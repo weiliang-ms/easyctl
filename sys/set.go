@@ -4,6 +4,7 @@ import (
 	"easycfg/resources"
 	"easycfg/util"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -66,4 +67,21 @@ func SetAliYUM() {
 	util.ExecuteCmd(cleanYUMCacheCmd)
 
 	fmt.Println("[successful] " + setAliMirrorSuccessful)
+}
+
+func SetHostname(name string) {
+	// todo
+	fmt.Println("校验hostname格式逻辑...")
+	fmt.Println("[hostname]配置hostname...")
+	cmd := fmt.Sprintf("hostnamectl --static set-hostname %s", name)
+	err, _ := util.ExecuteCmd(cmd)
+	if err != nil {
+		log.Println(err.Error())
+		util.PrintFailureMsg("[failed] 配置hostname失败...")
+	} else {
+		util.PrintSuccessfulMsg("[success] 配置hostname成功...")
+	}
+
+	fmt.Println("[host]配置host解析...")
+	util.ExecuteCmd(fmt.Sprintf("echo \"127.0.0.1 %s\"", name))
 }
