@@ -23,7 +23,8 @@ func init() {
 	rootCmd.AddCommand(setCmd)
 }
 
-var validArgs = []string{"dns", "yum", "hostname"}
+// set 命令合法参数
+var setValidArgs = []string{"dns", "yum", "hostname"}
 
 // 输出easycfg版本
 var setCmd = &cobra.Command{
@@ -35,7 +36,7 @@ var setCmd = &cobra.Command{
 		//fmt.Println("配置功能...")
 		analyseArgs(args)
 	},
-	ValidArgs: validArgs,
+	ValidArgs: setValidArgs,
 }
 
 func analyseArgs(args []string) {
@@ -68,8 +69,19 @@ func setDNS(args []string) {
 	}
 }
 
-func setYUM(args []string) (err error, result string) {
-	return err, result
+// 配置yum
+func setYUM(args []string) {
+	if len(args) < 2 {
+		sys.SetAliYUM()
+	} else {
+		switch args[1] {
+		case "ali":
+			sys.SetAliYUM()
+		default:
+			// todo
+			fmt.Println("暂不支持该mirror...")
+		}
+	}
 }
 
 func setHelp() {
