@@ -4,7 +4,6 @@ import (
 	"easycfg/resources"
 	"easycfg/util"
 	"fmt"
-	"log"
 	"os"
 )
 
@@ -26,7 +25,7 @@ func SetDNS(dnsAddress string) (err error, result string) {
 	return shellErr, shellResult
 }
 
-func SetAliYUM() (err error, result string) {
+func SetAliYUM() {
 
 	// 备份repo文件
 	cmd := "mkdir -p /etc/yum.repos.d/`date +%Y%m%d`" + ";" +
@@ -37,28 +36,34 @@ func SetAliYUM() (err error, result string) {
 
 	// 写入base文件
 	fmt.Printf("[create] 创建base-ali.repo文件...\n")
-	baseRepoFile, err := os.OpenFile("/etc/yum.repos.d/base-ali.repo", os.O_WRONLY&os.O_CREATE, 0666)
+	baseRepoFile, err := os.OpenFile("/etc/yum.repos.d/base-ali.repo", os.O_WRONLY|os.O_CREATE, 0666)
 	defer baseRepoFile.Close()
 	if err != nil {
-		log.Println(err.Error())
+		fmt.Println(err.Error())
 	}
 
 	_, baseWriteErr := baseRepoFile.Write([]byte(resources.CentOS7AliBaseYUMContent))
 	if baseWriteErr != nil {
-		return err, aliBaseEL7WriteError
+		fmt.Println(baseWriteErr.Error())
+		fmt.Println("[failed] " + aliBaseEL7WriteError)
 	}
 
 	fmt.Printf("[create] 创建epel-ali.repo文件...\n")
-	epelRepoFile, err := os.OpenFile("/etc/yum.repos.d/epel-ali.repo", os.O_WRONLY&os.O_CREATE, 0666)
+	epelRepoFile, err := os.OpenFile("/etc/yum.repos.d/epel-ali.repo", os.O_WRONLY|os.O_CREATE, 0666)
 	defer epelRepoFile.Close()
 	if err != nil {
-		log.Println(err.Error())
+		fmt.Println(err.Error())
 	}
 
-	_, epelWriteErr := baseRepoFile.Write([]byte(resources.CentOS7AliEpelYUMContent))
+	_, epelWriteErr := epelRepoFile.Write([]byte(resources.CentOS7AliEpelYUMContent))
 	if epelWriteErr != nil {
-		return epelWriteErr, aliEpelEL7WriteError
+		fmt.Println(epelWriteErr.Error())
+		fmt.Println("[failed] " + aliEpelEL7WriteError)
 	}
 
-	return nil, setAliMirrorSuccessful
+	cleanYUMCacheCmd := "yum clean all"
+	fmt.Printf("[clean] 清除yum缓存...\n")
+	util.ExecuteCmd(cleanYUMCacheCmd)
+
+	fmt.Println("[successful] " + setAliMirrorSuccessful)
 }
