@@ -48,6 +48,8 @@ func analyseArgs(args []string) {
 			setDNS(args)
 		case "yum":
 			setYUM(args)
+		case "hostname":
+			setHostname(args)
 		default:
 			setHelp()
 		}
@@ -84,6 +86,16 @@ func setYUM(args []string) {
 	}
 }
 
+// 配置hostname
+
+func setHostname(args []string) {
+	if len(args) < 2 {
+		// todo
+		fmt.Println("设置hostname帮助逻辑...")
+	} else {
+		sys.SetHostname(args[1])
+	}
+}
 func setHelp() {
 	fmt.Println(setHelpContent)
 }
