@@ -83,5 +83,5 @@ func SetHostname(name string) {
 	}
 
 	fmt.Println("[host]配置host解析...")
-	util.ExecuteCmd(fmt.Sprintf("echo \"127.0.0.1 %s\"", name))
+	util.ExecuteCmd(fmt.Sprintf("echo \"127.0.0.1 %s\" >> /etc/hosts", name))
 }
