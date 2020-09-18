@@ -17,6 +17,9 @@ var configSuccess = "配置成功..."
 var successBanner = "[success]"
 var failedBanner = "[failed]"
 
+const setHelpMessage = "" +
+	"easyctl"
+
 var missingParameterErr = errors.New("缺少参数...")
 
 func init() {
@@ -28,31 +31,33 @@ var setValidArgs = []string{"dns", "yum", "hostname"}
 
 // 输出easycfg版本
 var setCmd = &cobra.Command{
-	Use:     "set",
-	Short:   "set something through easycfg",
-	Long:    `Set DNS address,hostname,yum address...`,
-	Example: "set dns 114.114.114.114",
+	Use:   "set [OPTIONS] [values] [flags]",
+	Short: "set something through easycfg",
+	Example: "\neasycfg set dns 114.114.114.114" +
+		"\neasycfg set yum ali" +
+		"\neasycfg set hostname weiliang.com",
 	Run: func(cmd *cobra.Command, args []string) {
 		//fmt.Println("配置功能...")
-		analyseArgs(args)
+		switch cmd.HasSubCommands() {
+		case true:
+			analyseArgs(args)
+		case false:
+			fmt.Println(cmd.Use)
+		}
 	},
 	ValidArgs: setValidArgs,
 }
 
 func analyseArgs(args []string) {
-	if len(args) == 0 {
-		setHelp()
-	} else {
-		switch args[0] {
-		case "dns":
-			setDNS(args)
-		case "yum":
-			setYUM(args)
-		case "hostname":
-			setHostname(args)
-		default:
-			setHelp()
-		}
+	switch args[0] {
+	case "dns":
+		setDNS(args)
+	case "yum":
+		setYUM(args)
+	case "hostname":
+		setHostname(args)
+	default:
+		fmt.Println("暂不支持...")
 	}
 }
 
@@ -95,7 +100,4 @@ func setHostname(args []string) {
 	} else {
 		sys.SetHostname(args[1])
 	}
-}
-func setHelp() {
-	fmt.Println(setHelpContent)
 }
