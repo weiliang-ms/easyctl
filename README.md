@@ -4,7 +4,18 @@
 
 ** 适用平台：** `CentOS6` | `CentOS7`
 
-> 使用方式
+# 总览
+
+- [安装](#安装)
+
+- [命令]()
+  * [add](#add)
+    * [user](#user)
+  * [set](#set)
+    * [yum镜像源](#yum-repo)
+  * [search](#search)
+- [TODO](#todo)
+## 安装
 
 1.[下载release版本]()
 
@@ -44,7 +55,9 @@ z为y的补丁号
     Flags:
       -h, --help   help for easyctl
 
-## add命令
+## add
+
+### user
 
 > 添加用户
 
@@ -56,11 +69,11 @@ z为y的补丁号
 
     easyctl add username --no-login=true
 
-## set命令
+## set
 
 使用方式：easyctl set [options] [flags] 
 
-### yum配置 
+### yum-repo
 
 > 配置yum镜像源
 
@@ -105,7 +118,7 @@ b.配置本地镜像源（需手动挂载镜像至/media下：mount -o loop Cent
 
     easyctl set hostname nginx-server1
     
-## TODO
+## todo
 
 1.安全加固脚本（可排除选项）
 
