@@ -11,6 +11,8 @@
 - [命令]()
   * [add 添加](#add指令集)
     * [user 用户](#创建用户)
+  * [close 关闭](#close指令集)
+    * [selinux](#关闭selinux)
   * [set 设置](#set指令集)
     * [dns 域名解析](#配置dns域名解析)
     * [hosname 主机名](#配置主机名)
@@ -62,6 +64,26 @@
 2.添加非登录linux用户
 
     easyctl add username --no-login=true
+
+# close指令集
+
+## 关闭selinux
+
+> 格式
+
+    easyctl close selinux [flags]
+    
+    flags 可选 -f(永久关闭)
+    
+> 样例
+
+临时关闭selinux
+    
+    easyctl close selinux
+    
+永久关闭selinux
+
+    easyctl close selinux -f
 
 # search指令集
 
