@@ -16,7 +16,8 @@
     * [hosname 主机名](#配置主机名)
     * [timezone 时区](#配置时区)
     * [yum 镜像源](#yum镜像源)
-  * [search 查询](#search)
+  * [search 查询](#search指令集)
+    * [port 端口监听](#端口监听查询)
 - [TODO](#todo)
 
 
@@ -62,15 +63,26 @@
 
     easyctl add username --no-login=true
 
+# search指令集
+
+## 端口监听查询
+
+> 命令格式
+
+    easyctl search port 端口值
+
+> 使用样例
+
+    easyctl search port 22
+
 # set指令集
 
 使用方式：easyctl set [options] [flags] 
 
 ## yum镜像源
 
-> 配置yum镜像源
 
-a.配置阿里云yum镜像源
+> 配置阿里云yum镜像源
 
     easyctl set yum --repo=ali
     
@@ -78,7 +90,7 @@ a.配置阿里云yum镜像源
 
     easyctl set yum -r=ali
     
-b.配置本地镜像源（需手动挂载镜像至/media下：mount -o loop CentOS-7-x86_64-DVD-1908.iso /media）
+> 配置本地镜像源（需手动挂载镜像至/media下：mount -o loop CentOS-7-x86_64-DVD-1908.iso /media）
 
 
     easyctl set yum --repo=local
@@ -87,25 +99,25 @@ b.配置本地镜像源（需手动挂载镜像至/media下：mount -o loop Cent
 
     easyctl set yum -r=local
  
+## yum代理配置
+
 > 配置yum代理
 
 待添加
     
 ## 配置dns域名解析
-    
-配置DNS地址
 
-> 配置dns
+> 命令格式
 
-使用方式
+    easyctl set dns dns地址
+
+> 使用样例
 
     easyctl set dns 114.114.114.114
     
 ## 配置时区
 
-> 配置时区
-
-使用方式
+> 使用样例
 
     easyctl set timezone
     
@@ -117,11 +129,11 @@ b.配置本地镜像源（需手动挂载镜像至/media下：mount -o loop Cent
 
 ## 配置主机名
 
-配置hostname
+> 命令格式
 
-> 配置hostname
+    easyctl set hostname 主机名
 
-使用方式
+> 使用方式
 
     easyctl set hostname nginx-server1
     
@@ -140,3 +152,5 @@ b.配置本地镜像源（需手动挂载镜像至/media下：mount -o loop Cent
 6.开启端口监听用以测试网络连通性
   
 7.关闭某一服务
+
+8.主机host解析
