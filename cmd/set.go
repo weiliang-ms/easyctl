@@ -10,7 +10,6 @@ import (
 
 const (
 	dns   = "dns"
-	yum   = "yum源"
 	ali   = "ali"
 	local = "local"
 )
