@@ -1,7 +1,7 @@
 package main
 
 import (
-	"easycfg/cmd"
+	"easyctl/cmd"
 )
 
 func main() {

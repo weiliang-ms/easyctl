@@ -1,16 +1,21 @@
 package sys
 
 import (
-	"easycfg/resources"
-	"easycfg/util"
+	"easyctl/resources"
+	"easyctl/util"
 	"fmt"
 	"log"
 	"os"
 )
 
-var aliBaseEL7WriteError = "阿里云base镜像源配置失败..."
-var aliEpelEL7WriteError = "阿里云epel镜像源配置失败..."
-var setAliMirrorSuccessful = "阿里云镜像源配置成功..."
+const (
+	aliBaseEL7WriteErrMsg = "阿里云base镜像源配置失败..."
+	localWriteErrMsg      = "local.repo文件写失败..."
+	aliEpelEL7WriteErrMsg = "阿里云epel镜像源配置失败..."
+
+	setAliMirrorSuccessful   = "阿里云镜像源配置成功..."
+	setLocalMirrorSuccessful = "本地镜像源配置成功..."
+)
 
 func SetDNS(dnsAddress string) (err error, result string) {
 
@@ -43,10 +48,10 @@ func SetAliYUM() {
 		fmt.Println(err.Error())
 	}
 
-	_, baseWriteErr := baseRepoFile.Write([]byte(resources.CentOS7AliBaseYUMContent))
+	_, baseWriteErr := baseRepoFile.Write([]byte(resources.CentOSAliBaseYUMContent))
 	if baseWriteErr != nil {
 		fmt.Println(baseWriteErr.Error())
-		fmt.Println("[failed] " + aliBaseEL7WriteError)
+		fmt.Println("[failed] " + aliBaseEL7WriteErrMsg)
 	}
 
 	fmt.Printf("[create] 创建epel-ali.repo文件...\n")
@@ -56,10 +61,10 @@ func SetAliYUM() {
 		fmt.Println(err.Error())
 	}
 
-	_, epelWriteErr := epelRepoFile.Write([]byte(resources.CentOS7AliEpelYUMContent))
+	_, epelWriteErr := epelRepoFile.Write([]byte(resources.CentOSAliEpelYUMContent))
 	if epelWriteErr != nil {
 		fmt.Println(epelWriteErr.Error())
-		fmt.Println("[failed] " + aliEpelEL7WriteError)
+		fmt.Println("[failed] " + aliEpelEL7WriteErrMsg)
 	}
 
 	cleanYUMCacheCmd := "yum clean all"
@@ -69,12 +74,46 @@ func SetAliYUM() {
 	fmt.Println("[successful] " + setAliMirrorSuccessful)
 }
 
+func SetLocalYUM() {
+
+	// 备份repo文件
+	cmd := "mkdir -p /etc/yum.repos.d/`date +%Y%m%d`" + ";" +
+		"mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/`date +%Y%m%d` -f"
+
+	fmt.Printf("[bakup] 备份历史repo文件...\n")
+	util.ExecuteCmd(cmd)
+
+	// 写local.repo文件
+	fmt.Printf("[create] 创建local.repo文件...\n")
+	localRepoFile, err := os.OpenFile("/etc/yum.repos.d/local.repo", os.O_WRONLY|os.O_CREATE, 0666)
+	defer localRepoFile.Close()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	_, localWriteErr := localRepoFile.Write([]byte(resources.CentOSLocalYUMContent))
+	if localWriteErr != nil {
+		fmt.Println(localWriteErr.Error())
+		fmt.Println("[failed] " + localWriteErrMsg)
+	}
+
+	cleanYUMCacheCmd := "yum clean all"
+	fmt.Printf("[clean] 清除yum缓存...\n")
+	util.ExecuteCmd(cleanYUMCacheCmd)
+
+	fmt.Println("[successful] " + setLocalMirrorSuccessful)
+}
+
 func SetHostname(name string) {
-	// todo
-	fmt.Println("校验hostname格式逻辑...")
+	// todo 校验hostname格式逻辑
 	fmt.Println("[hostname]配置hostname...")
-	cmd := fmt.Sprintf("hostnamectl --static set-hostname %s", name)
+
+	cmd := fmt.Sprintf("sed -i '/HOSTNAME/d' /etc/sysconfig/network;"+
+		"echo \"HOSTNAME=%s\" >> /etc/sysconfig/network;"+
+		"sysctl kernel.hostname=%s", name, name)
+
 	err, _ := util.ExecuteCmd(cmd)
+
 	if err != nil {
 		log.Println(err.Error())
 		util.PrintFailureMsg("[failed] 配置hostname失败...")
@@ -84,4 +123,9 @@ func SetHostname(name string) {
 
 	fmt.Println("[host]配置host解析...")
 	util.ExecuteCmd(fmt.Sprintf("echo \"127.0.0.1 %s\" >> /etc/hosts", name))
+}
+
+func SetTimeZone() {
+	fmt.Println("[timezone]配置时区为上海...")
+	util.ExecuteCmd("\\cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime -R")
 }

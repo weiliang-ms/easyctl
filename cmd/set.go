@@ -1,103 +1,140 @@
 package cmd
 
 import (
-	"easycfg/sys"
+	"easyctl/sys"
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/spf13/cobra"
 )
 
-const dns = "dns"
-const yum = "yum源"
+const (
+	dns   = "dns"
+	yum   = "yum源"
+	ali   = "ali"
+	local = "local"
+)
 
 // todo
-var setHelpContent = "这是设置的帮助内容..."
-var configFailed = "配置失败..."
-var configSuccess = "配置成功..."
-var successBanner = "[success]"
-var failedBanner = "[failed]"
+var (
+	setHelpContent = "这是设置的帮助内容..."
+	configFailed   = "配置失败..."
+	configSuccess  = "配置成功..."
+	successBanner  = "[success]"
+	failedBanner   = "[failed]"
 
-const setHelpMessage = "" +
-	"easyctl"
+	Repo  string // 仓库地址
+	Proxy string // 代理地址
 
-var missingParameterErr = errors.New("缺少参数...")
+	missingParameterErr = errors.New("缺少参数...")
+)
 
 func init() {
+	setYumCmd.Flags().StringVarP(&Repo, "repo", "r", "", "Repository address of yum")
+	setYumCmd.Flags().StringVarP(&Proxy, "proxy", "p", "", "Proxy address of yum")
+
+	setCmd.AddCommand(setYumCmd)
+	setCmd.AddCommand(setDNSCmd)
+	setCmd.AddCommand(setHostnameCmd)
+	setCmd.AddCommand(setTimeZoneCmd)
+
 	rootCmd.AddCommand(setCmd)
+	flag.Parse()
+
 }
 
-// set 命令合法参数
+//// set 命令合法参数
 var setValidArgs = []string{"dns", "yum", "hostname"}
 
-// 输出easycfg版本
+// set命令
 var setCmd = &cobra.Command{
-	Use:   "set [OPTIONS] [values] [flags]",
-	Short: "set something through easycfg",
-	Example: "\neasycfg set dns 114.114.114.114" +
-		"\neasycfg set yum ali" +
-		"\neasycfg set hostname weiliang.com",
+	Use:   "set [OPTIONS] [flags]",
+	Short: "set something through easyctl",
+	Example: "\neasyctl set dns 114.114.114.114" +
+		"\neasyctl set yum ali" +
+		"\neasyctl set hostname weiliang.com",
 	Run: func(cmd *cobra.Command, args []string) {
-		//fmt.Println("配置功能...")
-		switch cmd.HasSubCommands() {
-		case true:
-			analyseArgs(args)
-		case false:
-			fmt.Println(cmd.Use)
-		}
+		fmt.Println(len(args))
 	},
 	ValidArgs: setValidArgs,
+	Args:      cobra.ExactValidArgs(1),
 }
 
-func analyseArgs(args []string) {
-	switch args[0] {
-	case "dns":
-		setDNS(args)
-	case "yum":
-		setYUM(args)
-	case "hostname":
-		setHostname(args)
-	default:
-		fmt.Println("暂不支持...")
-	}
+// 配置yum子命令
+var setYumCmd = &cobra.Command{
+	Use:   "yum [flags]",
+	Short: "easyctl set yum [flags]",
+	Example: "\neasyctl set yum --repo=ali" +
+		"\neasyctl set yum --repo=local" +
+		"\neasyctl set yum --proxy=http://xxx:xxx@xxx.xxx.xxx.xxx:xxx",
+	Run: func(cmd *cobra.Command, args []string) {
+		setYUM()
+	},
+}
+
+// 配置dns子命令
+var setDNSCmd = &cobra.Command{
+	Use:     "dns [value]",
+	Short:   "easyctl set dns [value]",
+	Example: "\neasyctl set dns 8.8.8.8",
+	Args:    cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		setDNS(args[0])
+	},
+}
+
+// 配置hostname子命令
+var setHostnameCmd = &cobra.Command{
+	Use:     "hostname [value]",
+	Short:   "easyctl set hostname [value]",
+	Example: "\neasyctl set hostname nginx-server1",
+	Args:    cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		setHostname(args[0])
+	},
+}
+
+// 配置时区子命令
+var setTimeZoneCmd = &cobra.Command{
+	Use:     "timezone",
+	Short:   "easyctl set tz/timezone [value]",
+	Example: "\neasyctl set tz/timezone",
+	Aliases: []string{"tz"},
+	Args:    cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		setTimeZone()
+	},
 }
 
 // 配置dns
-func setDNS(args []string) {
-	if len(args) < 2 {
-		fmt.Println(missingParameterErr)
+// todo 支持多dns地址
+func setDNS(address string) {
+	fmt.Printf("#### 配置dns地址：%s ####\n", address)
+	err, _ := sys.SetDNS(address)
+	if err != nil {
+		fmt.Println(failedBanner + " " + dns + configFailed + ": " + err.Error())
 	} else {
-		fmt.Printf("#### 配置dns地址：%s ####\n", args[1])
-		err, _ := sys.SetDNS(args[1])
-		if err != nil {
-			fmt.Println(failedBanner + " " + dns + configFailed + ": " + err.Error())
-		} else {
-			fmt.Println(successBanner + dns + configSuccess)
-		}
+		fmt.Println(successBanner + dns + configSuccess)
 	}
 }
 
 // 配置yum
-func setYUM(args []string) {
-	if len(args) < 2 {
+// todo 待优化
+func setYUM() {
+	if Repo != "" && Repo == ali {
 		sys.SetAliYUM()
-	} else {
-		switch args[1] {
-		case "ali":
-			sys.SetAliYUM()
-		default:
-			// todo
-			fmt.Println("暂不支持该mirror...")
-		}
+	}
+	if Repo != "" && Repo == local {
+		sys.SetLocalYUM()
 	}
 }
 
 // 配置hostname
+func setHostname(name string) {
+	sys.SetHostname(name)
+}
 
-func setHostname(args []string) {
-	if len(args) < 2 {
-		// todo
-		fmt.Println("设置hostname帮助逻辑...")
-	} else {
-		sys.SetHostname(args[1])
-	}
+// 配置时区
+func setTimeZone() {
+	sys.SetTimeZone()
 }

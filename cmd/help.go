@@ -12,8 +12,8 @@ func init() {
 // 帮助信息
 var helpCmd = &cobra.Command{
 	Use:   "help",
-	Short: "Print the version number of easycfg",
-	Long:  `All software has versions. This is easycfg's`,
+	Short: "Print the version number of easyctl",
+	Long:  `All software has versions. This is easyctl's`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("" +
 			"Cobra is a CLI library for Go that empowers applications.\n" +
@@ -21,7 +21,7 @@ var helpCmd = &cobra.Command{
 			"to quickly create a Cobra application.\n" +
 			"\n" +
 			"Usage:" + "\n" +
-			"  easycfg [command]\n" +
+			"  easyctl [command]\n" +
 			"\n" +
 			"Available Commands:" + "\n" +
 			"  set         Set DNS address, ulimit and so on." + "\n" +
@@ -33,6 +33,6 @@ var helpCmd = &cobra.Command{
 			"      --config string    config file (default is $HOME/.cobra.yaml)\n" +
 
 			"\n" +
-			"Use \"easycfg [command] --help\" for more information about a command.")
+			"Use \"easyctl [command] --help\" for more information about a command.")
 	},
 }

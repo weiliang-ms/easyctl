@@ -10,12 +10,12 @@ func init() {
 	rootCmd.AddCommand(versionCmd)
 }
 
-// 输出easycfg版本
+// 输出easyctl版本
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version number of easycfg",
-	Long:  `All software has versions. This is easycfg's`,
+	Short: "Print the version number of easyctl",
+	Long:  `All software has versions. This is easyctl's`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("easycfg  v0.1 -- alpha")
+		fmt.Println("easyctl  v0.1.0 -- alpha")
 	},
 }
