@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"easycfg/sys"
-	"easycfg/util"
+	"easyctl/sys"
+	"easyctl/util"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -14,17 +14,17 @@ func init() {
 // set 命令合法参数
 var searchValidArgs = []string{"port"}
 
-// 输出easycfg版本
+// 输出easyctl版本
 var searchCmd = &cobra.Command{
 	Use:     "search",
-	Short:   "search something through easycfg",
+	Short:   "search something through easyctl",
 	Long:    `Search port is lientened...`,
 	Example: "search port 8888",
 	Run: func(cmd *cobra.Command, args []string) {
 		//fmt.Println("配置功能...")
 		search(args)
 	},
-	ValidArgs: setValidArgs,
+	//ValidArgs: setValidArgs,
 }
 
 func search(args []string) {

@@ -1,6 +1,6 @@
 package sys
 
-import "easycfg/util"
+import "easyctl/util"
 
 // 查询端口监听
 func SearchPortStatus(port string) error {
