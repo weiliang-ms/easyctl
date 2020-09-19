@@ -9,37 +9,30 @@
 - [安装](#安装)
 
 - [命令]()
-  * [add](#add)
-    * [user](#user)
-  * [set](#set)
-    * [yum镜像源](#yum-repo)
-  * [search](#search)
+  * [add 添加](#add指令集)
+    * [user 用户](#创建用户)
+  * [set 设置](#set指令集)
+    * [dns 域名解析](#配置dns域名解析)
+    * [hosname 主机名](#配置主机名)
+    * [timezone 时区](#配置时区)
+    * [yum 镜像源](#yum镜像源)
+  * [search 查询](#search)
 - [TODO](#todo)
+
+
 ## 安装
 
-1.[下载release版本]()
+1.[下载release版本](https://github.com/weiliang-ms/easyctl/releases/)
 
 2.上传至/usr/sbin/下
 
 3.添加执行权限
 
-    chmod +x /usr/sbin/nginx
+    chmod +x /usr/sbin/easyctl
     
 4.查看版本信息
 
     easyctl version
-    
-> 版本说明
-
-    vx.y.z
-
-x为主版本号
-
-y为奇数：alpha测试版本
-
-y为偶数：beta稳定版
-
-z为y的补丁号
 
 # 命令介绍
 
@@ -55,9 +48,9 @@ z为y的补丁号
     Flags:
       -h, --help   help for easyctl
 
-## add
+# add指令集
 
-### user
+## 创建用户
 
 > 添加用户
 
@@ -69,11 +62,11 @@ z为y的补丁号
 
     easyctl add username --no-login=true
 
-## set
+# set指令集
 
 使用方式：easyctl set [options] [flags] 
 
-### yum-repo
+## yum镜像源
 
 > 配置yum镜像源
 
@@ -98,7 +91,7 @@ b.配置本地镜像源（需手动挂载镜像至/media下：mount -o loop Cent
 
 待添加
     
-### DNS
+## 配置dns域名解析
     
 配置DNS地址
 
@@ -107,8 +100,22 @@ b.配置本地镜像源（需手动挂载镜像至/media下：mount -o loop Cent
 使用方式
 
     easyctl set dns 114.114.114.114
+    
+## 配置时区
 
-### hostname
+> 配置时区
+
+使用方式
+
+    easyctl set timezone
+    
+或
+
+    easyctl set tz
+    
+默认配置时区为`上海`，暂不支持可选时区
+
+## 配置主机名
 
 配置hostname
 
@@ -132,3 +139,4 @@ b.配置本地镜像源（需手动挂载镜像至/media下：mount -o loop Cent
 
 6.开启端口监听用以测试网络连通性
   
+7.关闭某一服务
