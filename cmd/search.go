@@ -44,7 +44,7 @@ var searchPortCmd = &cobra.Command{
 func searchPortStatus(args []string) {
 
 	util.PrintSuccessfulMsg("#### 查询端口：%s监听状态 ####")
-	err := sys.SearchPortStatus(args[0])
+	_, err := sys.SearchPortStatus(args[0])
 
 	if err != nil {
 		util.PrintFailureMsg(fmt.Sprintf("\n[notOnListening] 端口：%s未被监听或您输入的端口格式不对，请检查是否为1~65535\n", args[1]))

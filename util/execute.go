@@ -25,7 +25,7 @@ func ExecuteCmd(command string) (err error, result string) {
 	return err, result
 }
 
-func ExecuteCmdAcceptResult(command string) error {
+func ExecuteCmdAcceptResult(command string) (result string, err error) {
 	cmd := exec.Command("/bin/bash", "-c", command)
 	fmt.Printf("[shell] 执行语句：%s\n", command)
 	stderr, _ := cmd.StderrPipe()
@@ -33,13 +33,14 @@ func ExecuteCmdAcceptResult(command string) error {
 	if err := cmd.Start(); err != nil {
 		log.Println("exec the cmd ", " failed")
 		fmt.Println(err.Error())
-		return err
+		return "", err
 	}
 	// 正常日志
 	logScan := bufio.NewScanner(stdout)
 	go func() {
 		for logScan.Scan() {
 			fmt.Println(logScan.Text())
+			result = logScan.Text()
 		}
 	}()
 	// 错误日志
@@ -55,7 +56,7 @@ func ExecuteCmdAcceptResult(command string) error {
 	cmd.Wait()
 	if !cmd.ProcessState.Success() {
 		// 执行失败，返回错误信息
-		return errors.New(errBuf.String())
+		return "", errors.New(errBuf.String())
 	}
-	return nil
+	return result, nil
 }
