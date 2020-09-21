@@ -67,6 +67,24 @@
 
 # close指令集
 
+## 关闭firewalld
+
+> 格式
+
+    easyctl close firewalld [flags]
+    
+    flags 可选 -f(永久关闭)
+    
+> 样例
+
+临时关闭firewalld
+    
+    easyctl close firewalld
+    
+永久关闭firewalld
+
+    easyctl close firewalld -f
+
 ## 关闭selinux
 
 > 格式
@@ -176,3 +194,5 @@
 7.关闭某一服务
 
 8.主机host解析
+
+9.添加命令自动补全

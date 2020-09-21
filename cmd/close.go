@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"easyctl/sys"
+	"easyctl/util"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -12,7 +13,10 @@ var closeValidArgs = []string{"firewalld", "selinux", "desktop"}
 func init() {
 
 	closeSeLinuxCmd.Flags().BoolVarP(&CloseServiceForever, "forever", "f", false, "Service closed duration.")
+	closeFirewalldCmd.Flags().BoolVarP(&CloseServiceForever, "forever", "f", false, "Service closed duration.")
+
 	closeCmd.AddCommand(closeSeLinuxCmd)
+	closeCmd.AddCommand(closeFirewalldCmd)
 	rootCmd.AddCommand(closeCmd)
 }
 
@@ -21,7 +25,9 @@ var closeCmd = &cobra.Command{
 	Use:   "close [OPTIONS] [flags]",
 	Short: "close some service through easyctl",
 	Example: "\neasyctl close firewalld" +
-		"\neasyctl close firewalld --forever=true",
+		"\neasyctl close firewalld --forever=true" +
+		"\neasyctl close selinux" +
+		"\neasyctl close selinux --forever=true",
 	Run: func(cmd *cobra.Command, args []string) {
 	},
 	ValidArgs: closeValidArgs,
@@ -40,8 +46,28 @@ var closeSeLinuxCmd = &cobra.Command{
 	ValidArgs: closeValidArgs,
 }
 
+// close firewalld命令
+var closeFirewalldCmd = &cobra.Command{
+	Use:   "firewalld [flags]",
+	Short: "close firewalld through easyctl",
+	Example: "\neasyctl close firewalld 临时关闭firewalld" +
+		"\neasyctl close firewalld --forever=true 永久关闭firewalld" +
+		"\neasyctl close firewalld -f 永久关闭firewalld",
+	Run: func(cmd *cobra.Command, args []string) {
+		closeFirewalld()
+	},
+	ValidArgs: closeValidArgs,
+}
+
 // 关闭selinux
 func closeSeLinux() {
 	fmt.Printf("#### 关闭selinux服务 ####\n\n")
 	sys.CloseSeLinux(CloseServiceForever)
+}
+
+// 关闭防火墙
+
+func closeFirewalld() {
+	util.PrintTitleMsg("关闭防火墙服务")
+	sys.CloseFirewalld(CloseServiceForever)
 }
