@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"easyctl/sys"
+	"easyctl/util"
 	"errors"
 	"flag"
 	"fmt"
@@ -22,8 +23,9 @@ var (
 	successBanner  = "[success]"
 	failedBanner   = "[failed]"
 
-	Repo  string // 仓库地址
-	Proxy string // 代理地址
+	Repo          string // 仓库地址
+	Proxy         string // 代理地址
+	HostsFilePath string // 主机互信hosts文件路径
 
 	missingParameterErr = errors.New("缺少参数...")
 )
@@ -31,11 +33,14 @@ var (
 func init() {
 	setYumCmd.Flags().StringVarP(&Repo, "repo", "r", "", "Repository address of yum")
 	setYumCmd.Flags().StringVarP(&Proxy, "proxy", "p", "", "Proxy address of yum")
+	setServerTrustCmd.Flags().StringVarP(&HostsFilePath, "hosts-file-path", "f", "", "配置主机互信的主机列表文件")
+	setServerTrustCmd.MarkFlagRequired("hosts-file-path")
 
 	setCmd.AddCommand(setYumCmd)
 	setCmd.AddCommand(setDNSCmd)
 	setCmd.AddCommand(setHostnameCmd)
 	setCmd.AddCommand(setTimeZoneCmd)
+	setCmd.AddCommand(setServerTrustCmd)
 
 	rootCmd.AddCommand(setCmd)
 	flag.Parse()
@@ -105,6 +110,18 @@ var setTimeZoneCmd = &cobra.Command{
 	},
 }
 
+// 主机互信
+var setServerTrustCmd = &cobra.Command{
+	Use:     "server-trust [flags]",
+	Short:   "easyctl set server-trust -f ./hosts.txt",
+	Example: "\neasyctl set server-trust --hosts-file-path=./hosts.txt",
+	Aliases: []string{"st"},
+	//Args:    cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		setServerTrust()
+	},
+}
+
 // 配置dns
 // todo 支持多dns地址
 func setDNS(address string) {
@@ -136,4 +153,9 @@ func setHostname(name string) {
 // 配置时区
 func setTimeZone() {
 	sys.SetTimeZone()
+}
+
+// 设置主机互信
+func setServerTrust() {
+	util.ReadSSHInfoFromFile(HostsFilePath)
 }

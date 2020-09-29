@@ -1,8 +1,6 @@
 package main
 
-import (
-	"easyctl/cmd"
-)
+import "easyctl/cmd"
 
 func main() {
 	cmd.Execute()

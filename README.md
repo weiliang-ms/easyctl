@@ -21,6 +21,7 @@
   * [search 查询](#search指令集)
     * [port 端口监听](#端口监听查询)
 - [TODO](#todo)
+- [开源项目](#开源项目)
 
 
 ## 安装
@@ -196,3 +197,8 @@
 8.主机host解析
 
 9.添加命令自动补全
+
+## 开源项目
+
+- [cobra](https://github.com/spf13/cobra)
+- [vssh](https://github.com/yahoo/vssh)
