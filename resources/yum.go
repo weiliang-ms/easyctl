@@ -77,5 +77,5 @@ const CentOSLocalYUMContent = "" +
 	"name=local-repo\n" +
 	"baseurl=file:///media\n" +
 	"enabled=1\n" +
-	"gpgkey=/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-$releasever \n" +
+	"gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-$releasever \n" +
 	"gpgcheck=0"
