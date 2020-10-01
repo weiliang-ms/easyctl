@@ -13,6 +13,9 @@
     * [user 用户](#创建用户)
   * [close 关闭](#close指令集)
     * [selinux](#关闭selinux)
+  * [install 安装](#install指令集)
+    * [docker](#安装docker)
+    * [docker](#安装nginx)
   * [set 设置](#set指令集)
     * [dns 域名解析](#配置dns域名解析)
     * [hosname 主机名](#配置主机名)
@@ -103,6 +106,36 @@
 永久关闭selinux
 
     easyctl close selinux -f
+    
+# install指令集
+
+## 安装docker
+
+> 格式
+
+    easyctl install docker [flags]
+    
+    flags 可选 --offline=true --file=./v19.03.13.tar.gz (离线安装)
+    
+> 样例
+
+在线安装`docker`(确保宿主机可访问http://mirrors.aliyun.com)
+    
+    easyctl install docker
+
+## 安装nginx
+
+> 格式
+
+    easyctl install nginx [flags]
+    
+    flags 可选 --offline=true --file=./nginx-1.16.0.tar.gz (离线安装)
+    
+> 样例
+
+在线安装`nginx`(确保宿主机可访问http://mirrors.aliyun.com)
+    
+    easyctl install nginx
 
 # search指令集
 

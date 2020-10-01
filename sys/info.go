@@ -22,6 +22,15 @@ const (
 const (
 	RedhatReleaseType   = "redhat"
 	RedhatOSVersionFile = "/etc/redhat-release"
+	start               = "start"
+	stop                = "stop"
+	disable             = "disable"
+	on                  = "on"
+	off                 = "off"
+	service             = "service"
+	enable              = "enable"
+	chkconfig           = "chkconfig"
+	systemctl           = "systemctl"
 )
 
 var SystemInfoObject SystemInfo
@@ -29,6 +38,10 @@ var SystemInfoObject SystemInfo
 type ServiceActionCommand struct {
 	CloseFirewalld        string // 关闭防火墙
 	CloseFirewalldForever string // 永久关闭防火墙
+	StartDocker           string // 开启docker服务
+	StartDockerForever    string // 永久开启docker服务
+	StartNginx            string // 开启nginx服务
+	StartNginxForever     string // 永久开启nginx服务
 }
 
 type OSVersion struct {
@@ -102,21 +115,14 @@ func (system *SystemInfo) loadManageServiceCommand() {
 
 // redhat系列主机管理操服务
 func (system *SystemInfo) loadRedhatManageServiceCmd() {
-
-	version := system.OSVersion.MainVersionNumber
-	var closeFirewalldCmd, closeFirewalldCmdForever string
-
-	if version == "6" {
-		closeFirewalldCmd = "service" + " iptables " + "stop"
-		closeFirewalldCmdForever = ""
-	} else if version == "7" {
-		closeFirewalldCmd = "systemctl" + " stop " + "firewalld"
-		closeFirewalldCmdForever = "systemctl" + " disable " + "firewalld"
-	}
-
+	version := SystemInfoObject.OSVersion.MainVersionNumber
 	// todo 组装
-	system.ServiceAction.CloseFirewalld = closeFirewalldCmd
-	system.ServiceAction.CloseFirewalldForever = closeFirewalldCmdForever
+	system.ServiceAction.CloseFirewalld = packageRedhatService(version, "firewalld", stop, false)
+	system.ServiceAction.CloseFirewalldForever = packageRedhatService(version, "firewalld", stop, true)
+	system.ServiceAction.StartDocker = packageRedhatService(version, "docker", start, false)
+	system.ServiceAction.StartDockerForever = packageRedhatService(version, "docker", start, true)
+	system.ServiceAction.StartNginx = packageRedhatService(version, "nginx", start, false)
+	system.ServiceAction.StartNginxForever = packageRedhatService(version, "nginx", start, true)
 }
 
 func (system *SystemInfo) loadRunLevel() {

@@ -79,3 +79,9 @@ const CentOSLocalYUMContent = "" +
 	"enabled=1\n" +
 	"gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-$releasever \n" +
 	"gpgcheck=0"
+
+const CentOSNginxMirrorContent = "[nginx]\n" +
+	"name=nginx repo\n" +
+	"baseurl=http://nginx.org/packages/centos/$releasever/$basearch/\n" +
+	"gpgcheck=0\n" +
+	"enabled=1"
