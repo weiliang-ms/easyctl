@@ -12,6 +12,7 @@
   * [add 添加](#add指令集)
     * [user 用户](#创建用户)
   * [close 关闭](#close指令集)
+    * [firewalld](#关闭防火墙)
     * [selinux](#关闭selinux)
   * [install 安装](#install指令集)
     * [docker](#安装docker)
