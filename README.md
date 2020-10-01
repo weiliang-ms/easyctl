@@ -15,7 +15,7 @@
     * [selinux](#关闭selinux)
   * [install 安装](#install指令集)
     * [docker](#安装docker)
-    * [docker](#安装nginx)
+    * [nginx](#安装nginx)
   * [set 设置](#set指令集)
     * [dns 域名解析](#配置dns域名解析)
     * [hosname 主机名](#配置主机名)
