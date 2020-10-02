@@ -156,7 +156,7 @@ flag
       -a, --password string   Redis password (default "redis")
       -p, --port string       Redis listen port (default "6379")
     
-> 样例
+> 在线安装样例
 
 在线安装`redis`(确保宿主机可访问http://mirrors.aliyun.com)
     
@@ -165,6 +165,14 @@ flag
 参数定制
 
     easyctl install redis --bind=192.168.131.36 --data=/var/lib/redis --port=6380 --password=redis567
+
+> 离线安装样例
+
+[下载redis release版本包](http://download.redis.io/releases/),如redis-5.0.5.tar.gz
+
+执行命令安装（其他参数可选，--offline --file为必须参数）
+
+    easyctl install redis --offline --file=./redis-5.0.5.tar.gz
 
 # search指令集
 
