@@ -17,6 +17,7 @@
   * [install 安装](#install指令集)
     * [docker](#安装docker)
     * [nginx](#安装nginx)
+    * [redis](#安装redis)
   * [set 设置](#set指令集)
     * [dns 域名解析](#配置dns域名解析)
     * [hosname 主机名](#配置主机名)
@@ -137,6 +138,33 @@
 在线安装`nginx`(确保宿主机可访问http://mirrors.aliyun.com)
     
     easyctl install nginx
+    
+## 安装redis
+
+> 格式
+
+    easyctl install redis [flags]
+    
+flag
+
+    Flags:
+      -b, --bind string       Redis bind address (default "0.0.0.0")
+      -d, --data string       Redis persistent directory (default "/var/lib/redis")
+      -h, --help              help for redis
+      -l, --log-file string   Redis logfile directory (default "/var/log/redis")
+      -o, --offline           offline mode
+      -a, --password string   Redis password (default "redis")
+      -p, --port string       Redis listen port (default "6379")
+    
+> 样例
+
+在线安装`redis`(确保宿主机可访问http://mirrors.aliyun.com)
+    
+    easyctl install redis
+    
+参数定制
+
+    easyctl install redis --bind=192.168.131.36 --data=/var/lib/redis --port=6380 --password=redis567
 
 # search指令集
 
