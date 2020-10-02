@@ -35,8 +35,11 @@ func init() {
 	installRedisCmd.Flags().StringVarP(&redisPassword, "password", "a", "redis", "Redis password")
 	installRedisCmd.Flags().StringVarP(&redisDataDir, "data", "d", "/var/lib/redis", "Redis persistent directory")
 	installRedisCmd.Flags().StringVarP(&redisLogDir, "log-file", "", "/var/log/redis", "Redis logfile directory")
-	installRedisCmd.Flags().StringVarP(&filePath, "file", "f", "", "redis-x-x-x.tar.gz path")
+	installRedisCmd.Flags().StringVarP(&filePath, "file", "f", "", "docker-x-x-x.tgz path")
 	installRedisCmd.Flags().StringVarP(&redisBinaryPath, "binary-path", "", "/usr/bin/", "redis-* binary file path")
+
+	installDockerCmd.Flags().StringVarP(&filePath, "file", "f", "", "redis-x-x-x.tar.gz path")
+	installDockerCmd.Flags().BoolVarP(&offline, "offline", "o", false, "offline mode")
 
 	installCmd.AddCommand(installDockerCmd)
 	installCmd.AddCommand(installNginxCmd)
@@ -61,9 +64,14 @@ var installDockerCmd = &cobra.Command{
 	Use:   "docker [flags]",
 	Short: "install docker through easyctl",
 	Example: "\neasyctl install docker 在线安装docker" +
-		"\neasyctl install docker --offline --file=./v19.03.13.tar.gz 离线安装docker",
+		"\neasyctl install docker --offline --file=./docker-19.03.9.tgz 离线安装docker",
 	Run: func(cmd *cobra.Command, args []string) {
-		installDocker()
+		fmt.Println("dddddddddd", !offline)
+		if !offline {
+			installDockerOnline()
+		} else {
+			installDockerOffline()
+		}
 	},
 }
 
@@ -93,8 +101,8 @@ var installRedisCmd = &cobra.Command{
 	},
 }
 
-// 安装docker
-func installDocker() {
+// 在线安装docker
+func installDockerOnline() {
 	fmt.Println("检测内核...")
 	if !sys.AccessAliMirrors() {
 		panic(netConnectErr)
@@ -121,6 +129,27 @@ func installDocker() {
 		util.PrintSuccessfulMsg("docker安装成功...")
 	}
 
+}
+
+// 离线安装docker
+func installDockerOffline() {
+
+	fmt.Println("离线安装docker...")
+	docker := "tar zxvf docker-*.tgz;mv docker/* /usr/bin/"
+	util.ExecuteCmdAcceptResult(docker)
+
+	// 配置系统服务
+	fmt.Println("[redis]配置redis系统服务...")
+	sys.ConfigService("docker")
+
+	sys.CloseSeLinux(true)
+	fmt.Println("[docker]启动docker...")
+	startRe, _ := util.ExecuteCmd(sys.SystemInfoObject.ServiceAction.StartDocker)
+	fmt.Println("[docker]设置docker开机自启动...")
+	enableRe, _ := util.ExecuteCmd(sys.SystemInfoObject.ServiceAction.StartDockerForever)
+	if startRe == nil && enableRe == nil {
+		util.PrintSuccessfulMsg("docker安装成功...")
+	}
 }
 
 // 安装nginx
@@ -166,7 +195,7 @@ func installRedisOnline() {
 	startRedis()
 }
 
-// 在线安装redis
+// 离线安装redis
 func installRedisOffline() {
 
 	gcc := "rpm -qa|grep \"^gcc\";echo $?"

@@ -1,4 +1,4 @@
-package resources
+package constant
 
 const CentOSAliBaseYUMContent = "[base]\n" +
 	"name=CentOS-$releasever - Base - mirrors.aliyun.com\n" +

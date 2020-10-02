@@ -1,7 +1,7 @@
 package sys
 
 import (
-	"easyctl/resources"
+	"easyctl/constant"
 	"easyctl/util"
 	"fmt"
 	"log"
@@ -52,7 +52,7 @@ func SetAliYUM() {
 		fmt.Println(err.Error())
 	}
 
-	_, baseWriteErr := baseRepoFile.Write([]byte(resources.CentOSAliBaseYUMContent))
+	_, baseWriteErr := baseRepoFile.Write([]byte(constant.CentOSAliBaseYUMContent))
 	if baseWriteErr != nil {
 		fmt.Println(baseWriteErr.Error())
 		fmt.Println("[failed] " + aliBaseEL7WriteErrMsg)
@@ -65,7 +65,7 @@ func SetAliYUM() {
 		fmt.Println(err.Error())
 	}
 
-	_, epelWriteErr := epelRepoFile.Write([]byte(resources.CentOSAliEpelYUMContent))
+	_, epelWriteErr := epelRepoFile.Write([]byte(constant.CentOSAliEpelYUMContent))
 	if epelWriteErr != nil {
 		fmt.Println(epelWriteErr.Error())
 		fmt.Println("[failed] " + aliEpelEL7WriteErrMsg)
@@ -95,7 +95,7 @@ func SetLocalYUM() {
 		fmt.Println(err.Error())
 	}
 
-	_, localWriteErr := localRepoFile.Write([]byte(resources.CentOSLocalYUMContent))
+	_, localWriteErr := localRepoFile.Write([]byte(constant.CentOSLocalYUMContent))
 	if localWriteErr != nil {
 		fmt.Println(localWriteErr.Error())
 		fmt.Println("[failed] " + localWriteErrMsg)
@@ -118,7 +118,7 @@ func SetNginxMirror() {
 		fmt.Println(err.Error())
 	}
 
-	_, nginxRepoFileWriteErr := nginxRepoFile.Write([]byte(resources.CentOSNginxMirrorContent))
+	_, nginxRepoFileWriteErr := nginxRepoFile.Write([]byte(constant.CentOSNginxMirrorContent))
 	if nginxRepoFileWriteErr != nil {
 		fmt.Println(nginxRepoFileWriteErr.Error())
 		fmt.Println("[failed] " + nginxRepoFileWriteErrMsg)

@@ -119,11 +119,21 @@
     
     flags 可选 --offline=true --file=./v19.03.13.tar.gz (离线安装)
     
-> 样例
+> 在线安装样例
 
 在线安装`docker`(确保宿主机可访问http://mirrors.aliyun.com)
     
     easyctl install docker
+    
+> 离线安装样例
+
+**适用于CentOS7**
+
+[下载docker x86压缩包](https://download.docker.com/linux/static/stable/x86_64/)
+
+执行命令安装（--offline --file为必须参数）
+
+    easyctl install docker --file=./docker-19.03.9.tgz --offline
 
 ## 安装nginx
 

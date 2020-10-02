@@ -1,4 +1,6 @@
-package resources
+package constant
+
+const Redhat7RedisServiceFilePath = "/usr/lib/systemd/system/redis.service"
 
 const Redhat7RedisServiceContent = "" +
 	"[Unit]\n" +
