@@ -42,6 +42,8 @@ type ServiceActionCommand struct {
 	StartDockerForever    string // 永久开启docker服务
 	StartNginx            string // 开启nginx服务
 	StartNginxForever     string // 永久开启nginx服务
+	StartRedis            string // 开启redis服务
+	StartRedisForever     string // 永久开启redis服务
 }
 
 type OSVersion struct {
@@ -123,6 +125,8 @@ func (system *SystemInfo) loadRedhatManageServiceCmd() {
 	system.ServiceAction.StartDockerForever = packageRedhatService(version, "docker", start, true)
 	system.ServiceAction.StartNginx = packageRedhatService(version, "nginx", start, false)
 	system.ServiceAction.StartNginxForever = packageRedhatService(version, "nginx", start, true)
+	system.ServiceAction.StartRedis = packageRedhatService(version, "redis", start, false)
+	system.ServiceAction.StartRedisForever = packageRedhatService(version, "redis", start, true)
 }
 
 func (system *SystemInfo) loadRunLevel() {
