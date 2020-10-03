@@ -31,17 +31,24 @@
 
 ## 安装
 
-1.[下载release版本](https://github.com/weiliang-ms/easyctl/releases/)
+> 下载上传
 
-2.上传至/usr/sbin/下
+[下载release版本](https://github.com/weiliang-ms/easyctl/releases/)
 
-3.添加执行权限
+上传至/usr/bin/下
 
-    chmod +x /usr/sbin/easyctl
+> 添加执行权限
+
+    chmod +x /usr/bin/easyctl
     
-4.查看版本信息
+> 查看版本信息
 
     easyctl version
+    
+> 配置命令补全
+
+    easyctl completion bash > /etc/bash_completion.d/easyctl
+    source <(easyctl completion bash)
 
 # 命令介绍
 
@@ -65,11 +72,11 @@
 
 1.添加可登录的linux用户(password可省，默认密码：user123)
 
-    easyctl add username password
+    easyctl add userad -u username -p password
     
 2.添加非登录linux用户
 
-    easyctl add username --no-login=true
+    easyctl add -u username --no-login
 
 # close指令集
 
@@ -117,7 +124,7 @@
 
     easyctl install docker [flags]
     
-    flags 可选 --offline=true --file=./v19.03.13.tar.gz (离线安装)
+    flags 可选 --offline --file=./v19.03.13.tar.gz (离线安装)
     
 > 在线安装样例
 
@@ -276,7 +283,7 @@ flag
 
 8.主机host解析
 
-9.添加命令自动补全
+9.添加命令自动补全(已完成)
 
 ## 开源项目
 

@@ -29,14 +29,14 @@ var (
 func init() {
 	netConnectErr = errors.New("网络连接异常,请选择离线方式安装...")
 	installErr = errors.New("程序安装失败...")
-	installRedisCmd.Flags().BoolVarP(&offline, "offline", "o", false, "offline mode")
-	installRedisCmd.Flags().StringVarP(&redisPort, "port", "p", "6379", "Redis listen port")
-	installRedisCmd.Flags().StringVarP(&redisBindIP, "bind", "b", "0.0.0.0", "Redis bind address")
-	installRedisCmd.Flags().StringVarP(&redisPassword, "password", "a", "redis", "Redis password")
-	installRedisCmd.Flags().StringVarP(&redisDataDir, "data", "d", "/var/lib/redis", "Redis persistent directory")
-	installRedisCmd.Flags().StringVarP(&redisLogDir, "log-file", "", "/var/log/redis", "Redis logfile directory")
-	installRedisCmd.Flags().StringVarP(&filePath, "file", "f", "", "docker-x-x-x.tgz path")
-	installRedisCmd.Flags().StringVarP(&redisBinaryPath, "binary-path", "", "/usr/bin/", "redis-* binary file path")
+	installRedisCmd.Flags().BoolVarP(&offline, "offline", "o", false, "offline mode 离线模式")
+	installRedisCmd.Flags().StringVarP(&redisPort, "port", "p", "6379", "Redis listen port 监听端口")
+	installRedisCmd.Flags().StringVarP(&redisBindIP, "bind", "b", "0.0.0.0", "Redis bind address 监听地址")
+	installRedisCmd.Flags().StringVarP(&redisPassword, "password", "a", "redis", "Redis password 密码")
+	installRedisCmd.Flags().StringVarP(&redisDataDir, "data", "d", "/var/lib/redis", "Redis persistent directory 持久化目录")
+	installRedisCmd.Flags().StringVarP(&redisLogDir, "log-file", "", "/var/log/redis", "Redis logfile directory 日志目录")
+	installRedisCmd.Flags().StringVarP(&filePath, "file", "f", "", "docker-x-x-x.tgz path 安装包路径")
+	installRedisCmd.Flags().StringVarP(&redisBinaryPath, "binary-path", "", "/usr/bin/", "redis-* binary file path 二进制文件路径")
 
 	installDockerCmd.Flags().StringVarP(&filePath, "file", "f", "", "redis-x-x-x.tar.gz path")
 	installDockerCmd.Flags().BoolVarP(&offline, "offline", "o", false, "offline mode")
@@ -50,13 +50,16 @@ func init() {
 // install命令
 var installCmd = &cobra.Command{
 	Use:   "install [OPTIONS] [flags]",
-	Short: "install some soft through easyctl",
+	Short: "install soft through easyctl",
 	Example: "\neasyctl install docker" +
 		"\neasyctl install nginx",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return parseCommand(cmd, args, installValidArgs)
 	},
-	ValidArgs: installValidArgs,
-	Args:      cobra.ExactValidArgs(1),
+	Args: cobra.MinimumNArgs(1),
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return installValidArgs, cobra.ShellCompDirectiveNoFileComp
+	},
 }
 
 // install docker命令
@@ -66,7 +69,6 @@ var installDockerCmd = &cobra.Command{
 	Example: "\neasyctl install docker 在线安装docker" +
 		"\neasyctl install docker --offline --file=./docker-19.03.9.tgz 离线安装docker",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("dddddddddd", !offline)
 		if !offline {
 			installDockerOnline()
 		} else {

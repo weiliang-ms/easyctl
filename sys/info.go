@@ -71,7 +71,7 @@ func init() {
 func (system *SystemInfo) loadOSReleaseContent() {
 	//fmt.Println("获取操作系统版本信息...")
 	// todo 优化获取os类型代码
-	systemType, _ := util.ExecuteCmdAcceptResult("echo $OSTYPE")
+	systemType, _ := util.ExecuteCmdResult("echo $OSTYPE")
 	system.OSVersion.OSType = systemType
 }
 
