@@ -53,10 +53,20 @@ type OSVersion struct {
 	MainVersionNumber string
 }
 
+type MemoryObject struct {
+	Total     string
+	Used      string
+	Free      string
+	Shared    string
+	BuffCache string
+	Available string
+}
+
 type SystemInfo struct {
 	Hostname      string
 	Kernel        string
 	RunLevel      string // 系统运行级别：0-6
+	Memory        MemoryObject
 	OSVersion     OSVersion
 	ServiceAction ServiceActionCommand
 }
@@ -65,6 +75,8 @@ func init() {
 	SystemInfoObject.loadOSReleaseContent()
 	SystemInfoObject.loadGnuSystemMainVersion()
 	SystemInfoObject.loadRedhatManageServiceCmd()
+	SystemInfoObject.kernelVersion()
+	SystemInfoObject.memoryInfo()
 }
 
 // todo 待优化代码
@@ -138,14 +150,46 @@ func (system *SystemInfo) loadRunLevel() {
 
 func (system *SystemInfo) kernelVersion() {
 	cmd := "uname -r"
-	kernel, err := util.ExecuteCmdAcceptResult(cmd)
+	kernel, err := util.ExecuteCmdResult(cmd)
 	if err == nil {
 		system.Kernel = kernel
 	}
 }
 
+func (system *SystemInfo) memoryInfo() {
+	cmd := "MEMORYLINE=`free | grep Mem`;echo $MEMORYLINE"
+	memoryInfo, _ := util.ExecuteCmdResult(cmd)
+	memory := strings.Split(memoryInfo, " ")
+	if len(memory) != 7 {
+		panic(errors.New("读取内存信息失败..."))
+	}
+	SystemInfoObject.Memory.Total = util.KConvert(memory[1])
+	SystemInfoObject.Memory.Used = util.KConvert(memory[2])
+	SystemInfoObject.Memory.Free = util.KConvert(memory[3])
+	SystemInfoObject.Memory.Shared = util.KConvert(memory[4])
+	SystemInfoObject.Memory.BuffCache = util.KConvert(memory[5])
+	SystemInfoObject.Memory.Available = util.KConvert(memory[6])
+}
+
 func PrintSystemInfo() {
-	fmt.Printf("###   当前系统信息   ####\n\n"+
-		"操作系统版本：%s",
+	fmt.Printf("###   操作系统版本   ####\n\n"+
+		"%s\n\n",
 		SystemInfoObject.OSVersion.ReleaseContent)
+}
+
+func PrintkernelInfo() {
+	fmt.Printf("###   操作系统内核   ####\n\n"+
+		"%s\n\n",
+		SystemInfoObject.Kernel)
+}
+
+func PrintMemoryInfo() {
+	mem := SystemInfoObject.Memory
+	fmt.Printf("###   内存信息   ####\n\n"+
+		"Total: %s\n\n"+
+		"Used: %s\n\n"+
+		"Free: %s\n\n"+
+		"Shared: %s\n\n"+
+		"Buffer/Cache: %s\n\n"+
+		"Available: %s\n\n", mem.Total, mem.Used, mem.Free, mem.Shared, mem.BuffCache, mem.Available)
 }

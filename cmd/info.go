@@ -17,15 +17,16 @@ var infoValidArgs = []string{"os", "system"}
 
 // 查询命令search指令集
 var infoCmd = &cobra.Command{
-	Use:     "info",
+	Use:     "info [OPTIONS]",
 	Short:   "print information about current system through easyctl",
-	Long:    `Search port is lientened...`,
 	Example: "info os",
-	Run: func(cmd *cobra.Command, args []string) {
-
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return parseCommand(cmd, args, infoValidArgs)
 	},
-	Args:      cobra.ExactValidArgs(1),
-	ValidArgs: searchValidArgs,
+	Args: cobra.MinimumNArgs(1),
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return infoValidArgs, cobra.ShellCompDirectiveNoFileComp
+	},
 }
 
 // 操作系统版本信息
@@ -48,5 +49,7 @@ var sysInfoCmd = &cobra.Command{
 	Aliases: []string{"sys"},
 	Run: func(cmd *cobra.Command, args []string) {
 		sys.PrintSystemInfo()
+		sys.PrintkernelInfo()
+		sys.PrintMemoryInfo()
 	},
 }
