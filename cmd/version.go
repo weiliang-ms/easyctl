@@ -16,6 +16,6 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version number of easyctl",
 	Long:  `All software has versions. This is easyctl's`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("easyctl  v0.1.0 -- alpha")
+		fmt.Println("easyctl  v0.6.0 -- alpha")
 	},
 }
