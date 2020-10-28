@@ -1,8 +1,8 @@
 package sys
 
 import (
-	"easyctl/util"
 	"fmt"
+	"github.com/weiliang-ms/easyctl/util"
 )
 
 const closeSelinuxFailure = "关闭selinux失败..."

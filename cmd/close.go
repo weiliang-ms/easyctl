@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"easyctl/sys"
-	"easyctl/util"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/weiliang-ms/easyctl/sys"
+	"github.com/weiliang-ms/easyctl/util"
 )
 
 var CloseServiceForever bool

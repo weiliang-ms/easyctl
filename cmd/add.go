@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"easyctl/sys"
 	"github.com/spf13/cobra"
+	"github.com/weiliang-ms/easyctl/sys"
 )
 
 var (

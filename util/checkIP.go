@@ -1,7 +1,7 @@
 package util
 
 import (
-	"easyctl/cutomErr"
+	"github.com/weiliang-ms/easyctl/cutomErr"
 	"regexp"
 )
 

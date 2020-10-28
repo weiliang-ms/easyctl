@@ -1,8 +1,8 @@
 package sys
 
 import (
-	"easyctl/util"
 	"fmt"
+	"github.com/weiliang-ms/easyctl/util"
 )
 
 const defaultPassword = "user123"
@@ -26,4 +26,10 @@ func AddUser(username string, password string, login bool) {
 	}
 
 	util.ExecuteCmd(cmd)
+}
+
+func AddSudoUser(username string) string {
+	return "chmod +w /etc/sudoers;" +
+		fmt.Sprintf("echo \"%sALL=(ALL) NOPASSWD: ALL\" >> /etc/sudoers;", username) +
+		"chmod -w /etc/sudoers"
 }
