@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"easyctl/sys"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/weiliang-ms/easyctl/sys"
 )
 
 func init() {

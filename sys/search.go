@@ -1,6 +1,6 @@
 package sys
 
-import "easyctl/util"
+import "github.com/weiliang-ms/easyctl/util"
 
 // 查询端口监听
 func SearchPortStatus(port string) (result string, err error) {

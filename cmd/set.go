@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"easyctl/sys"
-	"easyctl/util"
 	"errors"
 	"flag"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/weiliang-ms/easyctl/sys"
+	"github.com/weiliang-ms/easyctl/util"
 )
 
 const (
@@ -173,18 +173,26 @@ func setServerTrust() {
 
 	// 2.读取列表第一个主机.ssh信息
 	object := sshObjects[0]
-	_, rsa := object.ExecuteOriginCmd(CheckIDRsaFileCmd, 0)
-	_, rsaPub := object.ExecuteOriginCmd(fmt.Sprintf("[ -e $HOME/.ssh/%s ]", idRsaPub), 0)
+	//fmt.Printf("获取主机:%s的信息\n",object.Host)
+	_, rsa := object.ExecuteOriginCmd(CheckIDRsaFileCmd)
+	_, rsaPub := object.ExecuteOriginCmd(fmt.Sprintf("ls $HOME/.ssh/%s", idRsaPub))
+	fmt.Println(rsa, rsaPub)
 	if rsa != 0 || rsaPub != 0 {
-		object.ExecuteOriginCmd(generateIDRsaAndIDRsaPubCmd, 0)
+		fmt.Println("生成...")
+		object.ExecuteOriginCmd(generateIDRsaAndIDRsaPubCmd)
 	}
 
 	// 3.获取文件内容
-	rsaContent, _ := object.ExecuteOriginCmd(fmt.Sprintf("cat $HOME/.ssh/%s", idRsa), 0)
-	rsaPubContent, _ := object.ExecuteOriginCmd(fmt.Sprintf("cat $HOME/.ssh/%s", idRsaPub), 0)
+	rsaContent, _ := object.ExecuteOriginCmd(fmt.Sprintf("cat $HOME/.ssh/%s", idRsa))
+	rsaPubContent, _ := object.ExecuteOriginCmd(fmt.Sprintf("cat $HOME/.ssh/%s", idRsaPub))
 	fmt.Printf("rsa:\n%s \n\nrsapub:\n%s", rsaContent, rsaPubContent)
 
 	// 4.自互信
-	object.ExecuteOriginCmd(fmt.Sprintf("\\cp $HOME/.ssh/%s $HOME/.ssh/%s", idRsaPub, authorizedKeys), 0)
-	fmt.Println("----后续逻辑...")
+	object.ExecuteOriginCmd(fmt.Sprintf("\\cp $HOME/.ssh/%s $HOME/.ssh/%s", idRsaPub, authorizedKeys))
+
+	// 5.拷贝至其他主机
+	for i := 1; i < len(sshObjects); i++ {
+		instance := sshObjects[i]
+		instance.ExecuteOriginCmd(fmt.Sprintf("mkdir -p $HOME/.ssh && chmod 600 $HOME/.ssh"))
+	}
 }

@@ -1,9 +1,9 @@
 package sys
 
 import (
-	"easyctl/util"
 	"errors"
 	"fmt"
+	"github.com/weiliang-ms/easyctl/util"
 	"io/ioutil"
 	"os"
 	"regexp"

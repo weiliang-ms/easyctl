@@ -1,9 +1,9 @@
 package sys
 
 import (
-	"easyctl/constant"
-	"easyctl/util"
 	"errors"
+	"github.com/weiliang-ms/easyctl/constant"
+	"github.com/weiliang-ms/easyctl/util"
 )
 
 type Service struct {
