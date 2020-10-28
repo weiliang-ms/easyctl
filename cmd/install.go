@@ -18,8 +18,8 @@ const RedisConfigPath = "/etc/redis.conf"
 
 var installValidArgs = []string{"docker", "nginx", "redis"}
 var (
-	redisClusterMode     bool
-	redisClusterNodesNum int
+	redisClusterMode bool
+	//redisClusterNodesNum int
 	nodesSSHInfoFilePath string
 	offline              bool
 	redisPort            string
@@ -57,7 +57,7 @@ func init() {
 
 	// 集群参数
 	installRedisCmd.Flags().BoolVarP(&redisClusterMode, "cluster-mode", "", true, "redis 集群模式")
-	installRedisCmd.Flags().IntVarP(&redisClusterNodesNum, "clustr-nodes-num", "", 1, "redis集群节点数量")
+	//installRedisCmd.Flags().IntVarP(&redisClusterNodesNum, "clustr-nodes-num", "", 1, "redis集群节点数量")
 	installRedisCmd.Flags().StringVarP(&nodesSSHInfoFilePath, "ssh-info-file", "", "", "节点ssh连接信息配置文件路径")
 
 	installDockerCmd.Flags().StringVarP(&sourceFilePath, "file", "f", "", "redis-x-x-x.tar.gz path")
@@ -243,6 +243,8 @@ func (redis *redis) installClusterOffline() {
 	// 初始化集群
 	redis.initializeCluster()
 
+	// 开放端口
+
 }
 
 // 解析redis集群节点信息
@@ -289,7 +291,7 @@ func (redis *redis) startClusterCmd() (cmd string) {
 
 // 拷贝redis源代码
 func (redis *redis) copySourceCode() {
-	if len(redis.clusterNodes) == 0 && redisClusterNodesNum == 0 {
+	if len(redis.clusterNodes) == 0 {
 		fmt.Println("[result] 检测到clustr-nodes-num参数为1，本地安装redis...")
 		time.Sleep(3 * time.Second)
 		return
@@ -299,12 +301,10 @@ func (redis *redis) copySourceCode() {
 
 // 远程编译redis
 func (redis *redis) remoteCompile(compileCmd string) {
-	if len(redis.clusterNodes) != redisClusterNodesNum {
-		log.Fatal("[error] 集群数与ssh信息不匹配...")
-	}
+
 	wg := sync.WaitGroup{}
-	wg.Add(redisClusterNodesNum)
-	for i := 0; i < redisClusterNodesNum; i++ {
+	wg.Add(len(redis.clusterNodes))
+	for i := 0; i < len(redis.clusterNodes); i++ {
 		instance := redis.clusterNodes[i]
 		go instance.ExecuteOriginCmdParallel(compileCmd, &wg)
 	}
@@ -315,14 +315,14 @@ func (redis *redis) remoteCompile(compileCmd string) {
 func (redis *redis) writeClusterConfigFile() {
 
 	fmt.Println("[init] 初始化redis集群配置文件...")
-	if len(redis.clusterNodes) == 0 || redisClusterNodesNum == 1 {
+	if len(redis.clusterNodes) == 0 {
 		ports := []string{"26379", "26380", "26381", "26382", "26383", "26384"}
 		for _, v := range ports {
 			util.OverwriteContent(fmt.Sprintf("%s/%s.conf", redisConfigDir, v), redis.config(v))
 		}
 	}
 
-	if len(redis.clusterNodes) == 3 && redisClusterNodesNum == 3 {
+	if len(redis.clusterNodes) == 3 {
 		ports := []string{"26379", "26380"}
 		for _, v := range redis.clusterNodes {
 			for _, p := range ports {
@@ -341,7 +341,7 @@ func (redis *redis) compile() {
 	compileCmd := fmt.Sprintf("tar zxvf %s && cd %s && sed -i \"s#/usr/local#%s#g\" src/Makefile && make -j $(nproc) && make install && cd ~",
 		sourceFilePath, directoryName, redisBinaryPath)
 
-	if len(redis.clusterNodes) > 0 && redisClusterNodesNum > 1 {
+	if len(redis.clusterNodes) > 0 {
 		redis.remoteCompile(compileCmd)
 	} else {
 		util.ExecuteCmd(compileCmd)
@@ -396,6 +396,29 @@ func (redis *redis) installEnvDetection() {
 	}
 	if !gcc {
 		log.Fatal("[failed] redis安装环境检测失败...")
+	}
+}
+
+func (redis *redis) openFirewallPort() {
+
+}
+
+func (redis *redis) openFirewallPortCmd() {
+	ports := []int{}
+	var i int
+	if len(redis.clusterNodes) == 0 || len(redis.clusterNodes) == 1 {
+		i = 6
+	} else if len(redis.clusterNodes) == 3 {
+		i = 2
+	} else if len(redis.clusterNodes) == 2 {
+		i = 3
+	} else {
+		fmt.Sprintf("节点数量参数与不匹配")
+	}
+
+	for j := 0; j < i; j++ {
+		ports = append(ports, 26379+j)
+		ports = append(ports, 26379+j+10000)
 	}
 }
 
