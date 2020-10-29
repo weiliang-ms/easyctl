@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"easyctl/constant"
+	"easyctl/printe"
+	"easyctl/yum"
 	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/sys"
 	"github.com/weiliang-ms/easyctl/util"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -204,6 +207,7 @@ func installNginx() {
 
 // 在线安装redis
 func installRedisOnline() {
+
 }
 
 // 离线安装redis
@@ -219,11 +223,11 @@ func (redis *redis) installClusterOffline() {
 	// 检测redis安装环境
 	redis.installEnvDetection()
 
+	// 拷贝源码包
+	redis.scpSourceCode()
+
 	// 覆盖安装时执行
 	redis.removeClusterConfig()
-
-	// 拷贝源码包
-	redis.copySourceCode()
 
 	// 远程编译redis
 	redis.compile()
@@ -244,11 +248,12 @@ func (redis *redis) installClusterOffline() {
 	redis.initializeCluster()
 
 	// 开放端口
-
+	redis.openFirewallPort()
 }
 
 // 解析redis集群节点信息
 func (redis *redis) cluterNodesInfo() {
+	fmt.Printf("%s 解析ssh配置清单...\n", util.PrintOrange(constant.Redis))
 	if _, err := os.Stat(nodesSSHInfoFilePath); err == nil {
 		redis.clusterNodes = util.ReadSSHInfoFromFile(nodesSSHInfoFilePath)
 	}
@@ -256,14 +261,14 @@ func (redis *redis) cluterNodesInfo() {
 
 // 初始化集群
 func (redis *redis) initializeCluster() {
-	fmt.Println("[init] 初始化redis集群...")
+	fmt.Printf("%s 初始化redis集群...\n", util.PrintOrange(constant.Redis))
 	util.ExecuteCmdAcceptResult(redis.initializeClusterCmd())
 }
 
 func (redis *redis) initializeClusterCmd() (cmd string) {
 	if len(redis.clusterNodes) < 2 {
-		cmd = fmt.Sprintf("echo \"yes\" | redis-cli --cluster create 0.0.0.0:26379 0.0.0.0:26380 "+
-			"0.0.0.0:26381 0.0.0.0:26382 0.0.0.0:26383 0.0.0.0:26384 --cluster-replicas 1 -a %s", redisPassword)
+		cmd = fmt.Sprintf("echo \"yes\" | redis-cli --cluster create %s:26379 %s:26380 %s:26381 %s:26382 %s:26383 %s:26384 --cluster-replicas 1 -a %s", redisBindIP,
+			redisBindIP, redisBindIP, redisBindIP, redisBindIP, redisBindIP, redisPassword)
 	}
 
 	return
@@ -271,7 +276,7 @@ func (redis *redis) initializeClusterCmd() (cmd string) {
 
 // 启动集群
 func (redis *redis) startCluster() {
-	fmt.Println("[start] 启动redis集群...")
+	fmt.Printf("%s 启动redis集群...\n", util.PrintOrange(constant.Redis))
 	util.ExecuteCmdAcceptResult(redis.startClusterCmd())
 }
 
@@ -289,12 +294,35 @@ func (redis *redis) startClusterCmd() (cmd string) {
 	return cmd
 }
 
-// 拷贝redis源代码
-func (redis *redis) copySourceCode() {
+// 配置systemd service
+func (redis *redis) service() {
+
+}
+
+func (redis *redis) serviceCmd() (cmd string) {
 	if len(redis.clusterNodes) == 0 {
-		fmt.Println("[result] 检测到clustr-nodes-num参数为1，本地安装redis...")
+		cmd = fmt.Sprintf("chmod +x /etc/rc.local;ls %s/263*.conf|xargs -n1 redis-server", redisConfigDir)
+	}
+
+	return
+}
+
+// 拷贝redis源代码
+func (redis *redis) scpSourceCode() {
+	if len(redis.clusterNodes) == 0 {
+		fmt.Printf("%s 检测到clustr-nodes-num参数为1，本地安装redis...\n", util.PrintOrange(constant.Redis))
 		time.Sleep(3 * time.Second)
 		return
+	} else {
+		file, _ := os.OpenFile(sourceFilePath, os.O_RDONLY, 0666)
+		b, err := ioutil.ReadAll(file)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		for _, v := range redis.clusterNodes {
+			fmt.Printf("%s 拷贝源码包至%s:~/%s...\n", util.PrintOrange(constant.Origin), v.Host, file.Name())
+			util.OriginWriteFile(fmt.Sprintf("%s/%s", util.HomeDir(v), file.Name()), b, v)
+		}
 	}
 	// 拷贝逻辑
 }
@@ -314,7 +342,8 @@ func (redis *redis) remoteCompile(compileCmd string) {
 
 func (redis *redis) writeClusterConfigFile() {
 
-	fmt.Println("[init] 初始化redis集群配置文件...")
+	fmt.Printf("%s 初始化redis集群配置文件...\n", util.PrintOrange(constant.Redis))
+
 	if len(redis.clusterNodes) == 0 {
 		ports := []string{"26379", "26380", "26381", "26382", "26383", "26384"}
 		for _, v := range ports {
@@ -329,16 +358,16 @@ func (redis *redis) writeClusterConfigFile() {
 				configDir := fmt.Sprintf("%s/%s.conf", redisConfigDir, p)
 				util.OriginWriteFile(configDir, []byte(constant.RedisConfigContent), v)
 			}
-
 		}
 	}
 }
 
+// 编译
 func (redis *redis) compile() {
-	fmt.Println("[compile] 开始编译redis...")
-	directoryName := strings.Trim(strings.Trim(sourceFilePath, ".tar.gz"), "/")
-	// sed -i "s#/usr/local#$HOME#g" src/Makefile
-	compileCmd := fmt.Sprintf("tar zxvf %s && cd %s && sed -i \"s#/usr/local#%s#g\" src/Makefile && make -j $(nproc) && make install && cd ~",
+	fmt.Printf("%s 开始编译redis...\n", util.PrintOrange(constant.Redis))
+	directoryName := util.CutCharacter(strings.TrimSuffix(sourceFilePath, ".tar.gz"), []string{"./", ""})
+
+	compileCmd := fmt.Sprintf("tar zxvf %s && cd %s && sed -i \"s#\\$(PREFIX)/bin#%s#g\" src/Makefile && make -j $(nproc) && make install && cd ~",
 		sourceFilePath, directoryName, redisBinaryPath)
 
 	if len(redis.clusterNodes) > 0 {
@@ -349,6 +378,7 @@ func (redis *redis) compile() {
 
 }
 func (redis *redis) initializeRuntimeEnv() {
+	fmt.Printf("%s 初始化redis运行时环境...\n", util.PrintOrange(constant.Redis))
 	util.ExecuteCmdIgnoreErr(redis.initEnvCmd())
 }
 func (redis *redis) initEnvCmd() string {
@@ -358,59 +388,76 @@ func (redis *redis) initEnvCmd() string {
 }
 
 // 配置redis
-func (redis *redis) config(port string) string {
-	// todo 校验参数合法性
-	content := strings.ReplaceAll(constant.RedisConfigContent, "26379", port)
+func (redis *redis) config(port string) (content string) {
+
+	fmt.Printf("%s 生成redis配置项文件: %s...\n",
+		util.PrintOrange(constant.Redis), fmt.Sprintf("%s/%s.conf", redisConfigDir, port))
+
+	content = strings.ReplaceAll(constant.RedisConfigContent, "26379", port)
 	strings.ReplaceAll(content, "requirepass redis", fmt.Sprintf("requirepass %s", redisPassword))
 	strings.ReplaceAll(content, "dir /redis/lib", fmt.Sprintf("dir %s", redisDataDir))
-	strings.ReplaceAll(content, "logfile /redis/log", fmt.Sprintf("dir %s", redisLogDir))
+	strings.ReplaceAll(content, "logfile /redis/log", fmt.Sprintf("logfile %s", redisLogDir))
 
-	//fmt.Println("[redis]配置overcommit_memory...")
-	//
-	return content
+	return
 }
 
 func (redis *redis) optimize() {
+	fmt.Printf("%s redis调优...\n", util.PrintOrange(constant.Redis))
 	util.ExecuteCmd("echo \"vm.overcommit_memory = 1\" >> /etc/sysctl.conf;sysctl -p")
 }
 
-func (redis *redis) start() {
-	fmt.Println("[redis] 启动redis...")
-	startRe, _ := util.ExecuteCmd(sys.SystemInfoObject.ServiceAction.StartRedis)
-	fmt.Println("[redis] 配置redis为系统服务...")
-	enableRe, _ := util.ExecuteCmd(sys.SystemInfoObject.ServiceAction.StartRedisForever)
-	if startRe == nil && enableRe == nil {
-		util.PrintSuccessfulMsg("[success] redis安装成功...")
+func (redis *redis) installEnvDetection() {
+	fmt.Printf("%s 检测redis编译环境...\n", util.PrintOrange(constant.Redis))
+	if len(redis.clusterNodes) == 0 {
+		redis.localDependenceDetection()
+	} else {
+		redis.originDependenceDetection()
 	}
 }
 
-func (redis *redis) installEnvDetection() {
-	fmt.Println("[check] 检测redis编译环境...")
-	gcc := true
-	re := ""
-	for _, v := range redis.clusterNodes {
-		if !util.RemoteHostYumDetection(v) {
-			re += fmt.Sprintf("节点:%s yum检测失败，请配置好yum源\n", v.Host)
-			gcc = false
+func (redis *redis) localDependenceDetection() {
+	if yum.Detection(constant.Gcc) {
+		printe.PackageDetectionPass(constant.Redis)
+	} else {
+		printe.PackageInstall()
+		if yum.Install("gcc") {
+			printe.PackageDetectionPass(constant.Redis)
+		} else {
+			printe.InstallPackageFatal()
 		}
 	}
-	if !gcc {
-		log.Fatal("[failed] redis安装环境检测失败...")
+}
+
+func (redis *redis) originDependenceDetection() {
+	for _, node := range redis.clusterNodes {
+		if util.RemotePackageDetection(constant.Gcc, node) {
+			printe.PackageDetectionPass(constant.Redis)
+		} else {
+			printe.PackageOriginInstall(node)
+			if util.RemoteInstallPackage("gcc", node) {
+				printe.PackageDetectionPass(constant.Redis)
+			} else {
+				printe.InstallPackageFatal()
+			}
+		}
 	}
 }
 
+// 开启端口
 func (redis *redis) openFirewallPort() {
-
+	fmt.Printf("%s 开放端口...\n", util.PrintOrange(constant.Redis))
+	util.ExecuteCmdAcceptResult(redis.firewallPortsCmd())
 }
 
-func (redis *redis) openFirewallPortCmd() {
-	ports := []int{}
+func (redis *redis) firewallPortsCmd() string {
 	var i int
-	if len(redis.clusterNodes) == 0 || len(redis.clusterNodes) == 1 {
+	var ports []int
+	num := len(redis.clusterNodes)
+	if num == 0 || num == 1 {
 		i = 6
-	} else if len(redis.clusterNodes) == 3 {
+	} else if num == 3 {
 		i = 2
-	} else if len(redis.clusterNodes) == 2 {
+	} else if num == 2 {
 		i = 3
 	} else {
 		fmt.Sprintf("节点数量参数与不匹配")
@@ -420,6 +467,19 @@ func (redis *redis) openFirewallPortCmd() {
 		ports = append(ports, 26379+j)
 		ports = append(ports, 26379+j+10000)
 	}
+
+	redhat6 := "[ \"$(cat /etc/redhat-release|sed -r 's/.* ([0-9]+)\\..*/\\1/')\" == \"6\" ]"
+	redhat7 := "[ \"$(cat /etc/redhat-release|sed -r 's/.* ([0-9]+)\\..*/\\1/')\" == \"7\" ]"
+	var cmd6, cmd7 string
+	for _, v := range ports {
+		cmd7 += fmt.Sprintf("\nfirewall-cmd --zone=public --add-port=%d/tcp --permanent;", v)
+		cmd6 += fmt.Sprintf("\niptables -I INPUT -p tcp -m state --state NEW -m tcp --dport %d -j ACCEPT;", v)
+	}
+
+	cmd6 = fmt.Sprintf("%s && %s [ -f /etc/rc.d/init.d/iptables ] && /etc/rc.d/init.d/iptables save && service iptables restart", redhat6, cmd6)
+	cmd7 = fmt.Sprintf("%s && %s firewall-cmd --reload", redhat7, cmd7)
+
+	return fmt.Sprintf("[ `id -u` -eq 0 ] && %s;\n%s", cmd6, cmd7)
 }
 
 // 删除集群配置
