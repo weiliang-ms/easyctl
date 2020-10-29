@@ -18,7 +18,7 @@ var infoValidArgs = []string{"os", "system"}
 // 查询命令search指令集
 var infoCmd = &cobra.Command{
 	Use:     "info [OPTIONS]",
-	Short:   "print information about current system through easyctl",
+	Short:   "printe information about current system through easyctl",
 	Example: "info os",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return parseCommand(cmd, args, infoValidArgs)
@@ -32,8 +32,8 @@ var infoCmd = &cobra.Command{
 // 操作系统版本信息
 var osInfoCmd = &cobra.Command{
 	Use:     "os",
-	Short:   "print system version",
-	Long:    `print system version...`,
+	Short:   "printe system version",
+	Long:    `printe system version...`,
 	Example: "info os",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("当前系统版本：%+v\n", sys.SystemInfoObject.OSVersion.ReleaseContent)
@@ -43,8 +43,8 @@ var osInfoCmd = &cobra.Command{
 // 操作系统整体信息
 var sysInfoCmd = &cobra.Command{
 	Use:     "system",
-	Short:   "print system version",
-	Long:    `print system version...`,
+	Short:   "printe system version",
+	Long:    `printe system version...`,
 	Example: "info os",
 	Aliases: []string{"sys"},
 	Run: func(cmd *cobra.Command, args []string) {

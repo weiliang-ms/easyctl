@@ -1,6 +1,8 @@
 package util
 
-import "strings"
+import (
+	"strings"
+)
 
 func CutCharacter(str string, cutCharacters []string) (s string) {
 	for _, c := range cutCharacters {

@@ -3,6 +3,7 @@ package util
 import (
 	"bufio"
 	"bytes"
+	"easyctl/constant"
 	"errors"
 	"fmt"
 	"log"
@@ -12,7 +13,7 @@ import (
 func ExecuteCmd(command string) (err error, result string) {
 	//函数返回一个*Cmd，用于使用给出的参数执行name指定的程序
 	cmd := exec.Command("/bin/bash", "-c", command)
-	fmt.Printf("[shell] 执行语句：%s\n", command)
+	fmt.Printf("%s 执行语句：%s\n", PrintCyan(constant.Shell), command)
 	//读取io.Writer类型的cmd.Stdout，再通过bytes.Buffer(缓冲byte类型的缓冲器)将byte类型转化为string类型(out.String():这是bytes类型提供的接口)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -28,7 +29,7 @@ func ExecuteCmd(command string) (err error, result string) {
 func ExecuteCmdIgnoreErr(command string) (result string) {
 	//函数返回一个*Cmd，用于使用给出的参数执行name指定的程序
 	cmd := exec.Command("/bin/bash", "-c", command)
-	fmt.Printf("[shell] 执行语句：%s\n", command)
+	fmt.Printf("%s 执行语句：%s\n", PrintCyan(constant.Shell), command)
 	//读取io.Writer类型的cmd.Stdout，再通过bytes.Buffer(缓冲byte类型的缓冲器)将byte类型转化为string类型(out.String():这是bytes类型提供的接口)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -43,7 +44,6 @@ func ExecuteCmdIgnoreErr(command string) (result string) {
 
 func ExecuteCmdAcceptResult(command string) (result string, err error) {
 	cmd := exec.Command("/bin/bash", "-c", command)
-	//fmt.Printf("[shell] 执行语句：%s\n", command)
 	stderr, _ := cmd.StderrPipe()
 	stdout, _ := cmd.StdoutPipe()
 	if err := cmd.Start(); err != nil {
@@ -79,7 +79,6 @@ func ExecuteCmdAcceptResult(command string) (result string, err error) {
 
 func ExecuteCmdResult(command string) (result string, err error) {
 	cmd := exec.Command("/bin/bash", "-c", command)
-	//fmt.Printf("[shell] 执行语句：%s\n", command)
 	stderr, _ := cmd.StderrPipe()
 	stdout, _ := cmd.StdoutPipe()
 	if err := cmd.Start(); err != nil {
@@ -107,4 +106,19 @@ func ExecuteCmdResult(command string) (result string, err error) {
 		return "", errors.New(errBuf.String())
 	}
 	return result, nil
+}
+
+func ExecuteIgnoreStd(shell string) bool {
+	cmd := exec.Command("/bin/bash", "-c", shell)
+	if err := cmd.Start(); err != nil {
+		return false
+	}
+	// 等待命令执行完
+	cmd.Wait()
+	if !cmd.ProcessState.Success() {
+		// 执行失败，返回错误信息
+		return false
+	}
+
+	return true
 }

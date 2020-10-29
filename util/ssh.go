@@ -2,6 +2,7 @@ package util
 
 import (
 	"bufio"
+	"easyctl/constant"
 	"fmt"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -23,7 +24,7 @@ type SSHInstance struct {
 
 func (instance SSHInstance) ExecuteOriginCmd(cmd string) (msg string, exitCode int) {
 	session, conErr := instance.sshConnect()
-	fmt.Printf("[shell] 远程执行: %s\n", cmd)
+	fmt.Printf("%s 执行语句：%s\n", PrintCyan(constant.Shell), cmd)
 	if conErr != nil {
 		log.Fatal(conErr)
 	}
@@ -41,7 +42,7 @@ func (instance SSHInstance) ExecuteOriginCmd(cmd string) (msg string, exitCode i
 func (instance SSHInstance) ExecuteOriginCmdParallel(cmd string, wg *sync.WaitGroup) (msg string, exitCode int) {
 	defer wg.Done()
 	session, conErr := instance.sshConnect()
-	fmt.Printf("[origin] 远程执行: %s\n", cmd)
+	fmt.Printf("[origin] 远程%s执行: %s\n", instance.Host, cmd)
 	if conErr != nil {
 		log.Fatal(conErr)
 	}
@@ -147,8 +148,8 @@ func (instance SSHInstance) sshConnect() (*ssh.Session, error) {
 	return session, nil
 }
 
-func RemoteHostYumDetection(instance SSHInstance) bool {
-	_, code := instance.ExecuteOriginCmd("yum install -y gcc")
+func RemotePackageDetection(packageName string, instance SSHInstance) bool {
+	_, code := instance.ExecuteOriginCmd(fmt.Sprintf("rpm -qa|grep %s", packageName))
 	if code == 0 {
 		return true
 	}
@@ -156,9 +157,13 @@ func RemoteHostYumDetection(instance SSHInstance) bool {
 	return false
 }
 
-func ScpFile(originPath string, destinationPath string, instance SSHInstance) {
-	// 跨服务器拷贝
+func RemoteInstallPackage(packageName string, instance SSHInstance) bool {
+	_, code := instance.ExecuteOriginCmd(fmt.Sprintf("yum install -y %s", packageName))
+	if code == 0 {
+		return true
+	}
 
+	return false
 }
 
 // 远程写文件
@@ -166,9 +171,13 @@ func OriginWriteFile(filePath string, b []byte, instance SSHInstance) {
 	// init sftp
 	sftp, err := SftpConnect(instance.Username, instance.Password, instance.Host, instance.Port)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err.Error())
 	}
+	fmt.Println(filePath)
 	dstFile, err := sftp.Create(filePath)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 	defer dstFile.Close()
 	dstFile.Write(b)
 }
@@ -199,4 +208,13 @@ func SftpConnect(user, password, host string, port string) (sftpClient *sftp.Cli
 	}
 
 	return
+}
+
+func HomeDir(instance SSHInstance) string {
+	switch instance.Username {
+	case "root":
+		return "/root"
+	default:
+		return fmt.Sprintf("/home/%s", instance.Username)
+	}
 }
