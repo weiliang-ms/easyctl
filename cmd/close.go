@@ -17,7 +17,7 @@ func init() {
 
 	closeCmd.AddCommand(closeSeLinuxCmd)
 	closeCmd.AddCommand(closeFirewalldCmd)
-	rootCmd.AddCommand(closeCmd)
+	RootCmd.AddCommand(closeCmd)
 }
 
 // close命令

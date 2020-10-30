@@ -137,8 +137,8 @@ func (system *SystemInfo) loadRedhatManageServiceCmd() {
 	system.ServiceAction.StartDockerForever = packageRedhatService(version, "docker", start, true)
 	system.ServiceAction.StartNginx = packageRedhatService(version, "nginx", start, false)
 	system.ServiceAction.StartNginxForever = packageRedhatService(version, "nginx", start, true)
-	system.ServiceAction.StartRedis = packageRedhatService(version, "redis", start, false)
-	system.ServiceAction.StartRedisForever = packageRedhatService(version, "redis", start, true)
+	system.ServiceAction.StartRedis = packageRedhatService(version, "install", start, false)
+	system.ServiceAction.StartRedisForever = packageRedhatService(version, "install", start, true)
 }
 
 func (system *SystemInfo) loadRunLevel() {

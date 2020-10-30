@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"easyctl/cmd/install"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/util"
@@ -8,7 +9,7 @@ import (
 	"strings"
 )
 
-var rootCmd = &cobra.Command{
+var RootCmd = &cobra.Command{
 	Use:   "easyctl",
 	Short: "Easycf is a tool manage linux settings",
 	Long: `A Fast and Flexible Static Site Generator built with
@@ -20,8 +21,12 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+func init() {
+	RootCmd.AddCommand(install.RootCmd)
+}
+
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -57,7 +62,7 @@ func findSuggestions(c *cobra.Command, arg string) string {
 	return suggestionsString
 }
 
-func parseCommand(cmd *cobra.Command, args []string, validArgs []string) error {
+func ParseCommand(cmd *cobra.Command, args []string, validArgs []string) error {
 	//func parseCommand(cmd *cobra.Command,args[] string,validArgs []string,minArgNum int,maxArgNum int) error{
 
 	//if minArgNum > len(args) {

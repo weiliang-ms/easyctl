@@ -49,7 +49,7 @@ func init() {
 	setCmd.AddCommand(setTimeZoneCmd)
 	setCmd.AddCommand(setPubKeyAuthenticationCmd)
 
-	rootCmd.AddCommand(setCmd)
+	RootCmd.AddCommand(setCmd)
 	flag.Parse()
 
 }
@@ -65,7 +65,7 @@ var setCmd = &cobra.Command{
 		"\neasyctl set yum ali" +
 		"\neasyctl set hostname weiliang.com",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return parseCommand(cmd, args, setValidArgs)
+		return ParseCommand(cmd, args, setValidArgs)
 	},
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return setValidArgs, cobra.ShellCompDirectiveNoFileComp
