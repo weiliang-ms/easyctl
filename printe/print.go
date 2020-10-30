@@ -10,6 +10,9 @@ import (
 func PackageDetectionPass(banner string) {
 	fmt.Printf("%s 依赖检测通过...\n", util.PrintGreen(banner))
 }
+func OriginPackageDetectionPass(banner string, instance util.SSHInstance) {
+	fmt.Printf("%s 远程依赖检测通过...\n", util.PrintGreenMulti([]string{banner, constant.Origin, instance.Host}))
+}
 
 func PackageInstall() {
 	fmt.Printf("%s 尝试安装包...\n", util.PrintGreen(constant.Install))

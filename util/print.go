@@ -25,13 +25,32 @@ func PrintCloseServiceSuccessfulMsg(message string) {
 func PrintRed(message string) string {
 	return fmt.Sprintf("%c[1;40;31m[%s] %c[0m", 0x1B, message, 0x1B)
 }
+func PrintRedMulti(message []string) (content string) {
+	for _, v := range message {
+		content += fmt.Sprintf("[%s] ", v)
+	}
+	return fmt.Sprintf("%c[1;40;31m%s%c[0m", 0x1B, content, 0x1B)
+}
 
 func PrintGreen(message string) string {
 	return fmt.Sprintf("%c[1;40;32m[%s] %c[0m", 0x1B, message, 0x1B)
 }
+func PrintGreenMulti(message []string) (content string) {
+	for _, v := range message {
+		content += fmt.Sprintf("[%s] ", v)
+	}
+	return fmt.Sprintf("%c[1;40;32m%s%c[0m", 0x1B, content, 0x1B)
+}
 
 func PrintOrange(message string) string {
 	return fmt.Sprintf("%c[1;40;33m[%s] %c[0m", 0x1B, message, 0x1B)
+}
+
+func PrintOrangeMulti(message []string) (content string) {
+	for _, v := range message {
+		content += fmt.Sprintf("[%s] ", v)
+	}
+	return fmt.Sprintf("%c[1;40;33m%s%c[0m", 0x1B, content, 0x1B)
 }
 
 func PrintBlue(message string) string {
@@ -40,4 +59,10 @@ func PrintBlue(message string) string {
 
 func PrintCyan(message string) string {
 	return fmt.Sprintf("%c[1;40;36m[%s] %c[0m", 0x1B, message, 0x1B)
+}
+func PrintCyanMulti(message []string) (content string) {
+	for _, v := range message {
+		content += fmt.Sprintf("[%s] ", v)
+	}
+	return fmt.Sprintf("%c[1;40;36m%s%c[0m", 0x1B, content, 0x1B)
 }

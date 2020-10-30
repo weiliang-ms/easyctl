@@ -9,7 +9,7 @@ import (
 
 func init() {
 	searchCmd.AddCommand(searchPortCmd)
-	rootCmd.AddCommand(searchCmd)
+	RootCmd.AddCommand(searchCmd)
 }
 
 // set 命令合法参数

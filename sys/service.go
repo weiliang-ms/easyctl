@@ -12,7 +12,7 @@ type Service struct {
 }
 
 const (
-	redis  = "redis"
+	redis  = "install"
 	docker = "docker"
 )
 

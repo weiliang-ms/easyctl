@@ -19,7 +19,7 @@ func init() {
 	addUserCmd.MarkFlagRequired("username")
 
 	addCmd.AddCommand(addUserCmd)
-	rootCmd.AddCommand(addCmd)
+	RootCmd.AddCommand(addCmd)
 
 }
 
