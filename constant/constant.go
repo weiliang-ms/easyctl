@@ -17,7 +17,7 @@ const (
 	Install         = "install"
 	Error           = "error"
 	Redis           = "redis"
-	Origin          = "origin"
+	Remote          = "remote"
 	Local           = "local"
 	LoopbackAddress = "127.0.0.1"
 )

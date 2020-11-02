@@ -17,16 +17,17 @@ type mode string
 type redis struct {
 	clusterNodes []util.SSHInstance
 	cluster      bool
-	originDeploy bool
+	remoteDeploy bool
 	offline      bool
 	mode         mode
 	bind         string
 }
 
 const (
-	single                     = "single"
+	singleLocal                = "singleLocal"
+	singleRemote               = "singleRemote"
 	clusterOneNode             = "clusterOneNode"
-	startRedisCluster          = "启动redis集群"
+	startRedis                 = "启动redis服务"
 	initRedisCluster           = "初始化redis集群"
 	initRedisRuntimeEnv        = "初始化redis运行时环境"
 	modifyFirewallRule         = "调整防火墙策略"
@@ -36,6 +37,7 @@ const (
 	dependenceDetectionNotPass = "依赖检测未通过,请检查yum配置"
 	generateRedisConfigFile    = "生成redis配置文件"
 	startToCompileRedis        = "开始编译redis"
+	configService              = "配置开机自启动"
 )
 
 func (redis *redis) install() {
@@ -52,12 +54,8 @@ func installRedisOnline() {
 }
 
 // 离线安装redis
+
 func (redis *redis) installOffline() {
-	if redisClusterMode {
-		redis.installClusterOffline()
-	}
-}
-func (redis *redis) installClusterOffline() {
 
 	// 解析集群节点ssh连接信息
 	redis.cluterNodesInfo()
@@ -77,11 +75,11 @@ func (redis *redis) installClusterOffline() {
 	// 覆盖安装时执行
 	redis.removeClusterConfig()
 
-	// 远程编译redis
+	// 编译redis
 	redis.compile()
 
-	// 生成集群配置文件
-	redis.writeClusterConfigFile()
+	// 生成配置文件
+	redis.generateConfigFile()
 
 	// 初始化运行时环境
 	redis.initializeRuntimeEnv()
@@ -91,6 +89,9 @@ func (redis *redis) installClusterOffline() {
 
 	// 启动
 	redis.start()
+
+	// 配置系统级服务
+	redis.service()
 
 	// 初始化集群
 	redis.initializeCluster()
@@ -105,14 +106,14 @@ func (redis *redis) parseFlags() {
 
 func (redis *redis) require() {
 	// todo 检测参数合法性逻辑
-	if redisClusterMode && len(redis.clusterNodes) == 0 && redisBindIP == "" {
-		log.Fatal("当前模式必须指定--bind参数...")
+	if redisClusterMode && len(redis.clusterNodes) == 0 && redisListenAddress == "" {
+		log.Fatal("当前模式必须指定--listen-address参数...")
 	}
 }
 
 func (redis *redis) deployMode() *redis {
 	if len(redis.clusterNodes) > 0 {
-		redis.originDeploy = true
+		redis.remoteDeploy = true
 	}
 
 	return redis
@@ -120,8 +121,10 @@ func (redis *redis) deployMode() *redis {
 
 func (redis *redis) nodeMode() *redis {
 	// 解析是否单点
-	if redisSingleMode {
-		redis.mode = single
+	if redisSingleMode && len(redis.clusterNodes) > 0 {
+		redis.mode = singleRemote
+	} else if redisSingleMode && len(redis.clusterNodes) == 0 {
+		redis.mode = singleLocal
 	}
 
 	// 远端单机集群
@@ -140,23 +143,21 @@ func (redis *redis) nodeMode() *redis {
 // 解析redis集群节点信息
 func (redis *redis) cluterNodesInfo() {
 	fmt.Printf("%s 解析ssh配置清单...\n", util.PrintOrange(constant.Redis))
-	if _, err := os.Stat(nodesSSHInfoFilePath); err == nil {
-		redis.clusterNodes = util.ReadSSHInfoFromFile(nodesSSHInfoFilePath)
+	if _, err := os.Stat(serverList); err == nil {
+		redis.clusterNodes = util.ReadSSHInfoFromFile(serverList)
 	}
 }
 
 // 初始化集群
 func (redis *redis) initializeCluster() {
-	redis.shell(initRedisCluster, redis.initializeClusterCmd())
+	if redisClusterMode {
+		redis.shell(initRedisCluster, redis.initializeClusterCmd())
+	}
 }
 
 func (redis *redis) initializeClusterCmd() (cmd string) {
-	if len(redis.clusterNodes) < 2 {
-		if len(redis.clusterNodes) == 1 {
-			redisBindIP = redis.clusterNodes[0].Host
-		}
-		cmd = fmt.Sprintf("echo \"yes\" | redis-cli --cluster create %s:26379 %s:26380 %s:26381 %s:26382 %s:26383 %s:26384 --cluster-replicas 1 -a %s", redisBindIP,
-			redisBindIP, redisBindIP, redisBindIP, redisBindIP, redisBindIP, redisPassword)
+	if redis.mode == clusterOneNode {
+		cmd = redis.initializeOneNodeClusterCmd()
 	} else if len(redis.clusterNodes) == 2 {
 
 	}
@@ -164,33 +165,31 @@ func (redis *redis) initializeClusterCmd() (cmd string) {
 	return
 }
 
-// 启动集群
-func (redis *redis) start() {
-	switch redis.mode {
-	case single:
-		redis.startSingle()
-	case clusterOneNode:
-		redis.startClusterOneNode()
-	default:
-		log.Fatal("暂不支持这种部署方式...")
+func (redis *redis) initializeOneNodeClusterCmd() (cmd string) {
+	cmd = "echo \"yes\" | redis-cli --cluster create"
+	ports := []string{"26379", "26380", "26381", "26382", "26383", "26384"}
+	for _, v := range ports {
+		cmd += fmt.Sprintf(" %s:%s", redisBindIP, v)
 	}
+	cmd += fmt.Sprintf(" --cluster-replicas 1 -a %s", redisPassword)
+	return
 }
 
-// 单节点非集群实例
-func (redis *redis) startSingle() {
-	fmt.Println("启动单节点实例...")
+// 启动redis服务
+func (redis *redis) start() {
+	redis.shell(startRedis, redis.startCmd())
 }
 
-// 单节点集群实例
-func (redis *redis) startClusterOneNode() {
-	redis.shell(startRedisCluster, redis.startClusterCmd())
-}
-
-func (redis *redis) startClusterCmd() (cmd string) {
+func (redis *redis) startCmd() (cmd string) {
 	ports := []string{"26379", "26380", "26381", "26382", "26383", "26384"}
 	var i int
-	if len(redis.clusterNodes) < 2 {
+	if redis.mode == clusterOneNode {
 		i = 6
+	}
+
+	if redis.mode == singleLocal || redis.mode == singleRemote {
+		return fmt.Sprintf("%s/redis-server %s/redis.conf",
+			redisBinaryPath, redisConfigDir)
 	}
 
 	for j := 0; j < i; j++ {
@@ -203,8 +202,8 @@ func (redis *redis) startClusterCmd() (cmd string) {
 func (redis *redis) banner(msg string, address string) {
 	var location string
 
-	if redis.originDeploy {
-		location = constant.Origin
+	if redis.remoteDeploy {
+		location = constant.Remote
 	} else {
 		location = constant.Local
 		address = constant.LoopbackAddress
@@ -216,12 +215,17 @@ func (redis *redis) banner(msg string, address string) {
 
 // 配置systemd service
 func (redis *redis) service() {
-
+	redis.shell(configService, redis.serviceCmd())
 }
 
 func (redis *redis) serviceCmd() (cmd string) {
-	if redis.mode == single {
-		cmd = fmt.Sprintf("chmod +x /etc/rc.local;ls %s/263*.conf|xargs -n1 install-server", redisConfigDir)
+	if redis.mode == singleLocal || redis.mode == singleRemote {
+		cmd = fmt.Sprintf("%s %s;sed -i \"/redis-server/d\" %s;echo \"%s/redis-server %s/redis.conf\" >> %s",
+			constant.ChmodX, constant.EtcRcLocal, constant.EtcRcLocal, redisBinaryPath, redisConfigDir, constant.EtcRcLocal)
+	}
+	if redis.mode == clusterOneNode {
+		cmd = fmt.Sprintf("%s %s;sed -i \"/redis-server/d\" %s;echo \"%s/redis-server %s/263*.conf\" >> %s",
+			constant.ChmodX, constant.EtcRcLocal, constant.EtcRcLocal, redisBinaryPath, redisConfigDir, constant.EtcRcLocal)
 	}
 
 	return
@@ -230,7 +234,7 @@ func (redis *redis) serviceCmd() (cmd string) {
 // 拷贝redis源代码
 func (redis *redis) scpSourceCode() {
 
-	if !redis.originDeploy {
+	if !redis.remoteDeploy {
 		time.Sleep(3 * time.Second)
 		return
 	} else {
@@ -240,8 +244,8 @@ func (redis *redis) scpSourceCode() {
 			fmt.Println(err.Error())
 		}
 		for _, v := range redis.clusterNodes {
-			fmt.Printf("%s 拷贝源码包至%s:~/%s...\n", util.PrintOrangeMulti([]string{constant.Redis, constant.Origin, v.Host}), v.Host, file.Name())
-			util.OriginWriteFile(fmt.Sprintf("%s/%s", util.HomeDir(v), file.Name()), b, v)
+			fmt.Printf("%s 拷贝源码包至%s:~/%s...\n", util.PrintOrangeMulti([]string{constant.Redis, constant.Remote, v.Host}), v.Host, file.Name())
+			util.RemoteWriteFile(fmt.Sprintf("%s/%s", util.HomeDir(v), file.Name()), b, v)
 		}
 	}
 	// 拷贝逻辑
@@ -254,29 +258,39 @@ func (redis *redis) remoteCompile(compileCmd string) {
 	wg.Add(len(redis.clusterNodes))
 	for i := 0; i < len(redis.clusterNodes); i++ {
 		instance := redis.clusterNodes[i]
-		fmt.Printf("%s 开始编译redis...\n", util.PrintOrangeMulti([]string{constant.Redis, constant.Origin, instance.Host}))
+		fmt.Printf("%s 开始编译redis...\n", util.PrintOrangeMulti([]string{constant.Redis, constant.Remote, instance.Host}))
 		go instance.ExecuteOriginCmdParallel(compileCmd, &wg)
 	}
 
 	wg.Wait()
 }
 
-func (redis *redis) writeClusterConfigFile() {
+func (redis *redis) generateConfigFile() {
 
-	if len(redis.clusterNodes) == 0 {
+	if redis.mode == singleLocal {
+		redis.banner(generateRedisConfigFile, redisListenAddress)
+		util.OverwriteContent(fmt.Sprintf("%s/redis.conf", redisConfigDir), redis.config("6379"))
+	}
+
+	if redis.mode == singleRemote {
+		redis.banner(generateRedisConfigFile, redisListenAddress)
+		util.RemoteWriteFile(fmt.Sprintf("%s/redis.conf", redisConfigDir), []byte(redis.config("6379")), redis.clusterNodes[0])
+	}
+
+	if redis.mode == clusterOneNode && !redis.remoteDeploy {
 		ports := []string{"26379", "26380", "26381", "26382", "26383", "26384"}
 		for _, v := range ports {
 			redis.banner(fmt.Sprintf("%s: %s/%s.conf...", generateRedisConfigFile, redisConfigDir, v), constant.LoopbackAddress)
 			util.OverwriteContent(fmt.Sprintf("%s/%s.conf", redisConfigDir, v), redis.config(v))
 		}
 	}
-	if len(redis.clusterNodes) == 1 {
+	if redis.mode == clusterOneNode && redis.remoteDeploy {
 		ports := []string{"26379", "26380", "26381", "26382", "26383", "26384"}
 		for _, v := range ports {
 			configFilePath := fmt.Sprintf("%s/%s.conf", redisConfigDir, v)
 			content := strings.ReplaceAll(constant.RedisConfigContent, "26379", v)
-			fmt.Printf("%s 初始化redis集群配置文件: %s...\n", util.PrintOrangeMulti([]string{constant.Redis, constant.Origin, redis.clusterNodes[0].Host}), configFilePath)
-			util.OriginWriteFile(configFilePath, []byte(content), redis.clusterNodes[0])
+			fmt.Printf("%s 初始化redis集群配置文件: %s...\n", util.PrintOrangeMulti([]string{constant.Redis, constant.Remote, redis.clusterNodes[0].Host}), configFilePath)
+			util.RemoteWriteFile(configFilePath, []byte(content), redis.clusterNodes[0])
 		}
 	}
 
@@ -285,7 +299,7 @@ func (redis *redis) writeClusterConfigFile() {
 		for _, v := range redis.clusterNodes {
 			for _, p := range ports {
 				configDir := fmt.Sprintf("%s/%s.conf", redisConfigDir, p)
-				util.OriginWriteFile(configDir, []byte(constant.RedisConfigContent), v)
+				util.RemoteWriteFile(configDir, []byte(constant.RedisConfigContent), v)
 			}
 		}
 	}
@@ -316,7 +330,10 @@ func (redis *redis) config(port string) (content string) {
 	strings.ReplaceAll(content, "requirepass redis", fmt.Sprintf("requirepass %s", redisPassword))
 	strings.ReplaceAll(content, "dir /redis/lib", fmt.Sprintf("dir %s", redisDataDir))
 	strings.ReplaceAll(content, "logfile /redis/log", fmt.Sprintf("logfile %s", redisLogDir))
-
+	if redis.mode == singleRemote || redis.mode == singleLocal {
+		fmt.Println("替换")
+		content = strings.ReplaceAll(content, "cluster-enabled yes", "cluster-enabled no")
+	}
 	return
 }
 
@@ -334,7 +351,7 @@ func (redis *redis) compileEnvDetection() {
 	search := fmt.Sprintf("%s %s", constant.RpmSearch, constant.Gcc)
 	install := fmt.Sprintf("%s %s", constant.YumInstall, "gcc")
 
-	if !redis.originDeploy {
+	if !redis.remoteDeploy {
 		redis.banner(compileRedisEnvDetection, constant.Local)
 		if !util.ExecuteIgnoreStd(search) {
 			if !util.ExecuteIgnoreStd(install) {
@@ -349,7 +366,7 @@ func (redis *redis) compileEnvDetection() {
 			if !v.ExecuteOriginCmdIgnoreRe(search) {
 				if !v.ExecuteOriginCmdIgnoreRe(install) {
 					fmt.Printf("%s 节点：%s %s...\n",
-						util.PrintRedMulti([]string{constant.Error, constant.Origin, v.Host}),
+						util.PrintRedMulti([]string{constant.Error, constant.Remote, v.Host}),
 						v.Host,
 						dependenceDetectionNotPass)
 					os.Exit(1)
@@ -365,17 +382,16 @@ func (redis *redis) openFirewallPort() {
 }
 
 func (redis *redis) firewallPortsCmd() string {
+
 	var i int
 	var ports []int
-	num := len(redis.clusterNodes)
-	if num == 0 || num == 1 {
+
+	if redis.mode == clusterOneNode {
 		i = 6
-	} else if num == 3 {
-		i = 2
-	} else if num == 2 {
-		i = 3
-	} else {
-		fmt.Sprintf("节点数量参数与不匹配")
+	}
+
+	if redis.mode == singleLocal || redis.mode == singleRemote {
+		ports = append(ports, 6379)
 	}
 
 	for j := 0; j < i; j++ {
@@ -407,7 +423,7 @@ func (redis *redis) removeClusterConfigCmd() string {
 
 func (redis *redis) shell(msg string, cmd string) {
 
-	if !redis.originDeploy {
+	if !redis.remoteDeploy {
 		redis.banner(msg, constant.LoopbackAddress)
 		util.ExecuteCmdAcceptResult(cmd)
 	} else {
