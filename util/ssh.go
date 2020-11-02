@@ -24,7 +24,7 @@ type SSHInstance struct {
 
 func (instance SSHInstance) ExecuteOriginCmd(cmd string) (msg string, exitCode int) {
 	session, conErr := instance.sshConnect()
-	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{constant.Shell, constant.Origin, instance.Host}), cmd)
+	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{constant.Shell, constant.Remote, instance.Host}), cmd)
 	if conErr != nil {
 		log.Fatal(conErr)
 	}
@@ -42,7 +42,7 @@ func (instance SSHInstance) ExecuteOriginCmd(cmd string) (msg string, exitCode i
 
 func (instance SSHInstance) ExecuteOriginCmdIgnoreRe(cmd string) bool {
 	session, conErr := instance.sshConnect()
-	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{constant.Shell, constant.Origin, instance.Host}), cmd)
+	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{constant.Shell, constant.Remote, instance.Host}), cmd)
 	if conErr != nil {
 		log.Fatal(conErr)
 		return false
@@ -61,7 +61,7 @@ func (instance SSHInstance) ExecuteOriginCmdIgnoreRe(cmd string) bool {
 func (instance SSHInstance) ExecuteOriginCmdParallel(cmd string, wg *sync.WaitGroup) (msg string, exitCode int) {
 	defer wg.Done()
 	session, conErr := instance.sshConnect()
-	fmt.Printf("%s 远程执行: %s...\n", PrintOrangeMulti([]string{constant.Shell, constant.Origin, instance.Host}), cmd)
+	fmt.Printf("%s 远程执行: %s...\n", PrintOrangeMulti([]string{constant.Shell, constant.Remote, instance.Host}), cmd)
 	if conErr != nil {
 		log.Fatal(conErr)
 	}
@@ -186,7 +186,7 @@ func RemoteInstallPackage(packageName string, instance SSHInstance) bool {
 }
 
 // 远程写文件
-func OriginWriteFile(filePath string, b []byte, instance SSHInstance) {
+func RemoteWriteFile(filePath string, b []byte, instance SSHInstance) {
 	// init sftp
 	sftp, err := SftpConnect(instance.Username, instance.Password, instance.Host, instance.Port)
 	if err != nil {

@@ -13,7 +13,7 @@ var installValidArgs = []string{"docker", "nginx", "redis"}
 var (
 	redisClusterMode bool
 	//redisClusterNodesNum int
-	nodesSSHInfoFilePath string
+	serverList           string
 	RedisOffline         bool
 	dockerOffline        bool
 	redisSingleMode      bool
@@ -25,6 +25,7 @@ var (
 	redisConfigDir       string
 	redisBinaryPath      string
 	redisOverrideInstall bool
+	redisListenAddress   string
 	sourceFilePath       string
 	netConnectErr        error
 	installErr           error
@@ -45,10 +46,11 @@ func init() {
 
 	// 单节点
 	redisCmd.Flags().BoolVarP(&redisSingleMode, "single-mode", "", true, "redis 单机实例")
+	redisCmd.Flags().StringVarP(&redisListenAddress, "listen-address", "", "0.0.0.0", "redis监听地址")
 
 	// 集群参数
 	redisCmd.Flags().BoolVarP(&redisClusterMode, "cluster-mode", "", false, "redis 集群模式")
-	redisCmd.Flags().StringVarP(&nodesSSHInfoFilePath, "ssh-info-file", "", "", "节点ssh连接信息配置文件路径")
+	redisCmd.Flags().StringVarP(&serverList, "server-list", "", "", "ssh server连接信息配置文件路径")
 	redisCmd.Flags().BoolVarP(&RedisOffline, "offline", "o", false, "offline mode")
 
 	RootCmd.AddCommand(installDockerCmd)
