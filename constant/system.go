@@ -10,6 +10,7 @@ func CreateNologinUserCmd(username string) string {
 }
 
 var (
-	Redhat6 = "[ \"$(cat /etc/redhat-release|sed -r 's/.* ([0-9]+)\\..*/\\1/')\" == \"6\" ]"
-	Redhat7 = "[ \"$(cat /etc/redhat-release|sed -r 's/.* ([0-9]+)\\..*/\\1/')\" == \"7\" ]"
+	Redhat6      = "[ \"$(cat /etc/redhat-release|sed -r 's/.* ([0-9]+)\\..*/\\1/')\" == \"6\" ]"
+	Redhat7      = "[ \"$(cat /etc/redhat-release|sed -r 's/.* ([0-9]+)\\..*/\\1/')\" == \"7\" ]"
+	DeamonReload = "systemctl reload-daemon"
 )

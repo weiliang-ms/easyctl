@@ -9,6 +9,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v2"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -31,9 +32,14 @@ type NginxServerList struct {
 	Servers []Server
 }
 
+type DockerServerList struct {
+	Servers []Server
+}
+
 type ServerList struct {
-	RedisServerList []Server `yaml:"redis"`
-	NginxServerList []Server `yaml:"nginx"`
+	RedisServerList  []Server `yaml:"redis"`
+	NginxServerList  []Server `yaml:"nginx"`
+	DockerServerList []Server `yaml:"docker"`
 }
 
 func (server Server) ExecuteOriginCmd(cmd string) (msg string, exitCode int) {
@@ -75,7 +81,8 @@ func (server Server) ExecuteOriginCmdIgnoreRe(cmd string) bool {
 func (server Server) RemoteShellParallel(cmd string, wg *sync.WaitGroup) (msg string, exitCode int) {
 	defer wg.Done()
 	session, conErr := server.sshConnect()
-	fmt.Printf("%s 远程执行: %s...\n", PrintOrangeMulti([]string{constant.Shell, constant.Remote, server.Host}), cmd)
+	PrintBanner([]string{constant.Remote, constant.Shell, server.Host},
+		fmt.Sprintf("远程执行: %s", cmd))
 	if conErr != nil {
 		log.Fatal(conErr)
 	}
@@ -171,7 +178,7 @@ func ParseServerList(yamlPath string) ServerList {
 		log.Fatal(err)
 	}
 	//fmt.Println("print serverlist...")
-	fmt.Printf("json内容：\n%+v", serverList)
+	fmt.Printf("json内容：\n%+v\n", serverList)
 	return serverList
 }
 func setSSHObjectValue(hosts string) (instance Server) {
@@ -272,6 +279,40 @@ func RemoteWriteFile(filePath string, b []byte, instance Server) {
 	}
 	defer dstFile.Close()
 	dstFile.Write(b)
+}
+
+func RemoteWriteFileParallel(filePath string, b []byte, instance Server, wg *sync.WaitGroup) {
+	// init sftp
+	sftp, err := SftpConnect(instance.Username, instance.Password, instance.Host, instance.Port)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	dstFile, err := sftp.Create(filePath)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	defer dstFile.Close()
+	defer wg.Done()
+	dstFile.Write(b)
+}
+
+func ScpHome(banners Banner, localFilePath string, serverList []Server) {
+	file, err := os.OpenFile(localFilePath, os.O_RDONLY, 0666)
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	b, err := ioutil.ReadAll(file)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	for _, v := range serverList {
+		content := fmt.Sprintf("拷贝%s至%s:%s/%s",
+			localFilePath, v.Host, HomeDir(v), FormatFileName(file.Name()))
+		PrintBanner(append(banners.Symbols, v.Host), content)
+		RemoteWriteFile(fmt.Sprintf("%s/%s", HomeDir(v), FormatFileName(file.Name())), b, v)
+	}
 }
 
 func SftpConnect(user, password, host string, port string) (sftpClient *sftp.Client, err error) { //参数: 远程服务器用户名, 密码, ip, 端口

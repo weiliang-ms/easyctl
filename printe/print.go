@@ -11,7 +11,7 @@ func PackageDetectionPass(banner string) {
 	fmt.Printf("%s 依赖检测通过...\n", util.PrintGreen(banner))
 }
 func OriginPackageDetectionPass(banner string, instance util.Server) {
-	fmt.Printf("%s 远程依赖检测通过...\n", util.PrintGreenMulti([]string{banner, constant.Origin, instance.Host}))
+	fmt.Printf("%s 远程依赖检测通过...\n", util.PrintGreenMulti([]string{banner, constant.Remote, instance.Host}))
 }
 
 func PackageInstall() {
@@ -24,5 +24,5 @@ func InstallPackageFatal() {
 }
 
 func PackageOriginInstall(instance util.Server) {
-	fmt.Printf("%s 尝试远程主机：%s安装包...\n", util.PrintGreen(constant.Origin), instance.Host)
+	fmt.Printf("%s 尝试远程主机：%s安装包...\n", util.PrintGreen(constant.Remote), instance.Host)
 }

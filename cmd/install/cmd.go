@@ -13,7 +13,6 @@ var (
 	redisDeployMode      string
 	serverListFile       string
 	RedisOffline         bool
-	dockerOffline        bool
 	redisPort            string
 	redisBindIP          string
 	redisPassword        string
@@ -26,6 +25,16 @@ var (
 	sourceFilePath       string
 	netConnectErr        error
 	installErr           error
+
+	dockerOffline        bool
+	dockerPackageFile    string
+	dockerServerListFile string
+)
+
+const (
+	offline    = "offline"
+	file       = "file"
+	serverList = "server-list"
 )
 
 func init() {
@@ -48,9 +57,13 @@ func init() {
 
 	// 集群参数
 	redisCmd.Flags().StringVarP(&serverListFile, "server-list", "", "", "ssh server连接信息配置文件路径")
-	redisCmd.Flags().BoolVarP(&RedisOffline, "offline", "o", false, "offline mode")
-
+	redisCmd.Flags().BoolVarP(&RedisOffline, offline, "o", false, "offline mode")
 	redisCmd.MarkFlagRequired(redisDeployMode)
+
+	// docker
+	dockerCmd.Flags().BoolVarP(&dockerOffline, offline, "", false, "离线安装")
+	dockerCmd.Flags().StringVarP(&dockerPackageFile, file, "", "", "离线压缩包文件路径")
+	dockerCmd.Flags().StringVarP(&dockerServerListFile, serverList, "", "", "安装docker宿主机列表")
 
 	RootCmd.AddCommand(dockerCmd)
 	RootCmd.AddCommand(installNginxCmd)
@@ -73,14 +86,11 @@ var RootCmd = &cobra.Command{
 var dockerCmd = &cobra.Command{
 	Use:   "docker [flags]",
 	Short: "install docker through easyctl",
-	Example: "\neasyctl install docker 在线安装docker" +
-		"\neasyctl install docker --offline --file=./docker-19.03.9.tgz 离线安装docker",
+	//Example: "\neasyctl install docker 在线安装docker" +
+	//	"\neasyctl install docker --offline --file=./docker-19.03.9.tgz 离线安装docker",
 	Run: func(cmd *cobra.Command, args []string) {
-		if !dockerOffline {
-			installDockerOnline()
-		} else {
-			installDockerOffline()
-		}
+		var docker docker
+		docker.Install()
 	},
 }
 
@@ -105,33 +115,6 @@ var redisCmd = &cobra.Command{
 		var redis redis
 		redis.install()
 	},
-}
-
-// 在线安装docker
-func installDockerOnline() {
-	fmt.Println("检测内核...")
-	if !sys.AccessAliMirrors() {
-		panic(netConnectErr)
-	}
-
-	sys.SetAliYUM()
-	install := "yum -y redis yum-utils device-mapper-persistent-data lvm2;" +
-		"yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo;" +
-		"yum makecache fast;" +
-		"yum -y redis docker-ce"
-
-	//
-	util.ExecuteCmdAcceptResult(install)
-
-	sys.CloseSeLinux(true)
-	fmt.Println("[docker]启动docker...")
-	startRe, _ := util.ExecuteCmd(sys.SystemInfoObject.ServiceAction.StartDocker)
-	fmt.Println("[docker]设置docker开机自启动...")
-	enableRe, _ := util.ExecuteCmd(sys.SystemInfoObject.ServiceAction.StartDockerForever)
-	if startRe == nil && enableRe == nil {
-		util.PrintSuccessfulMsg("docker安装成功...")
-	}
-
 }
 
 // 安装nginx
