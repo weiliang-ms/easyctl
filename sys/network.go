@@ -10,8 +10,8 @@ const defaultDNSAddress = "114.114.114.114"
 // 检测主机是否连接到Internet
 func AccessAliMirrors() bool {
 	// 检测是否可以访问阿里镜像源
-	resolvRe, _ := util.ExecuteCmdAcceptResult("ping mirrors.aliyun.com -c 1 -W 2;echo $?")
-	accessDNSRe, _ := util.ExecuteCmdAcceptResult("ping 114.114.114.114 -c 1 -W 2;echo $?")
+	resolvRe := util.ExecuteCmdAcceptResult("ping mirrors.aliyun.com -c 1 -W 2;echo $?")
+	accessDNSRe := util.ExecuteCmdAcceptResult("ping 114.114.114.114 -c 1 -W 2;echo $?")
 	if resolvRe == "0" {
 		return true
 	} else {

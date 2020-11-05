@@ -40,12 +40,5 @@ func CloseFirewalld(forever bool) {
 		cmd = SystemInfoObject.ServiceAction.CloseFirewalld
 	}
 
-	_, err := util.ExecuteCmdAcceptResult(cmd)
-	if err != nil {
-		fmt.Println(err.Error())
-		// todo 变量待优化
-		util.PrintCloseServiceFailureMsg("防火墙")
-	} else {
-		util.PrintCloseServiceSuccessfulMsg("防火墙")
-	}
+	util.ExecuteCmdAcceptResult(cmd)
 }

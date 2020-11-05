@@ -42,20 +42,20 @@ func ExecuteCmdIgnoreErr(command string) (result string) {
 	return result
 }
 
-func ExecuteCmdAcceptResult(command string) (result string, err error) {
+func ExecuteCmdAcceptResult(command string) (result string) {
 	cmd := exec.Command("/bin/bash", "-c", command)
+	//fmt.Println("执行命令: ",cmd)
 	stderr, _ := cmd.StderrPipe()
 	stdout, _ := cmd.StdoutPipe()
 	if err := cmd.Start(); err != nil {
-		log.Println("exec the cmd ", " failed")
-		fmt.Println(err.Error())
-		return "", err
+		log.Fatal(err.Error())
+		return ""
 	}
 	// 正常日志
 	logScan := bufio.NewScanner(stdout)
 	go func() {
 		for logScan.Scan() {
-			fmt.Println(logScan.Text())
+			//fmt.Println(logScan.Text())
 			result = logScan.Text()
 		}
 	}()
@@ -72,9 +72,11 @@ func ExecuteCmdAcceptResult(command string) (result string, err error) {
 	cmd.Wait()
 	if !cmd.ProcessState.Success() {
 		// 执行失败，返回错误信息
-		return "", errors.New(errBuf.String())
+		return ""
 	}
-	return result, nil
+
+	//fmt.Println("返回结果：",result)
+	return result
 }
 
 func ExecuteCmdResult(command string) (result string, err error) {

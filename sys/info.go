@@ -142,10 +142,7 @@ func (system *SystemInfo) loadRedhatManageServiceCmd() {
 }
 
 func (system *SystemInfo) loadRunLevel() {
-	level, err := util.ExecuteCmdAcceptResult("runlevel")
-	if err == nil {
-		system.RunLevel = level
-	}
+	system.RunLevel = util.ExecuteCmdAcceptResult("runlevel")
 }
 
 func (system *SystemInfo) kernelVersion() {

@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-func Detection(packageName string, origin bool, instance util.SSHInstance) (re bool) {
+func Detection(packageName string, origin bool, instance util.Server) (re bool) {
 	if !origin {
 		fmt.Printf("%s 检测%s是否已安装\n", util.PrintOrange(constant.Check), packageName)
 		return util.ExecuteIgnoreStd(fmt.Sprintf("rpm -qa|grep %s", packageName))
