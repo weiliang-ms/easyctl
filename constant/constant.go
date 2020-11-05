@@ -20,4 +20,11 @@ const (
 	Remote          = "remote"
 	Local           = "local"
 	LoopbackAddress = "127.0.0.1"
+	Docker          = "docker"
+	Parallel        = "Parallel"
+	Scp             = "scp"
+	Service         = "service"
+	Parse           = "parse"
+	Reload          = "reload"
+	Write           = "write"
 )

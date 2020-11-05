@@ -189,10 +189,11 @@ func (redis *redis) nodeMode() *redis {
 
 // 解析redis集群节点信息
 func (redis *redis) cluterNodesInfo() {
-	if _, err := os.Stat(serverListFile); err == nil {
+	_, err := os.Stat(serverListFile)
+	if serverListFile != "" && err == nil {
 		redis.banner(nil, fmt.Sprintf("解析%s文件", serverListFile), constant.Local)
 		redis.clusterNodes = util.ParseServerList(serverListFile).RedisServerList
-	} else {
+	} else if serverListFile != "" && err != nil {
 		log.Fatal(err.Error())
 	}
 }
