@@ -48,8 +48,8 @@
 > 配置命令补全
 
     yum install bash-completion -y
-    easyctl completion bash > /etc/bash_completion.d/easyctl
-    source <(easyctl completion bash)
+    ./easyctl completion bash > /etc/bash_completion.d/easyctl
+    source <(./easyctl completion bash)
 
 # 命令介绍
 

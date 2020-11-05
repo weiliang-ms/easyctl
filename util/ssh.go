@@ -3,9 +3,11 @@ package util
 import (
 	"bufio"
 	"easyctl/constant"
+	"encoding/json"
 	"fmt"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
+	"gopkg.in/yaml.v2"
 	"io"
 	"log"
 	"net"
@@ -15,16 +17,28 @@ import (
 	"time"
 )
 
-type SSHInstance struct {
-	Host     string
-	Port     string
-	Username string
-	Password string
+type Server struct {
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
 
-func (instance SSHInstance) ExecuteOriginCmd(cmd string) (msg string, exitCode int) {
-	session, conErr := instance.sshConnect()
-	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{constant.Shell, constant.Remote, instance.Host}), cmd)
+type RedisServerList struct {
+	Servers []Server
+}
+type NginxServerList struct {
+	Servers []Server
+}
+
+type ServerList struct {
+	RedisServerList []Server `yaml:"redis"`
+	NginxServerList []Server `yaml:"nginx"`
+}
+
+func (server Server) ExecuteOriginCmd(cmd string) (msg string, exitCode int) {
+	session, conErr := server.sshConnect()
+	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{constant.Shell, constant.Remote, server.Host}), cmd)
 	if conErr != nil {
 		log.Fatal(conErr)
 	}
@@ -40,9 +54,9 @@ func (instance SSHInstance) ExecuteOriginCmd(cmd string) (msg string, exitCode i
 	return string(combo), exitCode
 }
 
-func (instance SSHInstance) ExecuteOriginCmdIgnoreRe(cmd string) bool {
-	session, conErr := instance.sshConnect()
-	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{constant.Shell, constant.Remote, instance.Host}), cmd)
+func (server Server) ExecuteOriginCmdIgnoreRe(cmd string) bool {
+	session, conErr := server.sshConnect()
+	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{constant.Shell, constant.Remote, server.Host}), cmd)
 	if conErr != nil {
 		log.Fatal(conErr)
 		return false
@@ -58,10 +72,10 @@ func (instance SSHInstance) ExecuteOriginCmdIgnoreRe(cmd string) bool {
 	return true
 }
 
-func (instance SSHInstance) ExecuteOriginCmdParallel(cmd string, wg *sync.WaitGroup) (msg string, exitCode int) {
+func (server Server) RemoteShellParallel(cmd string, wg *sync.WaitGroup) (msg string, exitCode int) {
 	defer wg.Done()
-	session, conErr := instance.sshConnect()
-	fmt.Printf("%s 远程执行: %s...\n", PrintOrangeMulti([]string{constant.Shell, constant.Remote, instance.Host}), cmd)
+	session, conErr := server.sshConnect()
+	fmt.Printf("%s 远程执行: %s...\n", PrintOrangeMulti([]string{constant.Shell, constant.Remote, server.Host}), cmd)
 	if conErr != nil {
 		log.Fatal(conErr)
 	}
@@ -73,11 +87,47 @@ func (instance SSHInstance) ExecuteOriginCmdParallel(cmd string, wg *sync.WaitGr
 	if runErr != nil {
 		e, _ := runErr.(*ssh.ExitError)
 		exitCode = e.ExitStatus()
+		log.Fatal(runErr.Error())
 	}
 
 	return string(combo), exitCode
 }
-func ReadSSHInfoFromFile(hostsFile string) (instances []SSHInstance) {
+
+func (server Server) RemoteShellPrint(cmd string) {
+	session, conErr := server.sshConnect()
+	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{constant.Shell, constant.Remote, server.Host}), cmd)
+	if conErr != nil {
+		log.Fatal(conErr)
+	}
+
+	defer session.Close()
+
+	combo, runErr := session.CombinedOutput(cmd)
+
+	if runErr != nil {
+		log.Fatal(runErr.Error())
+	}
+	fmt.Println(string(combo))
+}
+
+func (server Server) RemoteShellReturnStd(cmd string) string {
+	session, conErr := server.sshConnect()
+	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{constant.Shell, constant.Remote, server.Host}), cmd)
+	if conErr != nil {
+		log.Fatal(conErr)
+	}
+
+	defer session.Close()
+
+	combo, runErr := session.CombinedOutput(cmd)
+
+	if runErr != nil {
+		log.Fatal(runErr.Error())
+	}
+	return string(combo)
+}
+
+func ReadSSHInfoFromFile(hostsFile string) (instances []Server) {
 	f, err := os.OpenFile(hostsFile, os.O_RDONLY, 0644)
 	defer f.Close()
 
@@ -96,11 +146,35 @@ func ReadSSHInfoFromFile(hostsFile string) (instances []SSHInstance) {
 			break
 		}
 	}
-	log.Printf("%+v", instances)
+	//log.Printf("\n%+v", instances)
 	return instances
 }
 
-func setSSHObjectValue(hosts string) (instance SSHInstance) {
+func ParseServerList(yamlPath string) ServerList {
+	//fmt.Println("解析...")
+	var serverList ServerList
+	if f, err := os.Open(yamlPath); err != nil {
+		//fmt.Println("open yaml...")
+		log.Fatal(err)
+	} else {
+		//fmt.Println("decode...")
+		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
+		if decodeErr != nil {
+			//fmt.Println("decode failed...")
+			log.Fatal(decodeErr)
+		}
+	}
+	//fmt.Println("marshal...")
+	_, err := json.Marshal(serverList)
+	if err != nil {
+		//fmt.Println("marshal failed...")
+		log.Fatal(err)
+	}
+	//fmt.Println("print serverlist...")
+	fmt.Printf("json内容：\n%+v", serverList)
+	return serverList
+}
+func setSSHObjectValue(hosts string) (instance Server) {
 	//fmt.Println("-----line----" + hosts)
 	cutCharacters := []string{"\n"}
 	for _, v := range strings.Split(hosts, " ") {
@@ -128,7 +202,7 @@ func setSSHObjectValue(hosts string) (instance SSHInstance) {
 	return instance
 }
 
-func (instance SSHInstance) sshConnect() (*ssh.Session, error) {
+func (server *Server) sshConnect() (*ssh.Session, error) {
 	var (
 		auth         []ssh.AuthMethod
 		addr         string
@@ -139,21 +213,21 @@ func (instance SSHInstance) sshConnect() (*ssh.Session, error) {
 	)
 	// get auth method
 	auth = make([]ssh.AuthMethod, 0)
-	auth = append(auth, ssh.Password(instance.Password))
+	auth = append(auth, ssh.Password(server.Password))
 
 	hostKeyCallbk := func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 		return nil
 	}
 
 	clientConfig = &ssh.ClientConfig{
-		User: instance.Username,
+		User: server.Username,
 		Auth: auth,
 		// Timeout:             30 * time.Second,
 		HostKeyCallback: hostKeyCallbk,
 	}
 
 	// connet to ssh
-	addr = fmt.Sprintf("%s:%s", instance.Host, instance.Port)
+	addr = fmt.Sprintf("%s:%s", server.Host, server.Port)
 
 	if client, err = ssh.Dial("tcp", addr, clientConfig); err != nil {
 		return nil, err
@@ -167,7 +241,7 @@ func (instance SSHInstance) sshConnect() (*ssh.Session, error) {
 	return session, nil
 }
 
-func RemotePackageDetection(packageName string, instance SSHInstance) bool {
+func RemotePackageDetection(packageName string, instance Server) bool {
 	_, code := instance.ExecuteOriginCmd(fmt.Sprintf("rpm -qa|grep %s", packageName))
 	if code == 0 {
 		return true
@@ -176,7 +250,7 @@ func RemotePackageDetection(packageName string, instance SSHInstance) bool {
 	return false
 }
 
-func RemoteInstallPackage(packageName string, instance SSHInstance) bool {
+func RemoteInstallPackage(packageName string, instance Server) bool {
 	_, code := instance.ExecuteOriginCmd(fmt.Sprintf("yum install -y %s", packageName))
 	if code == 0 {
 		return true
@@ -186,7 +260,7 @@ func RemoteInstallPackage(packageName string, instance SSHInstance) bool {
 }
 
 // 远程写文件
-func RemoteWriteFile(filePath string, b []byte, instance SSHInstance) {
+func RemoteWriteFile(filePath string, b []byte, instance Server) {
 	// init sftp
 	sftp, err := SftpConnect(instance.Username, instance.Password, instance.Host, instance.Port)
 	if err != nil {
@@ -228,11 +302,11 @@ func SftpConnect(user, password, host string, port string) (sftpClient *sftp.Cli
 	return
 }
 
-func HomeDir(instance SSHInstance) string {
-	switch instance.Username {
+func HomeDir(server Server) string {
+	switch server.Username {
 	case "root":
 		return "/root"
 	default:
-		return fmt.Sprintf("/home/%s", instance.Username)
+		return fmt.Sprintf("/home/%s", server.Username)
 	}
 }

@@ -10,7 +10,7 @@ import (
 func PackageDetectionPass(banner string) {
 	fmt.Printf("%s 依赖检测通过...\n", util.PrintGreen(banner))
 }
-func OriginPackageDetectionPass(banner string, instance util.SSHInstance) {
+func OriginPackageDetectionPass(banner string, instance util.Server) {
 	fmt.Printf("%s 远程依赖检测通过...\n", util.PrintGreenMulti([]string{banner, constant.Origin, instance.Host}))
 }
 
@@ -23,6 +23,6 @@ func InstallPackageFatal() {
 	os.Exit(1)
 }
 
-func PackageOriginInstall(instance util.SSHInstance) {
+func PackageOriginInstall(instance util.Server) {
 	fmt.Printf("%s 尝试远程主机：%s安装包...\n", util.PrintGreen(constant.Origin), instance.Host)
 }
