@@ -81,7 +81,7 @@ func (server Server) ExecuteOriginCmdIgnoreRe(cmd string) bool {
 func (server Server) RemoteShellParallel(cmd string, wg *sync.WaitGroup) (msg string, exitCode int) {
 	defer wg.Done()
 	session, conErr := server.sshConnect()
-	PrintBanner([]string{constant.Remote, constant.Shell, server.Host},
+	PrintActionBanner([]string{server.Host},
 		fmt.Sprintf("远程执行: %s", cmd))
 	if conErr != nil {
 		log.Fatal(conErr)
@@ -102,7 +102,7 @@ func (server Server) RemoteShellParallel(cmd string, wg *sync.WaitGroup) (msg st
 
 func (server Server) RemoteShellPrint(cmd string) {
 	session, conErr := server.sshConnect()
-	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{constant.Shell, constant.Remote, server.Host}), cmd)
+	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{server.Host}), cmd)
 	if conErr != nil {
 		log.Fatal(conErr)
 	}
@@ -119,7 +119,7 @@ func (server Server) RemoteShellPrint(cmd string) {
 
 func (server Server) RemoteShellReturnStd(cmd string) string {
 	session, conErr := server.sshConnect()
-	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{constant.Shell, constant.Remote, server.Host}), cmd)
+	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{server.Host}), cmd)
 	if conErr != nil {
 		log.Fatal(conErr)
 	}
@@ -178,7 +178,7 @@ func ParseServerList(yamlPath string) ServerList {
 		log.Fatal(err)
 	}
 	//fmt.Println("print serverlist...")
-	fmt.Printf("json内容：\n%+v\n", serverList)
+	fmt.Printf("json内容：\n%v\n", serverList)
 	return serverList
 }
 func setSSHObjectValue(hosts string) (instance Server) {
@@ -310,7 +310,7 @@ func ScpHome(banners Banner, localFilePath string, serverList []Server) {
 	for _, v := range serverList {
 		content := fmt.Sprintf("拷贝%s至%s:%s/%s",
 			localFilePath, v.Host, HomeDir(v), FormatFileName(file.Name()))
-		PrintBanner(append(banners.Symbols, v.Host), content)
+		PrintActionBanner(append(banners.Symbols, v.Host), content)
 		RemoteWriteFile(fmt.Sprintf("%s/%s", HomeDir(v), FormatFileName(file.Name())), b, v)
 	}
 }

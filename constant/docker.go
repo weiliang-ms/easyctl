@@ -1,7 +1,7 @@
 package constant
 
 const (
-	Redhat7DockerServiceFilePath = "/usr/lib/systemd/system/docker.service"
+	Redhat7DockerServiceFilePath = "/etc/systemd/system/docker.service"
 )
 
 // /usr/lib/systemd/system/docker.service
