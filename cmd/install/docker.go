@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -19,8 +21,16 @@ type docker struct {
 const (
 	parseDockerServerList     = "解析安装docker宿主机列表信息"
 	decompressDockerPackage   = "解压docker安装包文件"
-	generateDockerServiceFile = "生成docker service配置文件"
 	reloadUnitService         = "重载系统service unit配置文件"
+	enableDcokerService       = "配置docker为系统服务"
+	startDockerService        = "启动docker服务"
+	statusDockerService       = "docker服务状态"
+	disableSelinux            = "关闭selinux"
+	checkSelinuxStatus        = "检测selinux状态"
+	checkKernelVersion        = "检测内核版本"
+	afterModifySelinuxContent = "执行root重启主机，以保证selinux关闭，随后重新执行安装命令进行安装"
+	decompressDockerCmd       = "tar zxvf docker-*.tgz;mv docker/* /usr/bin/"
+	scpDockerPackage          = "拷贝docker安装包"
 )
 
 func (docker *docker) Install() {
@@ -44,11 +54,25 @@ func (docker *docker) offline() {
 	// 拷贝安装文件
 	docker.scp()
 
+	// 判断内核版本
+	docker.checkKernel()
+
 	// 解压
 	docker.decompress()
 
+	// 检测selinux
+	docker.checkSelinux()
+
 	// 写unit服务配置
 	docker.writeService()
+
+	docker.reload()
+
+	docker.enable()
+
+	docker.start()
+
+	docker.status()
 
 }
 
@@ -77,24 +101,46 @@ func (docker *docker) getServerList() {
 
 // 解压赋值
 func (docker *docker) decompress() {
-	util.Shell{
-		Cmd:        fmt.Sprintf("%s && tar zxvf docker-*.tgz;mv docker/* /usr/bin/", constant.RootDetectionCmd),
-		ServerList: docker.serverList,
-		Banner:     util.Banner{Symbols: []string{constant.Docker}, Msg: decompressDockerPackage},
-	}.Shell()
+	cmd := fmt.Sprintf("%s && %s", constant.RootDetectionCmd, decompressDockerCmd)
+	docker.shell(cmd, decompressDockerPackage).Shell()
 }
 
 // 拷贝
 func (docker *docker) scp() {
 	// 拷贝docker安装包
+	if len(docker.serverList) != 0 {
+		util.ScpHome(docker.returnBanner(scpDockerPackage), dockerPackageFile, docker.serverList)
+	}
+	time.Sleep(3 * time.Second)
+}
+
+// 检测内核版本
+func (docker *docker) checkKernel() {
 	if len(docker.serverList) == 0 {
-		time.Sleep(3 * time.Second)
-		return
+		docker.checkLocalKernelVersion()
 	} else {
-		util.ScpHome(util.Banner{
-			Symbols: []string{constant.Docker, constant.Scp},
-			Msg:     "",
-		}, dockerPackageFile, docker.serverList)
+		docker.checkRemoteKernelVersion()
+	}
+}
+
+func (docker *docker) checkLocalKernelVersion() {
+	util.PrintDirectBanner([]string{constant.LoopbackAddress}, checkKernelVersion)
+	if sys.KernelMainVersion() < 3 {
+		log.Fatal("内核版本小于3,不满足安装条件...")
+	}
+}
+
+func (docker *docker) checkRemoteKernelVersion() {
+	for _, v := range docker.serverList {
+		util.PrintDirectBanner([]string{v.Host}, checkKernelVersion)
+		version := v.RemoteShellReturnStd(constant.KernelVersionCmd)
+		mVersion, err := strconv.Atoi(strings.TrimSuffix(version, "\n"))
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		if mVersion < 3 {
+			log.Fatal("内核版本小于3,不满足安装条件...")
+		}
 	}
 }
 
@@ -103,37 +149,58 @@ func (docker *docker) writeService() {
 	util.WriteFile(docker.serviceFilePath, []byte(docker.serviceContent), docker.serverList)
 }
 
+// 载入service文件
 func (docker *docker) reload() {
-	if len(docker.serverList) == 0 {
-		docker.banner(constant.Service, generateDockerServiceFile)
-		util.OverwriteContent(docker.serviceFilePath, docker.serviceContent)
+	docker.shell(constant.DeamonReloadCmd, reloadUnitService).Shell()
+}
 
-		docker.banner(constant.Reload, reloadUnitService)
-		util.ExecuteCmdAcceptResult(constant.DeamonReload)
+// 开机自启动
+func (docker *docker) enable() {
+	docker.shell(constant.DockerEnableCmd, enableDcokerService).Shell()
+}
+
+// 检测selinux状态
+func (docker *docker) checkSelinux() {
+	if len(docker.serverList) == 0 {
+		docker.closeLocalSelinux()
 	} else {
-		util.Shell{
-			Cmd:        "",
-			ServerList: nil,
-			Banner:     util.Banner{},
-		}.Shell()
+		for _, v := range docker.serverList {
+			docker.closeRemoteSelinux(v)
+		}
 	}
 }
 
-// 离线安装docker
-func installDockerOffline() {
-
-	// 配置系统服务
-	fmt.Println("[install]配置redis系统服务...")
-	sys.ConfigService("docker")
-
-	sys.CloseSeLinux(true)
-	fmt.Println("[docker]启动docker...")
-	startRe, _ := util.ExecuteCmd(sys.SystemInfoObject.ServiceAction.StartDocker)
-	fmt.Println("[docker]设置docker开机自启动...")
-	enableRe, _ := util.ExecuteCmd(sys.SystemInfoObject.ServiceAction.StartDockerForever)
-	if startRe == nil && enableRe == nil {
-		util.PrintSuccessfulMsg("docker安装成功...")
+// 关闭本地selinux
+func (docker *docker) closeLocalSelinux() {
+	status := docker.localSelinuxStatus()
+	if strings.TrimSuffix(status, "\n") == constant.Enabled {
+		util.LocalShell(disableSelinux, constant.DisableSelinuxCmd)
+		log.Fatal(afterModifySelinuxContent)
 	}
+}
+
+func (docker *docker) closeRemoteSelinux(server util.Server) {
+	status := docker.remoteSelinuxStatus(server)
+	if strings.TrimSuffix(status, "\n") == constant.Enabled {
+		server.RemoteShellReturnStd(constant.DisableSelinuxCmd)
+		log.Fatal(fmt.Sprintf("[%s]%s", server.Host, afterModifySelinuxContent))
+	}
+}
+
+func (docker *docker) localSelinuxStatus() string {
+	return util.LocalShell(checkSelinuxStatus, constant.SelinuxStatusCmd)
+}
+
+func (docker *docker) remoteSelinuxStatus(server util.Server) string {
+	return util.RemoteShellAcceptResult(checkSelinuxStatus, constant.SelinuxStatusCmd, server)
+}
+
+func (docker *docker) start() {
+	docker.shell(constant.DockerStartCmd, startDockerService).Shell()
+}
+
+func (docker *docker) status() {
+	docker.shell(constant.DockerStatusCmd, statusDockerService).ShellPrintStdout()
 }
 
 // 在线安装docker
@@ -163,5 +230,19 @@ func installDockerOnline() {
 }
 
 func (docker *docker) banner(operateName string, msg string) {
-	util.PrintBanner([]string{constant.Docker, operateName}, msg)
+	util.PrintDirectBanner([]string{constant.Docker, operateName}, msg)
+}
+func (docker *docker) returnBanner(msg string) util.Banner {
+	return util.Banner{
+		Symbols: nil,
+		Msg:     msg,
+	}
+}
+
+func (docker *docker) shell(cmd string, msg string) util.Shell {
+	return util.Shell{
+		Cmd:        cmd,
+		ServerList: docker.serverList,
+		Banner:     docker.returnBanner(msg),
+	}
 }

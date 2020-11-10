@@ -45,13 +45,13 @@ func FormatFileName(name string) string {
 
 func WriteFile(filePath string, b []byte, serverList []Server) {
 	if len(serverList) == 0 {
-		PrintBanner([]string{constant.Write}, fmt.Sprintf("写文件：%s", filePath))
+		PrintActionBanner([]string{constant.LoopbackAddress}, fmt.Sprintf("写文件：%s", filePath))
 		OverwriteContent(filePath, string(b))
 	} else {
 		wg := sync.WaitGroup{}
 		wg.Add(len(serverList))
 		for _, v := range serverList {
-			PrintBanner([]string{constant.Remote, constant.Write, v.Host}, fmt.Sprintf("写文件：%s:%s", v.Host, filePath))
+			PrintActionBanner([]string{v.Host}, fmt.Sprintf("写文件：%s:%s", v.Host, filePath))
 			go RemoteWriteFileParallel(filePath, b, v, &wg)
 		}
 		wg.Wait()
