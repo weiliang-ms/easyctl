@@ -1,5 +1,0 @@
-host=192.168.239.131 port=22 user=root passwor=dsad@edda131!!
-host=192.168.239.132 port=22 user=root passwor=dsad@edda132!!
-host=192.168.239.133 port=22 user=root passwor=dsad@edda133!!
-host=192.168.239.134 port=22 user=root passwor=dsad@edda134!!
-host=192.168.239.135 port=22 user=root passwor=dsad@edda135!!

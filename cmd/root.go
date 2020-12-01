@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"easyctl/cmd/install"
+	"easyctl/cmd/set"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/util"
@@ -23,6 +24,7 @@ var RootCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(install.RootCmd)
+	RootCmd.AddCommand(set.RootCmd)
 }
 
 func Execute() {

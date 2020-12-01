@@ -18,7 +18,7 @@ type Banner struct {
 }
 
 func PrintActionBanner(symbols []string, msg string) {
-	fmt.Printf("%s %s...\n",
+	fmt.Printf("%s %s...\n\n",
 		PrintCyanMulti(symbols), msg)
 }
 func PrintDirectBanner(symbols []string, msg string) {

@@ -54,12 +54,12 @@ func (redis *redis) install() {
 	if RedisOffline {
 		redis.installOffline()
 	} else {
-		installRedisOnline()
+		redis.installOnline()
 	}
 }
 
 // 在线安装redis
-func installRedisOnline() {
+func (redis *redis) installOnline() {
 
 }
 
@@ -94,20 +94,20 @@ func (redis *redis) installOffline() {
 	// 初始化运行时环境
 	redis.initializeRuntimeEnv()
 
-	// 调优
-	redis.optimize()
-
 	// 启动
 	redis.start()
 
 	// 配置系统级服务
 	redis.service()
 
+	// 开放端口
+	redis.openFirewallPort()
+
 	// 初始化集群
 	redis.initializeCluster()
 
-	// 开放端口
-	redis.openFirewallPort()
+	// 调优
+	redis.optimize()
 
 	// 状态
 	redis.status()
@@ -446,12 +446,12 @@ func (redis *redis) firewallPortsCmd() string {
 
 	var cmd6, cmd7 string
 	for _, v := range ports {
-		cmd7 += fmt.Sprintf("\nfirewall-cmd --zone=public --add-port=%d/tcp --permanent;", v)
-		cmd6 += fmt.Sprintf("\niptables -I INPUT -p tcp -m state --state NEW -m tcp --dport %d -j ACCEPT;", v)
+		cmd7 += fmt.Sprintf("firewall-cmd --zone=public --add-port=%d/tcp --permanent;", v)
+		cmd6 += fmt.Sprintf("iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport %d -j ACCEPT;", v)
 	}
 
-	cmd6 = fmt.Sprintf("%s && %s [ -f /etc/rc.d/init.d/iptables ] && /etc/rc.d/init.d/iptables save && service iptables restart", constant.Redhat6, cmd6)
-	cmd7 = fmt.Sprintf("%s && %s firewall-cmd --reload", constant.Redhat7, cmd7)
+	cmd6 = fmt.Sprintf("if %s;then\n\t%s %s\nfi", constant.Redhat6, cmd6, "[ -f /etc/rc.d/init.d/iptables ] && /etc/rc.d/init.d/iptables save && service iptables restart")
+	cmd7 = fmt.Sprintf("if %s;then\n\t%sfirewall-cmd --reload\nfi", constant.Redhat7, cmd7)
 
 	return fmt.Sprintf("%s && %s;\n%s", constant.RootDetectionCmd, cmd6, cmd7)
 }
