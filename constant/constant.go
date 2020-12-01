@@ -36,4 +36,5 @@ const (
 	status          = "status"
 	enable          = "enable"
 	Kernel          = "kernel"
+	Localhost       = "localhost"
 )

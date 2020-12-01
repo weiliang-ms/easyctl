@@ -1,6 +1,6 @@
 package constant
 
-const CentOSAliBaseYUMContent = "[base]\n" +
+const CentOSAliBaseYumContent = "[base]\n" +
 	"name=CentOS-$releasever - Base - mirrors.aliyun.com\n" +
 	"failovermethod=priority\n" +
 	"baseurl=http://mirrors.aliyun.com/centos/$releasever/os/$basearch/\n" +
@@ -46,9 +46,9 @@ const CentOSAliBaseYUMContent = "[base]\n" +
 	"        http://mirrors.cloud.aliyuncs.com/centos/$releasever/contrib/$basearch/\n" +
 	"gpgcheck=1\n" +
 	"enabled=0\n" +
-	"gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-$releaseverF"
+	"gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-$releasever\n"
 
-const CentOSAliEpelYUMContent = "" +
+const CentOSAliEpelYumContent = "" +
 	"[epel]\n" +
 	"name=Extra Packages for Enterprise Linux $releasever - $basearch\n" +
 	"baseurl=http://mirrors.aliyun.com/epel/$releasever/$basearch\n" +
@@ -70,9 +70,9 @@ const CentOSAliEpelYUMContent = "" +
 	"failovermethod=priority\n" +
 	"enabled=0\n" +
 	"gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-$releasever\n" +
-	"gpgcheck=0"
+	"gpgcheck=0\n"
 
-const CentOSLocalYUMContent = "" +
+const CentOSLocalYumContent = "" +
 	"[local-repo]\n" +
 	"name=local-repo\n" +
 	"baseurl=file:///media\n" +
@@ -85,3 +85,9 @@ const CentOSNginxMirrorContent = "[nginx]\n" +
 	"baseurl=http://nginx.org/packages/centos/$releasever/$basearch/\n" +
 	"gpgcheck=0\n" +
 	"enabled=1"
+
+const (
+	AliBaseRepoPath  = "/etc/yum.repos.d/ali-base.repo"
+	AliEpelRepoPath  = "/etc/yum.repos.d/ali-epel.repo"
+	YumLocalRepoPath = "/etc/yum.repos.d/local.repo"
+)

@@ -13,4 +13,5 @@ var (
 	Redhat6         = "[ \"$(cat /etc/redhat-release|sed -r 's/.* ([0-9]+)\\..*/\\1/')\" == \"6\" ]"
 	Redhat7         = "[ \"$(cat /etc/redhat-release|sed -r 's/.* ([0-9]+)\\..*/\\1/')\" == \"7\" ]"
 	DeamonReloadCmd = "systemctl daemon-reload"
+	ddd             = "if [ \"$(cat /etc/redhat-release|sed -r 's/.* ([0-9]+)\\..*/\\1/')\" == \"7\" ];then\n\techo ddd\nfi"
 )

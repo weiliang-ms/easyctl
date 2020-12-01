@@ -1,19 +1,16 @@
 package util
 
 import (
-	"bufio"
 	"easyctl/constant"
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v2"
-	"io"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
-	"strings"
 	"sync"
 	"time"
 )
@@ -40,6 +37,8 @@ type ServerList struct {
 	RedisServerList  []Server `yaml:"redis"`
 	NginxServerList  []Server `yaml:"nginx"`
 	DockerServerList []Server `yaml:"docker"`
+	YumServerList    []Server `yaml:"yum"`
+	PubServerList    []Server `yaml:"pub"`
 }
 
 func (server Server) ExecuteOriginCmd(cmd string) (msg string, exitCode int) {
@@ -62,7 +61,7 @@ func (server Server) ExecuteOriginCmd(cmd string) (msg string, exitCode int) {
 
 func (server Server) ExecuteOriginCmdIgnoreRe(cmd string) bool {
 	session, conErr := server.sshConnect()
-	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{constant.Shell, constant.Remote, server.Host}), cmd)
+	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{server.Host}), cmd)
 	if conErr != nil {
 		log.Fatal(conErr)
 		return false
@@ -76,6 +75,29 @@ func (server Server) ExecuteOriginCmdIgnoreRe(cmd string) bool {
 		return false
 	}
 	return true
+}
+
+// 返回结果，是否成功
+func (server Server) RemoteExecuteCmdResult(cmd string) bool {
+	session, conErr := server.sshConnect()
+	fmt.Printf("%s 执行语句：%s\n\n", PrintCyanMulti([]string{server.Host}), cmd)
+	if conErr != nil {
+		log.Fatal(conErr)
+		return false
+	}
+
+	defer session.Close()
+
+	_, runErr := session.CombinedOutput(cmd)
+
+	if runErr != nil {
+		return false
+	}
+	return true
+}
+
+func (server Server) FileDetection(filetPath string) bool {
+	return server.RemoteExecuteCmdResult(fmt.Sprintf("[ -f %s ]", filetPath))
 }
 
 func (server Server) RemoteShellParallel(cmd string, wg *sync.WaitGroup) (msg string, exitCode int) {
@@ -119,7 +141,7 @@ func (server Server) RemoteShellPrint(cmd string) {
 
 func (server Server) RemoteShellReturnStd(cmd string) string {
 	session, conErr := server.sshConnect()
-	fmt.Printf("%s 执行语句：%s\n", PrintCyanMulti([]string{server.Host}), cmd)
+	fmt.Printf("%s 执行语句：%s\n\n", PrintCyanMulti([]string{server.Host}), cmd)
 	if conErr != nil {
 		log.Fatal(conErr)
 	}
@@ -132,29 +154,6 @@ func (server Server) RemoteShellReturnStd(cmd string) string {
 		log.Fatal(runErr.Error())
 	}
 	return string(combo)
-}
-
-func ReadSSHInfoFromFile(hostsFile string) (instances []Server) {
-	f, err := os.OpenFile(hostsFile, os.O_RDONLY, 0644)
-	defer f.Close()
-
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	rd := bufio.NewReader(f)
-
-	for {
-		line, err := rd.ReadString('\n') //以'\n'为结束符读入一行
-		if strings.Contains(line, "host") {
-			instances = append(instances, setSSHObjectValue(line))
-		}
-		if err != nil || io.EOF == err {
-			break
-		}
-	}
-	//log.Printf("\n%+v", instances)
-	return instances
 }
 
 func ParseServerList(yamlPath string) ServerList {
@@ -178,35 +177,7 @@ func ParseServerList(yamlPath string) ServerList {
 		log.Fatal(err)
 	}
 	//fmt.Println("print serverlist...")
-	fmt.Printf("json内容：\n%v\n", serverList)
 	return serverList
-}
-func setSSHObjectValue(hosts string) (instance Server) {
-	//fmt.Println("-----line----" + hosts)
-	cutCharacters := []string{"\n"}
-	for _, v := range strings.Split(hosts, " ") {
-		//fmt.Printf("---%v", v)
-		if strings.Contains(v, "host") {
-			instance.Host = CutCharacter(strings.TrimPrefix(v, "host="), cutCharacters)
-			//fmt.Printf("host赋值%s",object.Host)
-			//fmt.Printf("%+v",object)
-		}
-
-		if strings.Contains(v, "port") {
-			//fmt.Println("port赋值")
-			instance.Port = CutCharacter(strings.TrimPrefix(v, "port="), cutCharacters)
-		}
-
-		if strings.Contains(v, "user") {
-			instance.Username = CutCharacter(strings.TrimPrefix(v, "user="), cutCharacters)
-			//fmt.Printf("username赋值：%s",object.Username)
-		}
-		if strings.Contains(v, "password") {
-			instance.Password = CutCharacter(strings.Trim(v, "password="), cutCharacters)
-			//fmt.Printf("password赋值%s",instance.Password)
-		}
-	}
-	return instance
 }
 
 func (server *Server) sshConnect() (*ssh.Session, error) {
@@ -281,6 +252,21 @@ func RemoteWriteFile(filePath string, b []byte, instance Server) {
 	dstFile.Write(b)
 }
 
+func (server *Server) RemoteWriteFile(filePath string, b []byte) {
+	PrintActionBanner([]string{server.Host}, fmt.Sprintf("写文件: %s", filePath))
+	// init sftp
+	sftp, err := SftpConnect(server.Username, server.Password, server.Host, server.Port)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	dstFile, err := sftp.Create(filePath)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	defer dstFile.Close()
+	dstFile.Write(b)
+}
+
 func RemoteWriteFileParallel(filePath string, b []byte, instance Server, wg *sync.WaitGroup) {
 	// init sftp
 	sftp, err := SftpConnect(instance.Username, instance.Password, instance.Host, instance.Port)
@@ -344,6 +330,15 @@ func SftpConnect(user, password, host string, port string) (sftpClient *sftp.Cli
 }
 
 func HomeDir(server Server) string {
+	switch server.Username {
+	case "root":
+		return "/root"
+	default:
+		return fmt.Sprintf("/home/%s", server.Username)
+	}
+}
+
+func (server Server) HomeDir() string {
 	switch server.Username {
 	case "root":
 		return "/root"

@@ -101,7 +101,8 @@ var installNginxCmd = &cobra.Command{
 	Example: "\neasyctl install nginx 在线安装nginx" +
 		"\neasyctl install nginx --offline=true --file=./nginx-1.16.0.tar.gz 离线安装nginx",
 	Run: func(cmd *cobra.Command, args []string) {
-		installNginx()
+		var ng nginx
+		ng.install()
 	},
 }
 

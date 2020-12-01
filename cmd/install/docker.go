@@ -209,8 +209,6 @@ func installDockerOnline() {
 	if !sys.AccessAliMirrors() {
 		panic(netConnectErr)
 	}
-
-	sys.SetAliYUM()
 	install := "yum -y redis yum-utils device-mapper-persistent-data lvm2;" +
 		"yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo;" +
 		"yum makecache fast;" +

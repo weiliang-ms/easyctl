@@ -8,7 +8,7 @@ var (
 	RootDetectionCmd            = "[ `id -u` -eq 0 ]"
 	EtcRcLocal                  = "/etc/rc.local"
 	ChmodX                      = "chmod +x"
-	LocalIPCmd                  = "ip a|grep inet|grep -v 127.0.0.1|grep -v inet6|awk '{print $2}'|tr -d \"addr:\"|awk '{sub(/.{3}$/,\"\")}1'"
+	LocalIPCmd                  = "ip addr | awk '/^[0-9]+: / {}; /inet.*global/ {print gensub(/(.*)\\/(.*)/, \"\\\\1\", \"g\", $2)}'|head -1"
 	startUnitServiceCmd         = fmt.Sprintf("%s %s", systemctl, start)
 	statusUnitServiceCmd        = fmt.Sprintf("%s %s", systemctl, status)
 	enableUnitServiceCmd        = fmt.Sprintf("%s %s", systemctl, enable)
@@ -18,4 +18,8 @@ var (
 	DisableSelinuxCmd           = "setenforce 0;sed -i \"s#SELINUX=enforcing#SELINUX=disabled#g\" /etc/selinux/config"
 	SelinuxStatusCmd            = "sestatus -v|grep \"SELinux status\"|awk '{print $3}'"
 	KernelVersionCmd            = "uname -r | grep -o \"^[0-9]\""
+	BackupYumRepoCmd            = "mkdir -p /etc/yum.repos.d/`date +%Y%m%d`" + ";" +
+		"mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/`date +%Y%m%d` -f"
+	CleanYumCacheCmd      = "yum clean all"
+	CreateRsaAndRsaPubCmd = "ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa -q"
 )
