@@ -22,7 +22,7 @@ func KernelVersion() (version string) {
 		log.Fatal(readErr.Error())
 	}
 	for _, v := range strings.Split(string(b), " ") {
-		matched, _ := regexp.MatchString("^[0-9]\\.[0-9]*\\.[0-9]*-[0-9]*.*.el[0-9].x86_64$", v)
+		matched, _ := regexp.MatchString("^[0-9]\\.[0-9]*\\.[0-9]*-[0-9]*.*.el[0-9].*x86_64$", v)
 		if matched {
 			version = v
 		}

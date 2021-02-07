@@ -1,6 +1,6 @@
 package constant
 
-const Redhat7RedisServiceFilePath = "/usr/lib/systemd/system/install.service"
+const Redhat7RedisServiceFilePath = "/usr/lib/systemd/system/redis.service"
 
 const Redhat7RedisServiceContent = "" +
 	"[Unit]\n" +
