@@ -1,0 +1,5 @@
+harbor:
+  resources:
+    offlineUrl: "https://github.com/goharbor/harbor/releases/download/v2.1.4/harbor-offline-installer-v2.1.4.tgz"
+    onlineUrl: "https://github.com/goharbor/harbor/releases/download/v2.1.4/harbor-online-installer-v2.1.4.tgz"
+
