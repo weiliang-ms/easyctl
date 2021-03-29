@@ -159,7 +159,7 @@ func ExecuteIgnoreStd(shell string) bool {
 
 func Run(command string) {
 	cmd := exec.Command("/bin/bash", "-c", command)
-	fmt.Printf("执行命令：%s", cmd)
+	//fmt.Printf("执行命令：%s", cmd)
 
 	stderr, _ := cmd.StderrPipe()
 	stdout, _ := cmd.StdoutPipe()
