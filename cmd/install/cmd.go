@@ -66,21 +66,21 @@ func init() {
 	//dockerCmd.Flags().StringVarP(&dockerServerListFile, serverList, "", "", "安装docker宿主机列表")
 	//
 	//RootCmd.AddCommand(dockerCmd)
-	RootCmd.AddCommand(installNginxCmd)
-	RootCmd.AddCommand(redisCmd)
+	//RootCmd.AddCommand(installNginxCmd)
+	//RootCmd.AddCommand(redisCmd)
 }
 
 // install命令
-var RootCmd = &cobra.Command{
-	Use:   "install [OPTIONS] [flags]",
-	Short: "install soft through easyctl",
-	Example: "\neasyctl install docker" +
-		"\neasyctl install nginx",
-	Args: cobra.MinimumNArgs(1),
-	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return installValidArgs, cobra.ShellCompDirectiveNoFileComp
-	},
-}
+//var RootCmd = &cobra.Command{
+//	Use:   "install [OPTIONS] [flags]",
+//	Short: "install soft through easyctl",
+//	Example: "\neasyctl install docker" +
+//		"\neasyctl install nginx",
+//	Args: cobra.MinimumNArgs(1),
+//	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+//		return installValidArgs, cobra.ShellCompDirectiveNoFileComp
+//	},
+//}
 
 //// install docker命令
 //var dockerCmd = &cobra.Command{
