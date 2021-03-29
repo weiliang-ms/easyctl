@@ -156,3 +156,38 @@ func ExecuteIgnoreStd(shell string) bool {
 
 	return true
 }
+
+func Run(command string) {
+	cmd := exec.Command("/bin/bash", "-c", command)
+	fmt.Printf("执行命令：%s", cmd)
+
+	stderr, _ := cmd.StderrPipe()
+	stdout, _ := cmd.StdoutPipe()
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err.Error())
+	}
+	// 正常日志
+	logScan := bufio.NewScanner(stdout)
+	go func() {
+		for logScan.Scan() {
+			fmt.Println(logScan.Text())
+		}
+	}()
+	// 错误日志
+	errBuf := bytes.NewBufferString("")
+	scan := bufio.NewScanner(stderr)
+	for scan.Scan() {
+		s := scan.Text()
+		log.Println("build error: ", s)
+		errBuf.WriteString(s)
+		errBuf.WriteString("\n")
+	}
+	// 等待命令执行完
+	cmd.Wait()
+	if !cmd.ProcessState.Success() {
+		// 执行失败，返回错误信息
+		log.Fatal("执行失败...")
+	}
+
+}
