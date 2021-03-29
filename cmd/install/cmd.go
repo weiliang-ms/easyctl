@@ -60,12 +60,12 @@ func init() {
 	redisCmd.Flags().BoolVarP(&RedisOffline, offline, "o", false, "offline mode")
 	redisCmd.MarkFlagRequired(redisDeployMode)
 
-	// docker
-	dockerCmd.Flags().BoolVarP(&dockerOffline, offline, "", false, "离线安装")
-	dockerCmd.Flags().StringVarP(&dockerPackageFile, file, "", "", "离线压缩包文件路径")
-	dockerCmd.Flags().StringVarP(&dockerServerListFile, serverList, "", "", "安装docker宿主机列表")
-
-	RootCmd.AddCommand(dockerCmd)
+	//// docker
+	//dockerCmd.Flags().BoolVarP(&dockerOffline, offline, "", false, "离线安装")
+	//dockerCmd.Flags().StringVarP(&dockerPackageFile, file, "", "", "离线压缩包文件路径")
+	//dockerCmd.Flags().StringVarP(&dockerServerListFile, serverList, "", "", "安装docker宿主机列表")
+	//
+	//RootCmd.AddCommand(dockerCmd)
 	RootCmd.AddCommand(installNginxCmd)
 	RootCmd.AddCommand(redisCmd)
 }
@@ -82,17 +82,17 @@ var RootCmd = &cobra.Command{
 	},
 }
 
-// install docker命令
-var dockerCmd = &cobra.Command{
-	Use:   "docker [flags]",
-	Short: "install docker through easyctl",
-	//Example: "\neasyctl install docker 在线安装docker" +
-	//	"\neasyctl install docker --offline --file=./docker-19.03.9.tgz 离线安装docker",
-	Run: func(cmd *cobra.Command, args []string) {
-		var docker docker
-		docker.Install()
-	},
-}
+//// install docker命令
+//var dockerCmd = &cobra.Command{
+//	Use:   "docker [flags]",
+//	Short: "install docker through easyctl",
+//	//Example: "\neasyctl install docker 在线安装docker" +
+//	//	"\neasyctl install docker --offline --file=./docker-19.03.9.tgz 离线安装docker",
+//	Run: func(cmd *cobra.Command, args []string) {
+//		var docker cmd2.docker
+//		docker.Install()
+//	},
+//}
 
 // install nginx命令
 var installNginxCmd = &cobra.Command{
