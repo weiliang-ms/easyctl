@@ -157,7 +157,7 @@ func ExecuteIgnoreStd(shell string) bool {
 	return true
 }
 
-func Run(command string) {
+func Run(command string) int {
 	cmd := exec.Command("/bin/bash", "-c", command)
 	//fmt.Printf("执行命令：%s", cmd)
 
@@ -189,5 +189,5 @@ func Run(command string) {
 		// 执行失败，返回错误信息
 		log.Fatal("执行失败...")
 	}
-
+	return cmd.ProcessState.ExitCode()
 }

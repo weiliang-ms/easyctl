@@ -4,4 +4,7 @@ var (
 	offline bool
 )
 
-const docker = "docker-ce"
+const (
+	docker        = "docker-ce"
+	dockerCompose = "docker-compose"
+)
