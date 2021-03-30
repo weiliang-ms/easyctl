@@ -17,8 +17,10 @@ var (
 
 func init() {
 
-	downloadCmd.AddCommand(downloadHarborCmd)
 	downloadCmd.AddCommand(downloadDockerCmd)
+	downloadCmd.AddCommand(downloadHarborCmd)
+	downloadCmd.AddCommand(downloadKernelCmd)
+	downloadCmd.AddCommand(downloadDockerComposeCmd)
 	RootCmd.AddCommand(downloadCmd)
 
 }
@@ -59,7 +61,8 @@ func download(url string, name string) {
 		fileName = arr[len(arr)-1]
 	}
 
-	f, err := os.Create(fmt.Sprintf("%s/%s", dataDir, fileName))
+	path := fmt.Sprintf("%s/%s", dataDir, fileName)
+	f, err := os.Create(path)
 	if err != nil {
 		panic(err)
 	}
@@ -69,5 +72,5 @@ func download(url string, name string) {
 	io.Copy(f, res.Body)
 	stop := time.Now()
 
-	fmt.Printf("下载完毕,耗时：%s...\n", stop.Sub(start))
+	fmt.Printf("下载完毕\n路径：%s\n耗时：%s...\n", path, stop.Sub(start))
 }
