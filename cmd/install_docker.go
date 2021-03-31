@@ -40,7 +40,7 @@ func installDockerOffline() {
 		panic(err)
 	}
 
-	script, _ := asset.Asset("script/install_offline.sh")
+	script, _ := asset.Asset("static/script/install_offline.sh")
 	fmt.Printf("开始安装%s...\n", docker)
 	util.Run(fmt.Sprintf("package_name=%s %s", docker, string(script)))
 

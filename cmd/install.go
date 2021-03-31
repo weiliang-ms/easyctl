@@ -4,7 +4,6 @@ import "github.com/spf13/cobra"
 
 func init() {
 	installCmd.AddCommand(installHarborCmd)
-	installCmd.AddCommand(installKernelCmd)
 	RootCmd.AddCommand(installCmd)
 }
 

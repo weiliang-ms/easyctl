@@ -266,6 +266,28 @@ flag
 
     easyctl set hostname nginx-server1
     
+## upgrade 命令
+
+升级`CentOS7`上一些软件
+
+### 内核
+
+#### 离线
+
+> 1.下载`kernel`离线仓库
+
+联网主机下执行以下命令:
+
+    sudo docker pull xzxwl/kernel-repo:lt
+    sudo docker run -idt --name kernel-lt xzxwl/kernel-repo:lt /bin/bash
+    sudo docker cp kernel-lt:/data/kernel-lt.tar.gz ./
+    sudo docker rm -f kernel-lt
+    
+> 2.安装
+
+    
+
+    
 ## todo
 
 1.安全加固脚本（可排除选项）
