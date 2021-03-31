@@ -44,7 +44,7 @@ var installHarborCmd = &cobra.Command{
 // 单机本地离线
 func localHarborOffline() {
 
-	script, _ := asset.Asset("script/install_harbor.sh")
+	script, _ := asset.Asset("static/script/install_harbor.sh")
 	fmt.Println("安装harbor...")
 	util.Run(fmt.Sprintf("ssl=%t version=%s domain=%s %s", ssl, HarborVersion, domain, string(script)))
 }

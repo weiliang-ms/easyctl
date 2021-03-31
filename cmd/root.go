@@ -24,6 +24,8 @@ var RootCmd = &cobra.Command{
 func init() {
 	//RootCmd.AddCommand(install.RootCmd)
 	RootCmd.AddCommand(set.RootCmd)
+	RootCmd.AddCommand(upgradeCmd)
+	RootCmd.AddCommand(initTmplCmd)
 }
 
 func Execute() {
