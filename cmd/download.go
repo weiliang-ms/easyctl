@@ -4,7 +4,10 @@ import (
 	"easyctl/util"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/vbauerster/mpb/v6"
+	"github.com/vbauerster/mpb/v6/decor"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -20,6 +23,7 @@ func init() {
 	downloadCmd.AddCommand(downloadDockerCmd)
 	downloadCmd.AddCommand(downloadHarborCmd)
 	downloadCmd.AddCommand(downloadKernelCmd)
+	downloadCmd.AddCommand(downloadKeepaliveCmd)
 	downloadCmd.AddCommand(downloadDockerComposeCmd)
 	RootCmd.AddCommand(downloadCmd)
 
@@ -36,7 +40,7 @@ var downloadCmd = &cobra.Command{
 
 func download(url string, name string) {
 
-	fmt.Printf("下载%s安装介质...\n介质下载地址为：%s\n", name, url)
+	log.Printf("下载%s安装介质，地址为：%s\n", name, url)
 
 	var fileName string
 
@@ -45,10 +49,10 @@ func download(url string, name string) {
 		panic(err)
 	}
 
-	dataDir := fmt.Sprintf("%s/resources/repo/%s",
+	dataDir := fmt.Sprintf("%s/repo/%s",
 		util.CurrentPath(), name)
 
-	fmt.Printf("创建%s安装介质持久化目录：%s...\n", name, dataDir)
+	log.Printf("创建%s安装介质持久化目录：%s...\n", name, dataDir)
 
 	dirErr := os.MkdirAll(dataDir, 0644)
 
@@ -67,10 +71,31 @@ func download(url string, name string) {
 		panic(err)
 	}
 
-	fmt.Println("开始下载...")
-	start := time.Now()
-	io.Copy(f, res.Body)
-	stop := time.Now()
+	total := res.ContentLength
+	reader := io.LimitReader(res.Body, total)
 
-	fmt.Printf("下载完毕\n路径：%s\n耗时：%s...\n", path, stop.Sub(start))
+	p := mpb.New(
+		mpb.WithWidth(60),
+		mpb.WithRefreshRate(180*time.Millisecond),
+	)
+
+	bar := p.Add(total,
+		mpb.NewBarFiller("[=>-|"),
+		mpb.PrependDecorators(
+			decor.CountersKibiByte("% .2f / % .2f"),
+		),
+		mpb.AppendDecorators(
+			decor.EwmaETA(decor.ET_STYLE_GO, 90),
+			decor.Name(" ] "),
+			decor.EwmaSpeed(decor.UnitKiB, "% .2f", 60),
+		),
+	)
+
+	// create proxy reader
+	proxyReader := bar.ProxyReader(reader)
+
+	//fmt.Println("开始下载...")
+	io.Copy(f, proxyReader)
+	p.Wait()
+
 }
