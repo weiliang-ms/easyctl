@@ -18,12 +18,13 @@ if [ ! -f "${filepath}" ];then
     exit 2
 fi
 
-echo "[kernel] set up kernel-""${version}"".repo repo..."
+echo "[kernel] set up kernel-${version}.repo repo..."
 # 生成repo
-cat > /etc/yum.repos.d/kernel-"${version}".repo <<EOF
+# shellcheck disable=SC2086
+cat > /etc/yum.repos.d/kernel-${version}.repo <<EOF
 [kernel-${version}]
 name=[kernel-${version}]-repo
-baseurl=file:///yum/data/"kernel-${version}"
+baseurl=file:///yum/data/kernel-${version}
 gpgcheck=0
 enabled=1
 EOF
@@ -35,8 +36,9 @@ tar zxvf "${filepath}" -C /yum/
 echo "[kernel] install kernel-${version}..."
 
 # 安装
-yum install -y kernel-"${version}" \
-    --disablerepo=\* --enablerepo="kernel-${version}"
+# shellcheck disable=SC2086
+yum install -y kernel-${version} \
+    --disablerepo=\* --enablerepo=kernel-${version}
 
 # shellcheck disable=SC2181
 if [ $? -eq 0 ];then

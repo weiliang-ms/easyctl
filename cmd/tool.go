@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/sftp"
+	"github.com/vbauerster/mpb/v6"
+	"github.com/vbauerster/mpb/v6/decor"
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v2"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -20,6 +23,13 @@ type Server struct {
 	Port     string `yaml:"port"`
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
+}
+
+type ShellResult struct {
+	Host   string
+	Cmd    string
+	Code   int
+	Status string
 }
 
 func parseServerList(yamlPath string) ServerList {
@@ -45,18 +55,54 @@ func parseServerList(yamlPath string) ServerList {
 }
 
 // 远程写文件
-func remoteWriteFile(filePath string, b []byte, instance Server) {
+func remoteWriteFile(srcPath string, dstPath string, instance Server) {
 	// init sftp
 	sftp, err := sftpConnect(instance.Username, instance.Password, instance.Host, instance.Port)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	dstFile, err := sftp.Create(filePath)
+
+	log.Printf("-> transfer %s to %s", srcPath, instance.Host)
+	dstFile, err := sftp.Create(dstPath)
+	sftp.Chmod(dstPath, 0755)
+
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+
+	f, _ := os.Open(srcPath)
+	ff, _ := os.Stat(srcPath)
+
+	total := ff.Size()
+	reader := io.LimitReader(f, total)
+
+	p := mpb.New(
+		mpb.WithWidth(60),
+		mpb.WithRefreshRate(180*time.Millisecond),
+	)
+
+	bar := p.Add(total,
+		mpb.NewBarFiller("[=>-|"),
+		mpb.PrependDecorators(
+			decor.CountersKibiByte("% .2f / % .2f"),
+		),
+		mpb.AppendDecorators(
+			decor.EwmaETA(decor.ET_STYLE_GO, 90),
+			decor.Name(" ] "),
+			decor.EwmaSpeed(decor.UnitKiB, "% .2f", 60),
+		),
+	)
+
+	// create proxy reader
+	proxyReader := bar.ProxyReader(reader)
+	io.Copy(dstFile, proxyReader)
+
+	p.Wait()
+
+	defer f.Close()
+	defer proxyReader.Close()
 	defer dstFile.Close()
-	dstFile.Write(b)
+
 }
 
 func sftpConnect(user, password, host string, port string) (sftpClient *sftp.Client, err error) { //参数: 远程服务器用户名, 密码, ip, 端口
@@ -85,4 +131,92 @@ func sftpConnect(user, password, host string, port string) (sftpClient *sftp.Cli
 	}
 
 	return
+}
+
+func (server Server) RemoteShellReturnStd(cmd string) string {
+	session, conErr := server.sshConnect()
+	if conErr != nil {
+		log.Fatal(conErr)
+	}
+
+	defer session.Close()
+
+	combo, runErr := session.CombinedOutput(cmd)
+
+	if runErr != nil {
+		log.Fatal(runErr.Error())
+	}
+	return string(combo)
+}
+
+func (server Server) RemoteShell(cmd string) ShellResult {
+
+	var resulft ShellResult
+	resulft.Cmd = cmd
+	resulft.Host = server.Host
+
+	log.Printf("-> [%s] shell => %s", server.Host, cmd)
+	session, conErr := server.sshConnect()
+	if conErr != nil {
+		log.Fatal(conErr)
+	}
+
+	defer session.Close()
+
+	combo, runErr := session.CombinedOutput(cmd)
+
+	if runErr != nil {
+		e, _ := runErr.(*ssh.ExitError)
+		resulft.Code = e.ExitStatus()
+		log.Print(runErr.Error())
+	}
+
+	log.Printf("<- call back %s\n %s", server.Host, string(combo))
+
+	if resulft.Code == 0 {
+		resulft.Status = "success"
+	} else {
+		resulft.Status = "failed"
+	}
+
+	return resulft
+}
+
+func (server *Server) sshConnect() (*ssh.Session, error) {
+	var (
+		auth         []ssh.AuthMethod
+		addr         string
+		clientConfig *ssh.ClientConfig
+		client       *ssh.Client
+		session      *ssh.Session
+		err          error
+	)
+	// get auth method
+	auth = make([]ssh.AuthMethod, 0)
+	auth = append(auth, ssh.Password(server.Password))
+
+	hostKeyCallbk := func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+		return nil
+	}
+
+	clientConfig = &ssh.ClientConfig{
+		User: server.Username,
+		Auth: auth,
+		// Timeout:             30 * time.Second,
+		HostKeyCallback: hostKeyCallbk,
+	}
+
+	// connet to ssh
+	addr = fmt.Sprintf("%s:%s", server.Host, server.Port)
+
+	if client, err = ssh.Dial("tcp", addr, clientConfig); err != nil {
+		return nil, err
+	}
+
+	// create session
+	if session, err = client.NewSession(); err != nil {
+		return nil, err
+	}
+
+	return session, nil
 }

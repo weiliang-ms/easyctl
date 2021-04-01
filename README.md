@@ -272,6 +272,8 @@ flag
 
 ### 内核
 
+更新升级内核
+
 #### 离线
 
 > 1.下载`kernel`离线仓库
@@ -283,9 +285,50 @@ flag
     sudo docker cp kernel-lt:/data/kernel-lt.tar.gz ./
     sudo docker rm -f kernel-lt
     
-> 2.安装
+> 2.本地更新
 
+    ./easyctl upgrade kernel \
+    --offline-file=./kernel-lt.tar.gz --offline
     
+> 3.批量更新
+
+初始化生成`server`模板
+
+    ./easyctl init-tmpl server
+    
+修改`server.yaml`文件内容
+
+    # 默认值
+    server:
+      - host: 192.168.239.133
+        username: root
+        password: 123456
+        port: 22
+      - host: 192.168.239.134
+        username: root
+        password: 123456
+        port: 22
+
+执行安装
+
+    ./easyctl upgrade kernel --offline-file=./kernel-lt.tar.gz --offline --server-list=./server.yaml
+    
+安装结果
+
+    ...
+    2021/04/01 04:53:49 [kernel] check kernel-lt exist ...
+    2021/04/01 04:53:49 [kernel] kernel-lt had been installed...
+    2021/04/01 04:53:49 0 : CentOS Linux (5.4.108-1.el7.elrepo.x86_64) 7 (Core)
+    2021/04/01 04:53:49 1 : CentOS Linux (3.10.0-1062.el7.x86_64) 7 (Core)
+    2021/04/01 04:53:49 2 : CentOS Linux (0-rescue-cf09c44eebea4dff8aac64fb57191034) 7 (Core)
+    2021/04/01 04:53:49 执行结果如下：
+    +-----------------+----------------------------------------------------------------------------+------+---------+
+    | Host            | Cmd                                                                        | Code | Status  |
+    +-----------------+----------------------------------------------------------------------------+------+---------+
+    | 192.168.235.129 | /tmp/easyctl upgrade kernel --offline-file=/tmp/kernel-lt.tar.gz --offline | 0    | success |
+    | 192.168.235.130 | /tmp/easyctl upgrade kernel --offline-file=/tmp/kernel-lt.tar.gz --offline | 0    | success |
+    +-----------------+----------------------------------------------------------------------------+------+---------+
+    2021/04/01 04:53:49 -> 重启主机生效...
 
     
 ## todo

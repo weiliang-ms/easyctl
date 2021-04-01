@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/modood/table"
 	"github.com/spf13/cobra"
-	"io/ioutil"
 	"log"
+	"sync"
 )
 
 var (
@@ -61,15 +61,48 @@ func upgradeKernelOffline(filePath string) {
 
 func upgradeKernelOfflineParallel(list []Server) {
 
+	var wg sync.WaitGroup
+	ch := make(chan ShellResult, len(list))
+
 	// 拷贝文件
-	filePath := fmt.Sprintf("/tmp/kernel-%s.tar.gz", kernelVersion)
-	b, err := ioutil.ReadFile(offlineFilePath)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	dstPath := fmt.Sprintf("/tmp/kernel-%s.tar.gz", kernelVersion)
+	binaryName := "easyctl"
+
 	for _, v := range list {
-		log.Printf("传输数据文件%s至%s...", filePath, v.Host)
-		remoteWriteFile(filePath, b, v)
-		log.Println("传输完毕...")
+		log.Printf("传输数据文件%s至%s...", dstPath, v.Host)
+		remoteWriteFile(offlineFilePath, dstPath, v)
+		log.Println("-> done 传输完毕...")
+
+		log.Printf("传输数据文件%s至%s:/tmp/%s...", binaryName, v.Host, binaryName)
+		remoteWriteFile(binaryName, fmt.Sprintf("/tmp/%s", binaryName), v)
+		log.Println("-> done 传输完毕...")
 	}
+
+	cmd := fmt.Sprintf("/tmp/easyctl upgrade kernel --offline-file=%s --offline",
+		fmt.Sprintf("/tmp/kernel-%s.tar.gz", kernelVersion))
+
+	// 并行
+	log.Println("-> 批量安装更新...")
+	for _, v := range list {
+		wg.Add(1)
+		go func(server Server) {
+			defer wg.Done()
+			re := server.RemoteShell(cmd)
+			ch <- re
+		}(v)
+	}
+	wg.Wait()
+	close(ch)
+
+	// ch -> slice
+	var as []ShellResult
+	for target := range ch {
+		as = append(as, target)
+	}
+
+	// 表格输出
+	log.Println("执行结果如下：")
+	table.OutputA(as)
+
+	log.Println("-> 重启主机生效...")
 }
