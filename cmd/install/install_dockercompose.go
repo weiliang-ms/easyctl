@@ -1,4 +1,4 @@
-package cmd
+package install
 
 import (
 	"easyctl/util"
@@ -9,7 +9,7 @@ import (
 
 func init() {
 	installDockerComposeCmd.Flags().BoolVarP(&offline, "offline", "", false, "是否离线安装")
-	installCmd.AddCommand(installDockerComposeCmd)
+	Cmd.AddCommand(installDockerComposeCmd)
 }
 
 // install docker-compose

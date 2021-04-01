@@ -1,12 +1,14 @@
 keepalived:
   vip: 192.168.239.150
-  - host: 192.168.239.129
-    username: root
-    password: 1
-    port: 22
-    interface: ens33
-  - host: 192.168.239.130
-    username: root
-    password: 1
-    port: 22
-    interface: ens33
+  interface: ens33
+  server:
+    - host: 192.168.239.129
+      username: root
+      password: 1
+      port: 22
+      interface: ens33
+    - host: 192.168.239.130
+      username: root
+      password: 1
+      port: 22
+      interface: ens33

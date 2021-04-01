@@ -1,4 +1,4 @@
-package cmd
+package install
 
 import (
 	"easyctl/asset"
@@ -7,18 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type harbor struct {
-	Address  string
-	Username string
-	Password string
-}
-
 const HarborVersion = "v2.1.4"
-
-var (
-	domain string // harbor域名
-	ssl    bool
-)
 
 func init() {
 	installHarborCmd.Flags().BoolVarP(&offline, "offline", "", false, "是否离线安装")

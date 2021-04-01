@@ -1,8 +1,8 @@
-package cmd
+package upgrade
 
 import (
 	"easyctl/asset"
-	"easyctl/shell"
+	"easyctl/pkg/run"
 	"fmt"
 	"github.com/modood/table"
 	"github.com/spf13/cobra"
@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	offline         bool
 	kernelVersion   string
 	offlineFilePath string
 	serverListFile  string
@@ -41,7 +42,7 @@ func upgradeKernel() {
 		upgradeKernelOffline(offlineFilePath)
 	}
 	if offline && serverListFile != "" {
-		list := parseServerList(serverListFile).Server
+		list := run.ParseServerList(serverListFile).Server
 		table.OutputA(list)
 		// todo: 确认交互
 		upgradeKernelOfflineParallel(list)
@@ -50,19 +51,19 @@ func upgradeKernel() {
 
 // 单机本地离线
 func upgradeKernelOffline(filePath string) {
-	var re shell.ExecResult
+	var re run.ExecResult
 	script, _ := asset.Asset("static/script/upgrade_kernel.sh")
 	log.Printf("开始升级安装%s...\n", kernel)
-	re = shell.Run(fmt.Sprintf("version=%s filepath=%s %s", kernelVersion, filePath, string(script)))
+	re = run.Shell(fmt.Sprintf("version=%s filepath=%s %s", kernelVersion, filePath, string(script)))
 	if re.ExitCode != 0 {
 		log.Fatal(re.StdErr)
 	}
 }
 
-func upgradeKernelOfflineParallel(list []Server) {
+func upgradeKernelOfflineParallel(list []run.Server) {
 
 	var wg sync.WaitGroup
-	ch := make(chan ShellResult, len(list))
+	ch := make(chan run.ShellResult, len(list))
 
 	// 拷贝文件
 	dstPath := fmt.Sprintf("/tmp/kernel-%s.tar.gz", kernelVersion)
@@ -70,11 +71,11 @@ func upgradeKernelOfflineParallel(list []Server) {
 
 	for _, v := range list {
 		log.Printf("传输数据文件%s至%s...", dstPath, v.Host)
-		remoteWriteFile(offlineFilePath, dstPath, v)
+		run.RemoteWriteFile(offlineFilePath, dstPath, v)
 		log.Println("-> done 传输完毕...")
 
 		log.Printf("传输数据文件%s至%s:/tmp/%s...", binaryName, v.Host, binaryName)
-		remoteWriteFile(binaryName, fmt.Sprintf("/tmp/%s", binaryName), v)
+		run.RemoteWriteFile(binaryName, fmt.Sprintf("/tmp/%s", binaryName), v)
 		log.Println("-> done 传输完毕...")
 	}
 
@@ -85,7 +86,7 @@ func upgradeKernelOfflineParallel(list []Server) {
 	log.Println("-> 批量安装更新...")
 	for _, v := range list {
 		wg.Add(1)
-		go func(server Server) {
+		go func(server run.Server) {
 			defer wg.Done()
 			re := server.RemoteShell(cmd)
 			ch <- re
@@ -95,7 +96,7 @@ func upgradeKernelOfflineParallel(list []Server) {
 	close(ch)
 
 	// ch -> slice
-	var as []ShellResult
+	var as []run.ShellResult
 	for target := range ch {
 		as = append(as, target)
 	}

@@ -1,4 +1,4 @@
-package cmd
+package install
 
 import (
 	"easyctl/asset"
@@ -11,7 +11,6 @@ import (
 func init() {
 	installDockerCmd.Flags().BoolVarP(&offline, "offline", "", false, "是否离线安装")
 	//installDockerCmd.MarkFlagRequired("offline")
-	installCmd.AddCommand(installDockerCmd)
 }
 
 // install docker

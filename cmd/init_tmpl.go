@@ -10,6 +10,7 @@ import (
 
 func init() {
 	initTmplCmd.AddCommand(initServerTmplCmd)
+	initTmplCmd.AddCommand(initKeepaliveTmplCmd)
 }
 
 // 初始化模板命令
@@ -26,6 +27,16 @@ var initServerTmplCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		tmpl, _ := asset.Asset("static/tmpl/server.yaml")
 		ioutil.WriteFile(fmt.Sprintf("%s/server.yaml", util.CurrentPath()), tmpl, 0644)
+	},
+	Args: cobra.NoArgs,
+}
+
+// init keepalive servers template
+var initKeepaliveTmplCmd = &cobra.Command{
+	Use: "keepalived [flags]",
+	Run: func(cmd *cobra.Command, args []string) {
+		tmpl, _ := asset.Asset("static/tmpl/keepalived.yaml")
+		ioutil.WriteFile(fmt.Sprintf("%s/keepalived.yaml", util.CurrentPath()), tmpl, 0644)
 	},
 	Args: cobra.NoArgs,
 }

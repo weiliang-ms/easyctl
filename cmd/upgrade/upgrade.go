@@ -1,13 +1,13 @@
-package cmd
+package upgrade
 
 import "github.com/spf13/cobra"
 
 func init() {
-	upgradeCmd.AddCommand(upgradeKernelCmd)
+	Cmd.AddCommand(upgradeKernelCmd)
 }
 
 // upgrade 命令
-var upgradeCmd = &cobra.Command{
+var Cmd = &cobra.Command{
 	Use:     "upgrade [OPTIONS] [flags]",
 	Short:   "upgrade soft through easyctl",
 	Example: "\neasyctl upgrade kernel --kernel-version=lt\n",

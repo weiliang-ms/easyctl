@@ -1,4 +1,4 @@
-package cmd
+package download
 
 import (
 	"easyctl/util"
@@ -20,17 +20,15 @@ var (
 
 func init() {
 
-	downloadCmd.AddCommand(downloadDockerCmd)
-	downloadCmd.AddCommand(downloadHarborCmd)
-	downloadCmd.AddCommand(downloadKernelCmd)
-	downloadCmd.AddCommand(downloadKeepaliveCmd)
-	downloadCmd.AddCommand(downloadDockerComposeCmd)
-	RootCmd.AddCommand(downloadCmd)
-
+	Cmd.AddCommand(downloadDockerCmd)
+	Cmd.AddCommand(downloadHarborCmd)
+	Cmd.AddCommand(downloadKernelCmd)
+	Cmd.AddCommand(downloadKeepaliveCmd)
+	Cmd.AddCommand(downloadDockerComposeCmd)
 }
 
 // add命令
-var downloadCmd = &cobra.Command{
+var Cmd = &cobra.Command{
 	Use:   "download [OPTIONS] [flags]",
 	Short: "download soft through easyctl",
 	Run: func(cmd *cobra.Command, args []string) {
