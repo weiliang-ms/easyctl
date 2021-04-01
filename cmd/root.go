@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"easyctl/cmd/download"
+	"easyctl/cmd/install"
 	"easyctl/cmd/set"
+	"easyctl/cmd/upgrade"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/util"
@@ -24,7 +27,9 @@ var RootCmd = &cobra.Command{
 func init() {
 	//RootCmd.AddCommand(install.RootCmd)
 	RootCmd.AddCommand(set.RootCmd)
-	RootCmd.AddCommand(upgradeCmd)
+	RootCmd.AddCommand(install.Cmd)
+	RootCmd.AddCommand(download.Cmd)
+	RootCmd.AddCommand(upgrade.Cmd)
 	RootCmd.AddCommand(initTmplCmd)
 }
 
