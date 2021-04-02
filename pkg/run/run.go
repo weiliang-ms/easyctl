@@ -69,6 +69,32 @@ func ParseServerList(yamlPath string) ServerList {
 	return serverList
 }
 
+func ParseKeepaliveList(yamlPath string) KeepaliveServerList {
+
+	var serverList KeepaliveServerList
+	if f, err := os.Open(yamlPath); err != nil {
+		log.Println("open yaml...")
+		log.Fatal(err)
+	} else {
+		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
+		if decodeErr != nil {
+			log.Println("decode failed...")
+			log.Fatal(decodeErr)
+		}
+	}
+
+	data, err := json.Marshal(serverList)
+
+	fmt.Println(string(data))
+	if err != nil {
+		log.Println("marshal failed...")
+		log.Fatal(err)
+	}
+
+	//log.Printf("%v",serverList)
+	return serverList
+}
+
 // 远程写文件
 func RemoteWriteFile(srcPath string, dstPath string, instance Server) {
 	// init sftp

@@ -19,7 +19,7 @@ const (
 
 func init() {
 	Cmd.AddCommand(installHarborCmd)
-	Cmd.AddCommand()
+	Cmd.AddCommand(keepaliveCmd)
 }
 
 //
