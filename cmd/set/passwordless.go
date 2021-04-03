@@ -1,0 +1,65 @@
+package set
+
+import (
+	"easyctl/asset"
+	"easyctl/pkg/run"
+	"fmt"
+	"github.com/spf13/cobra"
+	"log"
+	"os/user"
+)
+
+func init() {
+	setPasswordLessCmd.Flags().StringVarP(&serverListFile, "server-list", "", "server.yaml", "服务器列表")
+}
+
+// 主机互信
+var setPasswordLessCmd = &cobra.Command{
+	Use:     "password-less [flags]",
+	Short:   "easyctl set password-less --server-list=xxx",
+	Example: "\neasyctl set password-less --server-list=server.yaml",
+	//Aliases: []string{"pka"},
+	Args: cobra.ExactValidArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		passwordLess()
+	},
+}
+
+func passwordLess() {
+
+	local("生成互信文件", passwordScript())
+
+	// 解析主机列表
+	list := run.ParseServerList(serverListFile)
+
+	// 拷贝文件
+	u, _ := user.Current()
+	rsa := fmt.Sprintf("%s/.ssh/id_rsa", u.HomeDir)
+	rsaPub := fmt.Sprintf("%s/.ssh/id_rsa.pub", u.HomeDir)
+	authorizedKeys := fmt.Sprintf("%s/.ssh/authorized_keys", u.HomeDir)
+
+	for _, v := range list.Server {
+
+		v.RemoteShell(fmt.Sprintf("mkdir -p %s/.ssh", run.HomeDir(v)))
+
+		log.Printf("传输数据文件%s至%s...", rsa, v.Host)
+		run.RemoteWriteFile(rsa, fmt.Sprintf("%s/.ssh/id_rsa", run.HomeDir(v)), v, 0600)
+		log.Println("-> done 传输完毕...")
+
+		log.Printf("传输数据文件%s至%s...", rsa, v.Host)
+		run.RemoteWriteFile(rsaPub, fmt.Sprintf("%s/.ssh/id_rsa.pub", run.HomeDir(v)), v, 0600)
+		log.Println("-> done 传输完毕...")
+
+		log.Printf("传输数据文件%s至%s...", rsa, v.Host)
+		run.RemoteWriteFile(authorizedKeys, fmt.Sprintf("%s/.ssh/authorized_keys", run.HomeDir(v)), v, 0600)
+		log.Println("-> done 传输完毕...")
+	}
+
+	log.Println("主机免密配置完毕，请验证...")
+
+}
+
+func passwordScript() string {
+	script, _ := asset.Asset("static/script/set/passwordless.sh")
+	return string(script)
+}

@@ -50,7 +50,7 @@ func (yum *yum) setRepo() {
 	switch yumRepo {
 	case ali:
 		yum.setAliRepo()
-	case local:
+	case "local":
 		yum.setLocalRepo()
 	default:
 		log.Fatal("暂不支持")

@@ -1,32 +1,52 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [easyctl](#easyctl)
+  - [安装](#%E5%AE%89%E8%A3%85)
+- [指令集](#%E6%8C%87%E4%BB%A4%E9%9B%86)
+  - [add](#add)
+    - [user](#user)
+  - [close](#close)
+    - [firewalld](#firewalld)
+    - [selinux](#selinux)
+  - [install](#install)
+    - [keepalive](#keepalive)
+      - [离线](#%E7%A6%BB%E7%BA%BF)
+  - [安装docker](#%E5%AE%89%E8%A3%85docker)
+  - [安装nginx](#%E5%AE%89%E8%A3%85nginx)
+  - [安装redis](#%E5%AE%89%E8%A3%85redis)
+- [search指令集](#search%E6%8C%87%E4%BB%A4%E9%9B%86)
+  - [端口监听查询](#%E7%AB%AF%E5%8F%A3%E7%9B%91%E5%90%AC%E6%9F%A5%E8%AF%A2)
+- [set指令集](#set%E6%8C%87%E4%BB%A4%E9%9B%86)
+  - [yum镜像源](#yum%E9%95%9C%E5%83%8F%E6%BA%90)
+  - [yum代理配置](#yum%E4%BB%A3%E7%90%86%E9%85%8D%E7%BD%AE)
+  - [dns](#dns)
+    - [可选参数](#%E5%8F%AF%E9%80%89%E5%8F%82%E6%95%B0)
+    - [命令格式](#%E5%91%BD%E4%BB%A4%E6%A0%BC%E5%BC%8F)
+    - [使用样例](#%E4%BD%BF%E7%94%A8%E6%A0%B7%E4%BE%8B)
+  - [password-less](#password-less)
+    - [可选参数](#%E5%8F%AF%E9%80%89%E5%8F%82%E6%95%B0-1)
+    - [命令格式](#%E5%91%BD%E4%BB%A4%E6%A0%BC%E5%BC%8F-1)
+    - [使用样例](#%E4%BD%BF%E7%94%A8%E6%A0%B7%E4%BE%8B-1)
+  - [timezone](#timezone)
+    - [可选参数](#%E5%8F%AF%E9%80%89%E5%8F%82%E6%95%B0-2)
+    - [命令格式](#%E5%91%BD%E4%BB%A4%E6%A0%BC%E5%BC%8F-2)
+    - [使用样例](#%E4%BD%BF%E7%94%A8%E6%A0%B7%E4%BE%8B-2)
+  - [配置主机名](#%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E5%90%8D)
+  - [upgrade 命令](#upgrade-%E5%91%BD%E4%BB%A4)
+    - [内核](#%E5%86%85%E6%A0%B8)
+      - [离线](#%E7%A6%BB%E7%BA%BF-1)
+  - [todo](#todo)
+  - [开源项目](#%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # easyctl
 
 基于golang轻量级运维工具集
 
-** 适用平台：** `CentOS6` | `CentOS7`
-
-# 总览
-
-- [安装](#安装)
-
-- [命令]()
-  * [add 添加](#add指令集)
-    * [user 用户](#创建用户)
-  * [close 关闭](#close指令集)
-    * [firewalld](#关闭防火墙)
-    * [selinux](#关闭selinux)
-  * [install 安装](#install指令集)
-    * [docker](#安装docker)
-    * [nginx](#安装nginx)
-    * [redis](#安装redis)
-  * [set 设置](#set指令集)
-    * [dns 域名解析](#配置dns域名解析)
-    * [hosname 主机名](#配置主机名)
-    * [timezone 时区](#配置时区)
-    * [yum 镜像源](#yum镜像源)
-  * [search 查询](#search指令集)
-    * [port 端口监听](#端口监听查询)
-- [TODO](#todo)
-- [开源项目](#开源项目)
+** 适用平台：** `CentOS7`
 
 
 ## 安装
@@ -51,7 +71,7 @@
     ./easyctl completion bash > /etc/bash_completion.d/easyctl
     source <(./easyctl completion bash)
 
-# 命令介绍
+# 指令集
 
     Usage:
       easyctl [command] [flags]
@@ -65,9 +85,9 @@
     Flags:
       -h, --help   help for easyctl
 
-# add指令集
+## add
 
-## 创建用户
+### user
 
 > 添加用户
 
@@ -79,9 +99,9 @@
 
     easyctl add -u username --no-login
 
-# close指令集
+## close
 
-## 关闭firewalld
+### firewalld
 
 > 格式
 
@@ -99,7 +119,7 @@
 
     easyctl close firewalld -f
 
-## 关闭selinux
+### selinux
 
 > 格式
 
@@ -117,7 +137,7 @@
 
     easyctl close selinux -f
     
-# install指令集
+## install
 
 ### keepalive
 
@@ -290,27 +310,247 @@ flag
 
 待添加
     
-## 配置dns域名解析
+## dns
 
-> 命令格式
+### 可选参数
 
-    easyctl set dns dns地址
-
-> 使用样例
-
-    easyctl set dns 114.114.114.114
+    [root@localhost ~]# ./easyctl set dns -h
+    easyctl set dns --value
     
-## 配置时区
+    Usage:
+      easyctl set dns [flags]
+    
+    Examples:
+    
+    easyctl set dns --value=8.8.8.8
+    
+    Flags:
+      -h, --help                 help for dns
+          --multi-node           是否配置多节点
+          --server-list string   服务器列表 (default "server.yaml")
+      -v, --value string         dns 地址...
 
-> 使用样例
+### 命令格式
+
+> 单节点
+
+    easyctl set dns -v x.x.x.x
+    
+> 多节点
+
+    easyctl set dns -v x.x.x.x --multi-node
+
+### 使用样例
+
+> 单节点
+
+配置当前主机`dns`
+
+    easyctl set dns -v 8.8.8.8
+    
+> 多节点
+
+生成`server.yaml`模板文件
+
+    ./easyctl init-tmpl server
+    
+调整`server.yaml`内容（默认内容如下：）
+
+    server:
+      - host: 192.168.235.129
+        username: root
+        password: 1
+        port: 22
+      - host: 192.168.235.130
+        username: root
+        password: 1
+        port: 22
+
+配置主机列表内的主机`dns`
+
+    ./easyctl set dns -v 7.7.7.7 --multi-node
+  
+成功返回  
+    
+    2021/04/03 02:00:21 <- call back 192.168.235.129
+     [dns] 配置成功...
+    [dns] 当前dns列表:
+    nameserver 114.114.114.114
+    nameserver 7.7.7.7
+    2021/04/03 02:00:21 <- call back 192.168.235.130
+     [dns] 配置成功...
+    [dns] 当前dns列表:
+    nameserver 114.114.114.114
+    nameserver 7.7.7.7
+    2021/04/03 02:00:21 执行结果如下：
+    +-----------------+----------------+------+---------+
+    | Host            | Cmd            | Code | Status  |
+    +-----------------+----------------+------+---------+
+    | 192.168.235.129 | built-in shell | 0    | success |
+    | 192.168.235.130 | built-in shell | 0    | success |
+    +-----------------+----------------+------+---------+
+
+## password-less
+
+配置主机间ssh免密登录
+
+### 可选参数
+
+    easyctl set password-less -h
+    easyctl set password-less --server-list=xxx
+    
+    Usage:
+      easyctl set password-less [flags]
+    
+    Examples:
+    
+    easyctl set password-less --server-list=server.yaml
+    
+    Flags:
+      -h, --help                 help for password-less
+          --server-list string   服务器列表 (default "server.yaml")
+
+
+### 命令格式
+
+    easyctl set password-less
+
+### 使用样例
+
+> 生成`server.yaml`模板文件
+
+    ./easyctl init-tmpl server
+    
+> 调整`server.yaml`内容（默认内容如下：）
+
+    server:
+      - host: 192.168.235.129
+        username: root
+        password: 1
+        port: 22
+      - host: 192.168.235.130
+        username: root
+        password: 1
+        port: 22
+
+配置主机列表内的主机间免密访问
+
+    easyctl set password-less
+  
+成功返回  
+    
+    
+    2021/04/03 15:50:40 生成互信文件
+    2021/04/03 15:50:40 -> [192.168.235.129] shell => mkdir -p /root/.ssh
+    2021/04/03 15:50:40 <- call back 192.168.235.129
+  
+    2021/04/03 15:50:40 传输数据文件/root/.ssh/id_rsa至192.168.235.129...
+    2021/04/03 15:50:40 -> transfer /root/.ssh/id_rsa to 192.168.235.129
+    1.64 KiB / 1.64 KiB [==========================================================| 0s ] 0.00 b/s
+    2021/04/03 15:50:40 -> done 传输完毕...
+    2021/04/03 15:50:40 传输数据文件/root/.ssh/id_rsa至192.168.235.129...
+    2021/04/03 15:50:40 -> transfer /root/.ssh/id_rsa.pub to 192.168.235.129
+    408.00 b / 408.00 b [==========================================================| 0s ] 0.00 b/s
+    2021/04/03 15:50:40 -> done 传输完毕...
+    2021/04/03 15:50:40 传输数据文件/root/.ssh/id_rsa至192.168.235.129...
+    2021/04/03 15:50:40 -> transfer /root/.ssh/authorized_keys to 192.168.235.129
+    408.00 b / 408.00 b [==========================================================| 0s ] 0.00 b/s
+    2021/04/03 15:50:40 -> done 传输完毕...
+    2021/04/03 15:50:40 -> [192.168.235.130] shell => mkdir -p /root/.ssh
+    2021/04/03 15:50:40 <- call back 192.168.235.130
+    
+    2021/04/03 15:50:40 传输数据文件/root/.ssh/id_rsa至192.168.235.130...
+    2021/04/03 15:50:40 -> transfer /root/.ssh/id_rsa to 192.168.235.130
+    1.64 KiB / 1.64 KiB [==========================================================| 0s ] 0.00 b/s
+    2021/04/03 15:50:40 -> done 传输完毕...
+    2021/04/03 15:50:40 传输数据文件/root/.ssh/id_rsa至192.168.235.130...
+    2021/04/03 15:50:40 -> transfer /root/.ssh/id_rsa.pub to 192.168.235.130
+    408.00 b / 408.00 b [==========================================================| 0s ] 0.00 b/s
+    2021/04/03 15:50:40 -> done 传输完毕...
+    2021/04/03 15:50:40 传输数据文件/root/.ssh/id_rsa至192.168.235.130...
+    2021/04/03 15:50:40 -> transfer /root/.ssh/authorized_keys to 192.168.235.130
+    408.00 b / 408.00 b [==========================================================| 0s ] 0.00 b/s
+    2021/04/03 15:50:40 -> done 传输完毕...
+    2021/04/03 15:50:40 主机免密配置完毕，请验证...
+    
+## timezone
+
+默认配置时区为`上海`，暂不支持可选时区
+
+### 可选参数
+
+    easyctl set tz/timezone [value]
+    
+    Usage:
+      easyctl set timezone [flags]
+    
+    Aliases:
+      timezone, tz
+    
+    Examples:
+    
+    easyctl set tz/timezone
+    
+    Flags:
+      -h, --help                 help for timezone
+          --multi-node           是否配置多节点
+          --server-list string   服务器列表 (default "server.yaml")
+      -v, --value string         时区 (default "Asia/Shanghai")
+
+### 命令格式
+
+> 单节点
 
     easyctl set timezone
     
-或
+> 多节点
 
-    easyctl set tz
+    easyctl set timezone --multi-node
+
+### 使用样例
+
+> 单节点
+
+配置当前主机时区
+
+    easyctl set timezone
     
-默认配置时区为`上海`，暂不支持可选时区
+> 多节点
+
+生成`server.yaml`模板文件
+
+    ./easyctl init-tmpl server
+    
+调整`server.yaml`内容（默认内容如下：）
+
+    server:
+      - host: 192.168.235.129
+        username: root
+        password: 1
+        port: 22
+      - host: 192.168.235.130
+        username: root
+        password: 1
+        port: 22
+
+配置主机列表内的主机时区
+
+    ./easyctl set timezone --multi-node
+  
+成功返回  
+    
+    2021/04/03 14:51:47 <- call back 192.168.235.129
+    
+    2021/04/03 14:51:47 <- call back 192.168.235.130
+    
+    2021/04/03 14:51:47 执行结果如下：
+    +-----------------+---------------------------------------------------------+------+---------+
+    | Host            | Cmd                                                     | Code | Status  |
+    +-----------------+---------------------------------------------------------+------+---------+
+    | 192.168.235.129 | \cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime -R | 0    | success |
+    | 192.168.235.130 | \cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime -R | 0    | success |
+    +-----------------+---------------------------------------------------------+------+---------+
+
 
 ## 配置主机名
 

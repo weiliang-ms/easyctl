@@ -1,9 +1,9 @@
 server:
-  - host: 192.168.239.133
+  - host: 192.168.235.129
     username: root
-    password: 123456
+    password: 1
     port: 22
-  - host: 192.168.239.134
+  - host: 192.168.235.130
     username: root
-    password: 123456
+    password: 1
     port: 22
