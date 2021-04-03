@@ -50,11 +50,11 @@ func keepaliveOffline() {
 
 	for _, v := range list {
 		log.Printf("传输数据文件%s至%s...", dstPath, v.Host)
-		run.RemoteWriteFile(offlineFilePath, dstPath, v)
+		run.RemoteWriteFile(offlineFilePath, dstPath, v, 0755)
 		log.Println("-> done 传输完毕...")
 
 		log.Printf("传输数据文件%s至%s:/tmp/%s...", "keepalived.sh", v.Host, "keepalived.sh")
-		run.RemoteWriteFile("keepalived.sh", fmt.Sprintf("/tmp/%s", "keepalived.sh"), v)
+		run.RemoteWriteFile("keepalived.sh", fmt.Sprintf("/tmp/%s", "keepalived.sh"), v, 0755)
 		log.Println("-> done 传输完毕...")
 	}
 

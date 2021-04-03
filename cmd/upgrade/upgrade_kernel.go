@@ -71,11 +71,11 @@ func upgradeKernelOfflineParallel(list []run.Server) {
 
 	for _, v := range list {
 		log.Printf("传输数据文件%s至%s...", dstPath, v.Host)
-		run.RemoteWriteFile(offlineFilePath, dstPath, v)
+		run.RemoteWriteFile(offlineFilePath, dstPath, v, 0755)
 		log.Println("-> done 传输完毕...")
 
 		log.Printf("传输数据文件%s至%s:/tmp/%s...", binaryName, v.Host, binaryName)
-		run.RemoteWriteFile(binaryName, fmt.Sprintf("/tmp/%s", binaryName), v)
+		run.RemoteWriteFile(binaryName, fmt.Sprintf("/tmp/%s", binaryName), v, 0755)
 		log.Println("-> done 传输完毕...")
 	}
 

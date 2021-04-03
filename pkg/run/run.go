@@ -96,7 +96,7 @@ func ParseKeepaliveList(yamlPath string) KeepaliveServerList {
 }
 
 // 远程写文件
-func RemoteWriteFile(srcPath string, dstPath string, instance Server) {
+func RemoteWriteFile(srcPath string, dstPath string, instance Server, mode os.FileMode) {
 	// init sftp
 	sftp, err := sftpConnect(instance.Username, instance.Password, instance.Host, instance.Port)
 	if err != nil {
@@ -105,7 +105,7 @@ func RemoteWriteFile(srcPath string, dstPath string, instance Server) {
 
 	log.Printf("-> transfer %s to %s", srcPath, instance.Host)
 	dstFile, err := sftp.Create(dstPath)
-	sftp.Chmod(dstPath, 0755)
+	sftp.Chmod(dstPath, mode)
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -193,7 +193,11 @@ func (server Server) RemoteShellReturnStd(cmd string) string {
 func (server Server) RemoteShell(cmd string) ShellResult {
 
 	var resulft ShellResult
-	resulft.Cmd = cmd
+	if len(cmd) < 60 {
+		resulft.Cmd = cmd
+	} else {
+		resulft.Cmd = "built-in shell"
+	}
 	resulft.Host = server.Host
 
 	log.Printf("-> [%s] shell => %s", server.Host, cmd)
@@ -296,9 +300,16 @@ func Shell(command string) (re ExecResult) {
 
 	// 等待命令执行完
 	cmd.Wait()
-
 	re.ExitCode = cmd.ProcessState.ExitCode()
-
 	return re
+}
 
+// /root or /home/username
+func HomeDir(server Server) string {
+	switch server.Username {
+	case "root":
+		return "/root"
+	default:
+		return fmt.Sprintf("/home/%s", server.Username)
+	}
 }
