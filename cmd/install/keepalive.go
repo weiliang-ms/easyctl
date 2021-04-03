@@ -91,6 +91,4 @@ func keepaliveOffline() {
 	// 表格输出
 	log.Println("执行结果如下：")
 	table.OutputA(as)
-
-	log.Println("-> 重启主机生效...")
 }
