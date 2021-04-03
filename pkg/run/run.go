@@ -96,7 +96,7 @@ func ParseKeepaliveList(yamlPath string) KeepaliveServerList {
 }
 
 // 远程写文件
-func RemoteWriteFile(srcPath string, dstPath string, instance Server, mode os.FileMode) {
+func ScpFile(srcPath string, dstPath string, instance Server, mode os.FileMode) {
 	// init sftp
 	sftp, err := sftpConnect(instance.Username, instance.Password, instance.Host, instance.Port)
 	if err != nil {
@@ -142,6 +142,26 @@ func RemoteWriteFile(srcPath string, dstPath string, instance Server, mode os.Fi
 
 	defer f.Close()
 	defer proxyReader.Close()
+	defer dstFile.Close()
+
+}
+
+func RemoteWriteFile(b []byte, dstPath string, instance Server, mode os.FileMode) {
+	// init sftp
+	sftp, err := sftpConnect(instance.Username, instance.Password, instance.Host, instance.Port)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	dstFile, err := sftp.Create(dstPath)
+	sftp.Chmod(dstPath, mode)
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	dstFile.Write(b)
+
 	defer dstFile.Close()
 
 }

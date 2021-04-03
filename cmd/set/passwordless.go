@@ -5,6 +5,7 @@ import (
 	"easyctl/pkg/run"
 	"fmt"
 	"github.com/spf13/cobra"
+	"io/ioutil"
 	"log"
 	"os/user"
 )
@@ -34,9 +35,10 @@ func passwordLess() {
 
 	// 拷贝文件
 	u, _ := user.Current()
-	rsa := fmt.Sprintf("%s/.ssh/id_rsa", u.HomeDir)
-	rsaPub := fmt.Sprintf("%s/.ssh/id_rsa.pub", u.HomeDir)
-	authorizedKeys := fmt.Sprintf("%s/.ssh/authorized_keys", u.HomeDir)
+
+	rsa, _ := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/id_rsa", u.HomeDir))
+	rsaPub, _ := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/id_rsa.pub", u.HomeDir))
+	authorizedKeys, _ := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/authorized_keys", u.HomeDir))
 
 	for _, v := range list.Server {
 
