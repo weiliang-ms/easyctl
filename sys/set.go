@@ -2,7 +2,6 @@ package sys
 
 import (
 	"fmt"
-	"github.com/weiliang-ms/easyctl/constant"
 	"github.com/weiliang-ms/easyctl/util"
 	"log"
 	"os"
@@ -45,11 +44,11 @@ func SetNginxMirror() {
 		fmt.Println(err.Error())
 	}
 
-	_, nginxRepoFileWriteErr := nginxRepoFile.Write([]byte(constant.CentOSNginxMirrorContent))
-	if nginxRepoFileWriteErr != nil {
-		fmt.Println(nginxRepoFileWriteErr.Error())
-		fmt.Println("[failed] " + nginxRepoFileWriteErrMsg)
-	}
+	//_, nginxRepoFileWriteErr := nginxRepoFile.Write([]byte(constant.CentOSNginxMirrorContent))
+	//if nginxRepoFileWriteErr != nil {
+	//	fmt.Println(nginxRepoFileWriteErr.Error())
+	//	fmt.Println("[failed] " + nginxRepoFileWriteErrMsg)
+	//}
 
 	cleanYUMCacheCmd := "yum clean all"
 	fmt.Printf("[clean] 清除yum缓存...\n")

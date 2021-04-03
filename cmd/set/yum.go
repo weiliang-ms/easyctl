@@ -1,109 +1,54 @@
 package set
 
 import (
-	"easyctl/constant"
-	"easyctl/util"
-	"fmt"
+	"github.com/spf13/cobra"
+	"io/ioutil"
 	"log"
 	"os"
 )
 
-const (
-	parseYumServerListFile = "解析配置Yum的主机列表"
-	backupYumRepoConfig    = "备份原有yum仓储文件"
-	mountImageMsg          = "挂载系统iso镜像"
-	cleanYumCacheMsg       = "清除yum缓存"
-)
-
-type yum struct {
-	serverList []util.Server
+// 配置yum repo
+var setYumRepoCmd = &cobra.Command{
+	Use:     "yum-repo",
+	Short:   "easyctl set yum-repo [flags]",
+	Example: "\neasyctl set yum-repo",
+	Run: func(cmd *cobra.Command, args []string) {
+		setYumRepo()
+	},
 }
 
-func (yum *yum) setYum() {
-	yum.getServerList()
-	yum.parseFlags()
+func init() {
+	setYumRepoCmd.Flags().BoolVarP(&aliRepo, "ali-repo", "", false, "阿里云镜像源yum仓库")
+	setYumRepoCmd.Flags().BoolVarP(&tsinghuaRepo, "tsinghua-repo", "", false, "清华镜像源yum仓库")
+	setYumRepoCmd.Flags().BoolVarP(&multiNode, "multi-node", "", false, "是否配置多节点")
+	setYumRepoCmd.Flags().StringVarP(&serverListFile, "server-list", "", "server.yaml", "服务器列表")
 }
 
-func (yum *yum) parseFlags() {
-	if yumRepo != "" {
-		yum.setRepo()
+// 配置yum repo
+func setYumRepo() {
+	if !multiNode {
+		setLocalYumRepo()
 	}
 }
 
-// docker server list赋值
-func (yum *yum) getServerList() {
-	if yumServerListFile != "" {
-		if _, err := os.Stat(yumServerListFile); err == nil {
-			util.PrintDirectBanner([]string{"parse"}, parseYumServerListFile)
-			yum.serverList = util.ParseServerList(yumServerListFile).YumServerList
-			for _, v := range yum.serverList {
-				fmt.Printf("Host=%s Port=%s Username=%s Password=%s\n",
-					v.Host, v.Port, v.Username, v.Password)
+// 配置yum repo
+func setLocalYumRepo() {
+	//var re run.ExecResult
+
+	// backup repo file
+	repoDir := "/etc/yum.repos.d/"
+	os.MkdirAll(repoDir+"bak", 0644)
+	log.Println("开始备份，yum仓库配置文件...")
+	files, _ := ioutil.ReadDir(repoDir)
+	for _, f := range files {
+		if !f.IsDir() {
+			oldpath := repoDir + f.Name()
+			newPath := repoDir + "bak/" + f.Name()
+			log.Printf("%s => %s", oldpath, newPath)
+			err := os.Rename(oldpath, newPath)
+			if err != nil {
+				log.Fatal(err.Error())
 			}
-		} else {
-			log.Fatal(err.Error())
 		}
-	}
-}
-
-func (yum *yum) setRepo() {
-	switch yumRepo {
-	case ali:
-		yum.setAliRepo()
-	case "local":
-		yum.setLocalRepo()
-	default:
-		log.Fatal("暂不支持")
-	}
-
-	// 清除缓存
-	yum.cleanCache()
-}
-
-// 备份原有
-func (yum *yum) backupRepo() {
-	yum.shell(constant.BackupYumRepoCmd, backupYumRepoConfig)
-}
-
-// 配置阿里云仓库
-func (yum *yum) setAliRepo() {
-	yum.backupRepo()
-	// base
-	util.WriteFile(constant.AliBaseRepoPath, []byte(constant.CentOSAliBaseYumContent), yum.serverList)
-	// epel
-	util.WriteFile(constant.AliEpelRepoPath, []byte(constant.CentOSAliEpelYumContent), yum.serverList)
-}
-
-func (yum *yum) setLocalRepo() {
-	yum.backupRepo()
-	yum.mountImage()
-	// base
-	util.WriteFile(constant.YumLocalRepoPath, []byte(constant.CentOSLocalYumContent), yum.serverList)
-}
-
-// 挂载镜像
-func (yum *yum) mountImage() {
-	cmd := fmt.Sprintf("mount -o loop %s /media", imageFilePath)
-	yum.shell(cmd, mountImageMsg)
-}
-
-// 清除缓存
-func (yum *yum) cleanCache() {
-	yum.shell(constant.CleanYumCacheCmd, cleanYumCacheMsg)
-}
-
-// shell
-func (yum *yum) shell(cmd string, msg string) {
-	util.Shell{
-		Cmd:        cmd,
-		ServerList: yum.serverList,
-		Banner:     yum.returnBanner(msg),
-	}.Shell()
-}
-
-func (yum *yum) returnBanner(msg string) util.Banner {
-	return util.Banner{
-		Symbols: nil,
-		Msg:     msg,
 	}
 }
