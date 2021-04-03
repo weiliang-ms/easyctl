@@ -119,6 +119,62 @@
     
 # install指令集
 
+### keepalive
+
+安装keepalived
+
+#### 离线
+
+> 1.下载`keepalived`离线仓库
+
+联网主机下执行以下命令:
+
+    sudo docker pull xzxwl/keepalived-repo:latest
+    sudo docker run -idt --name keepalived xzxwl/keepalived-repo:latest /bin/bash
+    sudo docker cp keepalived:/keepalived.tar.gz ./
+    sudo docker rm -f keepalived
+    
+> 2.安装
+
+初始化生成`server`模板
+
+    ./easyctl init-tmpl keepalived
+    
+修改`keepalived.yaml`文件内容
+
+    # 虚拟IP
+    vip: 192.168.235.150
+    # 网卡名称
+    interface: ens33
+    server:
+      - host: 192.168.235.129
+        username: root
+        password: 1
+        port: 22
+      - host: 192.168.235.130
+        username: root
+        password: 1
+        port: 22
+
+执行安装
+
+    ./easyctl install keepalived --offline --offline-file=keepalived.tar.gz --server-list=keepalived.yaml
+    
+安装结果
+
+    ...
+    omplete!
+    [keepalived] config keepalived...
+    [keepalived] boot keepalived...
+    Created symlink from /etc/systemd/system/multi-user.target.wants/keepalived.service to /usr/lib/systemd/system/keepalived.service.
+    2021/04/02 05:44:56 执行结果如下：
+    +-----------------+------------------------------------------------------------------------------------------+------+---------+
+    | Host            | Cmd                                                                                      | Code | Status  |
+    +-----------------+------------------------------------------------------------------------------------------+------+---------+
+    | 192.168.235.129 | /tmp/keepalived.sh ens33 192.168.235.129 192.168.235.130 192.168.235.150 192.168.235.129 | 0    | success |
+    | 192.168.235.130 | /tmp/keepalived.sh ens33 192.168.235.129 192.168.235.130 192.168.235.150 192.168.235.130 | 0    | success |
+    +-----------------+------------------------------------------------------------------------------------------+------+---------+
+
 ## 安装docker
 
 > 格式
