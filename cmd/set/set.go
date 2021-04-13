@@ -1,7 +1,7 @@
 package set
 
 import (
-	"easyctl/pkg/run"
+	"easyctl/pkg/runner"
 	"flag"
 	"fmt"
 	"github.com/modood/table"
@@ -39,26 +39,26 @@ func init() {
 
 // 单机本地
 func local(msg string, cmd string) {
-	var re run.ExecResult
+	var re runner.ExecResult
 	log.Println(msg)
-	re = run.Shell(cmd)
+	re = runner.Shell(cmd)
 	if re.ExitCode != 0 {
 		log.Fatal(re.StdErr)
 	}
 }
 
 // 跨服务器多节点
-func multiShell(list run.ServerList, cmd string) {
+func multiShell(list runner.ServerList, cmd string) {
 	var wg sync.WaitGroup
 
-	ch := make(chan run.ShellResult, len(list.Server))
+	ch := make(chan runner.ShellResult, len(list.Server))
 
 	// 拷贝文件
 	binaryName := "easyctl"
 
 	for _, v := range list.Server {
 		log.Printf("传输数据文件%s至%s:/tmp/%s...", binaryName, v.Host, binaryName)
-		run.ScpFile(binaryName, fmt.Sprintf("/tmp/%s", binaryName), v, 0755)
+		runner.ScpFile(binaryName, fmt.Sprintf("/tmp/%s", binaryName), v, 0755)
 		log.Println("-> done 传输完毕...")
 	}
 
@@ -66,7 +66,7 @@ func multiShell(list run.ServerList, cmd string) {
 	log.Println("-> 批量配置...")
 	for _, v := range list.Server {
 		wg.Add(1)
-		go func(server run.Server) {
+		go func(server runner.Server) {
 			defer wg.Done()
 			re := server.RemoteShell(cmd)
 			ch <- re
@@ -76,7 +76,7 @@ func multiShell(list run.ServerList, cmd string) {
 	close(ch)
 
 	// ch -> slice
-	var as []run.ShellResult
+	var as []runner.ShellResult
 	for target := range ch {
 		as = append(as, target)
 	}

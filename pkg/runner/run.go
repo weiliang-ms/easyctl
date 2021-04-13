@@ -1,4 +1,4 @@
-package run
+package runner
 
 import (
 	"bufio"
@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v2"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -165,6 +166,43 @@ func RemoteWriteFile(b []byte, dstPath string, instance Server, mode os.FileMode
 	defer dstFile.Close()
 
 }
+
+func (server Server)WriteRemoteFile(b []byte, dstPath string, mode os.FileMode) {
+	// init sftp
+	sftp, err := sftpConnect(server.Username, server.Password, server.Host, server.Port)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	dstFile, err := sftp.Create(dstPath)
+	sftp.Chmod(dstPath, mode)
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	dstFile.Write(b)
+
+	defer dstFile.Close()
+
+}
+
+// 移动目录下文件至新目录
+func (server Server)MoveDirFiles(srcDir string, dstDir string) {
+	files, _ := ioutil.ReadDir(srcDir)
+	for _, f := range files {
+		if !f.IsDir() {
+			oldpath := srcDir + f.Name()
+			newPath := dstDir + "/" + f.Name()
+			log.Printf("%s => %s", oldpath, newPath)
+			err := os.Rename(oldpath, newPath)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+		}
+	}
+}
+
 
 func sftpConnect(user, password, host string, port string) (sftpClient *sftp.Client, err error) { //参数: 远程服务器用户名, 密码, ip, 端口
 	auth := make([]ssh.AuthMethod, 0)

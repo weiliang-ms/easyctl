@@ -1,7 +1,7 @@
 package set
 
 import (
-	"easyctl/pkg/run"
+	"easyctl/pkg/runner"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -38,7 +38,7 @@ func setLocalTZ() {
 }
 
 func setMultiNodeTZ() {
-	list := run.ParseServerList(serverListFile)
+	list := runner.ParseServerList(serverListFile)
 	multiShell(list, timezoneScript())
 }
 
