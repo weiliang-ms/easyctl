@@ -280,31 +280,87 @@ flag
 
     easyctl search port 22
 
-# set指令集
+## set
 
 使用方式：easyctl set [options] [flags] 
 
-## yum镜像源
+### yum-repo
 
+> 可选参数
 
-> 配置阿里云yum镜像源
-
-    easyctl set yum --repo=ali
+    [root@localhost ~]# ./easyctl set yum-repo -h
+    easyctl set yum-repo [flags]
     
-或
-
-    easyctl set yum -r=ali
+    Usage:
+      easyctl set yum-repo [flags]
     
-> 配置本地镜像源（需手动挂载镜像至/media下：mount -o loop CentOS-7-x86_64-DVD-1908.iso /media）
-
-
-    easyctl set yum --repo=local
+    Examples:
     
-或
+    easyctl set yum-repo
+    
+    Flags:
+          --ali-repo             阿里云镜像源yum仓库
+      -h, --help                 help for yum-repo
+          --multi-node           是否配置多节点
+          --server-list string   服务器列表 (default "server.yaml")
 
-    easyctl set yum -r=local
- 
+> 命令格式
+
+- 单节点
+
+
+    easyctl set yum-repo --ali-repo
+    
+- 多节点
+
+
+    easyctl set yum-repo --ali-repo --multi-node
+
+> 使用样例
+
+#### 单节点
+
+
+配置阿里云yum源
+
+    easyctl set yum-repo --ali-repo
+    
+成功返回
+
+    [root@localhost ~]# ./easyctl set yum-repo --ali-repo
+    2021/04/04 10:20:01 开始备份，yum仓库配置文件...
+    2021/04/04 10:20:01 /etc/yum.repos.d/ali-base.repo => /etc/yum.repos.d/bak/ali-base.repo
+    2021/04/04 10:20:01 /etc/yum.repos.d/ali-epel.repo => /etc/yum.repos.d/bak/ali-epel.repo
+    2021/04/04 10:20:01 write repo config file -> /etc/yum.repos.d/ali-base.repo
+    2021/04/04 10:20:01 write repo config file -> /etc/yum.repos.d/ali-epel.repo
+    2021/04/04 10:20:01 配置yum repo成功...
+    
+#### 多节点
+
+配置阿里云yum源
+    - 生成`server.yaml`模板文件:
+    
+     `./easyctl init-tmpl server`
+    
+- 调整`server.yaml`内容（默认内容如下：）
+    
+
+    server:
+      - host: 192.168.235.129
+        username: root
+        password: 1
+        port: 22
+      - host: 192.168.235.130
+        username: root
+        password: 1
+        port: 22
+
+配置主机列表内的主机`yum repo`
+
+    ./easyctl set yum-repo --ali-repo --multi-node
+  
 ## yum代理配置
+
 
 > 配置yum代理
 

@@ -2,7 +2,7 @@ package upgrade
 
 import (
 	"easyctl/asset"
-	"easyctl/pkg/run"
+	"easyctl/pkg/runner"
 	"fmt"
 	"github.com/modood/table"
 	"github.com/spf13/cobra"
@@ -42,7 +42,7 @@ func upgradeKernel() {
 		upgradeKernelOffline(offlineFilePath)
 	}
 	if offline && serverListFile != "" {
-		list := run.ParseServerList(serverListFile).Server
+		list := runner.ParseServerList(serverListFile).Server
 		table.OutputA(list)
 		// todo: 确认交互
 		upgradeKernelOfflineParallel(list)
@@ -51,31 +51,31 @@ func upgradeKernel() {
 
 // 单机本地离线
 func upgradeKernelOffline(filePath string) {
-	var re run.ExecResult
+	var re runner.ExecResult
 	script, _ := asset.Asset("static/script/upgrade_kernel.sh")
 	log.Printf("开始升级安装%s...\n", kernel)
-	re = run.Shell(fmt.Sprintf("version=%s filepath=%s %s", kernelVersion, filePath, string(script)))
+	re = runner.Shell(fmt.Sprintf("version=%s filepath=%s %s", kernelVersion, filePath, string(script)))
 	if re.ExitCode != 0 {
 		log.Fatal(re.StdErr)
 	}
 }
 
-func upgradeKernelOfflineParallel(list []run.Server) {
+func upgradeKernelOfflineParallel(list []runner.Server) {
 
 	var wg sync.WaitGroup
-	ch := make(chan run.ShellResult, len(list))
+	ch := make(chan runner.ShellResult, len(list))
 
 	// 拷贝文件
 	dstPath := fmt.Sprintf("/tmp/kernel-%s.tar.gz", kernelVersion)
 	binaryName := "easyctl"
 
 	for _, v := range list {
-		log.Printf("传输数据文件%s至%s...", dstPath, v.Host)
-		run.ScpFile(offlineFilePath, dstPath, v, 0755)
+		log.Printf("传输数据文件%s至%s:/tmp/kernel-%s.tar.gz...", dstPath, v.Host, kernelVersion)
+		runner.ScpFile(offlineFilePath, dstPath, v, 0755)
 		log.Println("-> done 传输完毕...")
 
 		log.Printf("传输数据文件%s至%s:/tmp/%s...", binaryName, v.Host, binaryName)
-		run.ScpFile(binaryName, fmt.Sprintf("/tmp/%s", binaryName), v, 0755)
+		runner.ScpFile(binaryName, fmt.Sprintf("/tmp/%s", binaryName), v, 0755)
 		log.Println("-> done 传输完毕...")
 	}
 
@@ -86,7 +86,7 @@ func upgradeKernelOfflineParallel(list []run.Server) {
 	log.Println("-> 批量安装更新...")
 	for _, v := range list {
 		wg.Add(1)
-		go func(server run.Server) {
+		go func(server runner.Server) {
 			defer wg.Done()
 			re := server.RemoteShell(cmd)
 			ch <- re
@@ -96,7 +96,7 @@ func upgradeKernelOfflineParallel(list []run.Server) {
 	close(ch)
 
 	// ch -> slice
-	var as []run.ShellResult
+	var as []runner.ShellResult
 	for target := range ch {
 		as = append(as, target)
 	}

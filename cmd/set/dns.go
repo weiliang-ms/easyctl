@@ -2,7 +2,7 @@ package set
 
 import (
 	"easyctl/asset"
-	"easyctl/pkg/run"
+	"easyctl/pkg/runner"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -39,7 +39,7 @@ func setLocalDNS() {
 }
 
 func setMultiNodeDNS() {
-	list := run.ParseServerList(serverListFile)
+	list := runner.ParseServerList(serverListFile)
 	multiShell(list, dnsScript())
 }
 

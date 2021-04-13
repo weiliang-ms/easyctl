@@ -2,7 +2,7 @@ package install
 
 import (
 	"easyctl/asset"
-	"easyctl/pkg/run"
+	"easyctl/pkg/runner"
 	"fmt"
 	"github.com/modood/table"
 	"github.com/spf13/cobra"
@@ -37,10 +37,10 @@ func keepalive() {
 func keepaliveOffline() {
 
 	var wg sync.WaitGroup
-	re := run.ParseKeepaliveList(serverListFile)
+	re := runner.ParseKeepaliveList(serverListFile)
 	list := re.Server
 
-	ch := make(chan run.ShellResult, len(list))
+	ch := make(chan runner.ShellResult, len(list))
 	// 拷贝文件
 	dstPath := "/tmp/keepalived.tar.gz"
 
@@ -50,11 +50,11 @@ func keepaliveOffline() {
 
 	for _, v := range list {
 		log.Printf("传输数据文件%s至%s...", dstPath, v.Host)
-		run.ScpFile(offlineFilePath, dstPath, v, 0755)
+		runner.ScpFile(offlineFilePath, dstPath, v, 0755)
 		log.Println("-> done 传输完毕...")
 
 		log.Printf("传输数据文件%s至%s:/tmp/%s...", "keepalived.sh", v.Host, "keepalived.sh")
-		run.ScpFile("keepalived.sh", fmt.Sprintf("/tmp/%s", "keepalived.sh"), v, 0755)
+		runner.ScpFile("keepalived.sh", fmt.Sprintf("/tmp/%s", "keepalived.sh"), v, 0755)
 		log.Println("-> done 传输完毕...")
 	}
 
@@ -73,7 +73,7 @@ func keepaliveOffline() {
 	log.Println("-> 批量安装更新...")
 	for _, v := range list {
 		wg.Add(1)
-		go func(server run.Server) {
+		go func(server runner.Server) {
 			defer wg.Done()
 			re := server.RemoteShell(cmd + server.Host)
 			ch <- re
@@ -83,7 +83,7 @@ func keepaliveOffline() {
 	close(ch)
 
 	// ch -> slice
-	var as []run.ShellResult
+	var as []runner.ShellResult
 	for target := range ch {
 		as = append(as, target)
 	}

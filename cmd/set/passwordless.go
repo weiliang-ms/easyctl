@@ -2,7 +2,7 @@ package set
 
 import (
 	"easyctl/asset"
-	"easyctl/pkg/run"
+	"easyctl/pkg/runner"
 	"fmt"
 	"github.com/spf13/cobra"
 	"io/ioutil"
@@ -31,7 +31,7 @@ func passwordLess() {
 	local("生成互信文件", passwordScript())
 
 	// 解析主机列表
-	list := run.ParseServerList(serverListFile)
+	list := runner.ParseServerList(serverListFile)
 
 	// 拷贝文件
 	u, _ := user.Current()
@@ -42,18 +42,18 @@ func passwordLess() {
 
 	for _, v := range list.Server {
 
-		v.RemoteShell(fmt.Sprintf("mkdir -p %s/.ssh", run.HomeDir(v)))
+		v.RemoteShell(fmt.Sprintf("mkdir -p %s/.ssh", runner.HomeDir(v)))
 
 		log.Printf("传输数据文件%s至%s...", rsa, v.Host)
-		run.RemoteWriteFile(rsa, fmt.Sprintf("%s/.ssh/id_rsa", run.HomeDir(v)), v, 0600)
+		runner.RemoteWriteFile(rsa, fmt.Sprintf("%s/.ssh/id_rsa", runner.HomeDir(v)), v, 0600)
 		log.Println("-> done 传输完毕...")
 
 		log.Printf("传输数据文件%s至%s...", rsa, v.Host)
-		run.RemoteWriteFile(rsaPub, fmt.Sprintf("%s/.ssh/id_rsa.pub", run.HomeDir(v)), v, 0600)
+		runner.RemoteWriteFile(rsaPub, fmt.Sprintf("%s/.ssh/id_rsa.pub", runner.HomeDir(v)), v, 0600)
 		log.Println("-> done 传输完毕...")
 
 		log.Printf("传输数据文件%s至%s...", rsa, v.Host)
-		run.RemoteWriteFile(authorizedKeys, fmt.Sprintf("%s/.ssh/authorized_keys", run.HomeDir(v)), v, 0600)
+		runner.RemoteWriteFile(authorizedKeys, fmt.Sprintf("%s/.ssh/authorized_keys", runner.HomeDir(v)), v, 0600)
 		log.Println("-> done 传输完毕...")
 	}
 
