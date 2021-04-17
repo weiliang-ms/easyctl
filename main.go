@@ -1,7 +1,7 @@
 package main
 
 import (
-	"easyctl/cmd"
+	"github.com/weiliang-ms/easyctl/cmd"
 )
 
 func main() {

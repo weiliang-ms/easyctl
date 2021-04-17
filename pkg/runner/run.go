@@ -28,6 +28,7 @@ type ExecResult struct {
 type ServerList struct {
 	Server []Server `yaml:"server,flow"`
 }
+
 type Server struct {
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
@@ -36,9 +37,79 @@ type Server struct {
 }
 
 type KeepaliveServerList struct {
+	Keepalive Keepalive `yaml:"keepalive"`
+}
+
+type Keepalive struct {
 	Vip       string   `yaml:"vip"`
 	Interface string   `yaml:"interface"`
 	Server    []Server `yaml:"server,flow"`
+}
+
+type HaProxyServerList struct {
+	HaProxy HaProxy `yaml:"haproxy"`
+}
+
+type DockerServerList struct {
+	Docker Docker `yaml:"docker"`
+}
+
+type Docker struct {
+	Server []Server `yaml:"server,flow"`
+}
+
+type DockerComposeServerList struct {
+	DockerCompose DockerCompose `yaml:"docker-compose"`
+}
+
+type DockerCompose struct {
+	Server []Server `yaml:"server,flow"`
+}
+
+type HaProxy struct {
+	Server      []Server  `yaml:"server,flow"`
+	BalanceList []Balance `yaml:"balance,flow"`
+}
+
+type Balance struct {
+	Name    string   `yaml:"name"`
+	Port    int      `yaml:"port"`
+	Address []string `yaml:"address"`
+}
+
+//
+//harbor:
+//dataDir: /data
+//domain: harbor.wl.com
+//port:
+//http: 80
+//server:
+//- host: 192.168.239.133
+//username: root
+//password: 123456
+//port: 22
+//- host: 192.168.239.134
+//username: root
+//password: 123456
+//port: 22
+
+type HarborServerList struct {
+	Harbor Harbor `yaml:"harbor"`
+}
+
+type Harbor struct {
+	Server   []Server      `yaml:"server,flow"`
+	Project  HarborProject `yaml:"project"`
+	Password string        `yaml:"password"`
+	DataDir  string        `yaml:"dataDir"`
+	Domain   string        `yaml:"domain"`
+	HttpPort string        `yaml:"http-port"`
+	Vip      string        `yaml:"vip"`
+}
+
+type HarborProject struct {
+	Private []string `yaml:"private"`
+	Public  []string `yaml:"public"`
 }
 
 type ShellResult struct {
@@ -46,6 +117,14 @@ type ShellResult struct {
 	Cmd    string
 	Code   int
 	Status string
+}
+
+type Installer struct {
+	Offline         bool
+	Cmd             string
+	FileName        string
+	ServerListPath  string
+	OfflineFilePath string
 }
 
 func ParseServerList(yamlPath string) ServerList {
@@ -84,15 +163,108 @@ func ParseKeepaliveList(yamlPath string) KeepaliveServerList {
 		}
 	}
 
-	data, err := json.Marshal(serverList)
+	_, err := json.Marshal(serverList)
 
-	fmt.Println(string(data))
 	if err != nil {
 		log.Println("marshal failed...")
 		log.Fatal(err)
 	}
 
-	//log.Printf("%v",serverList)
+	return serverList
+}
+
+func ParseHaProxyList(yamlPath string) HaProxyServerList {
+
+	var serverList HaProxyServerList
+	if f, err := os.Open(yamlPath); err != nil {
+		log.Println("open yaml...")
+		log.Fatal(err)
+	} else {
+		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
+		if decodeErr != nil {
+			log.Println("decode failed...")
+			log.Fatal(decodeErr)
+		}
+	}
+
+	_, err := json.Marshal(serverList)
+
+	if err != nil {
+		log.Println("marshal failed...")
+		log.Fatal(err)
+	}
+	return serverList
+}
+
+func ParseDockerServerList(yamlPath string) DockerServerList {
+
+	var serverList DockerServerList
+	if f, err := os.Open(yamlPath); err != nil {
+		log.Println("open yaml...")
+		log.Fatal(err)
+	} else {
+		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
+		if decodeErr != nil {
+			log.Println("decode failed...")
+			log.Fatal(decodeErr)
+		}
+	}
+
+	_, err := json.Marshal(serverList)
+
+	if err != nil {
+		log.Println("marshal failed...")
+		log.Fatal(err)
+	}
+
+	return serverList
+}
+
+func ParseDockerComposeServerList(yamlPath string) DockerComposeServerList {
+
+	var serverList DockerComposeServerList
+	if f, err := os.Open(yamlPath); err != nil {
+		log.Println("open yaml...")
+		log.Fatal(err)
+	} else {
+		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
+		if decodeErr != nil {
+			log.Println("decode failed...")
+			log.Fatal(decodeErr)
+		}
+	}
+
+	_, err := json.Marshal(serverList)
+
+	if err != nil {
+		log.Println("marshal failed...")
+		log.Fatal(err)
+	}
+
+	return serverList
+}
+
+func ParseHarborServerList(yamlPath string) HarborServerList {
+
+	var serverList HarborServerList
+	if f, err := os.Open(yamlPath); err != nil {
+		log.Println("open yaml...")
+		log.Fatal(err)
+	} else {
+		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
+		if decodeErr != nil {
+			log.Println("decode failed...")
+			log.Fatal(decodeErr)
+		}
+	}
+
+	_, err := json.Marshal(serverList)
+
+	if err != nil {
+		log.Println("marshal failed...")
+		log.Fatal(err)
+	}
+
 	return serverList
 }
 
@@ -104,7 +276,7 @@ func ScpFile(srcPath string, dstPath string, instance Server, mode os.FileMode) 
 		fmt.Println(err.Error())
 	}
 
-	log.Printf("-> transfer %s to %s", srcPath, instance.Host)
+	log.Printf("-> transfer %s to %s:%s", srcPath, instance.Host, dstPath)
 	dstFile, err := sftp.Create(dstPath)
 	sftp.Chmod(dstPath, mode)
 
@@ -167,7 +339,7 @@ func RemoteWriteFile(b []byte, dstPath string, instance Server, mode os.FileMode
 
 }
 
-func (server Server)WriteRemoteFile(b []byte, dstPath string, mode os.FileMode) {
+func (server Server) WriteRemoteFile(b []byte, dstPath string, mode os.FileMode) {
 	// init sftp
 	sftp, err := sftpConnect(server.Username, server.Password, server.Host, server.Port)
 	if err != nil {
@@ -188,7 +360,7 @@ func (server Server)WriteRemoteFile(b []byte, dstPath string, mode os.FileMode) 
 }
 
 // 移动目录下文件至新目录
-func (server Server)MoveDirFiles(srcDir string, dstDir string) {
+func (server Server) MoveDirFiles(srcDir string, dstDir string) {
 	files, _ := ioutil.ReadDir(srcDir)
 	for _, f := range files {
 		if !f.IsDir() {
@@ -202,7 +374,6 @@ func (server Server)MoveDirFiles(srcDir string, dstDir string) {
 		}
 	}
 }
-
 
 func sftpConnect(user, password, host string, port string) (sftpClient *sftp.Client, err error) { //参数: 远程服务器用户名, 密码, ip, 端口
 	auth := make([]ssh.AuthMethod, 0)
@@ -258,7 +429,8 @@ func (server Server) RemoteShell(cmd string) ShellResult {
 	}
 	resulft.Host = server.Host
 
-	log.Printf("-> [%s] shell => %s", server.Host, cmd)
+	//log.Printf("-> [%s] shell => %s", server.Host, cmd)
+	log.Printf("-> [%s] => exec shell...", server.Host)
 	session, conErr := server.sshConnect()
 	if conErr != nil {
 		log.Fatal(conErr)
@@ -274,15 +446,40 @@ func (server Server) RemoteShell(cmd string) ShellResult {
 		log.Print(runErr.Error())
 	}
 
-	log.Printf("<- call back %s\n %s", server.Host, string(combo))
-
 	if resulft.Code == 0 {
+		log.Printf("<- call back [%s] exec shell successful...", server.Host)
 		resulft.Status = "success"
 	} else {
+		log.Printf("<- call back [%s]\n %s", server.Host, string(combo))
 		resulft.Status = "failed"
 	}
 
 	return resulft
+}
+
+func (server Server) RemoteShellOutput(cmd string) {
+
+	var resulft ShellResult
+	if len(cmd) < 60 {
+		resulft.Cmd = cmd
+	} else {
+		resulft.Cmd = "built-in shell"
+	}
+	resulft.Host = server.Host
+
+	//log.Printf("-> [%s] shell => %s", server.Host, cmd)
+	log.Printf("-> [%s] => exec shell...", server.Host)
+	session, conErr := server.sshConnect()
+	if conErr != nil {
+		log.Fatal(conErr)
+	}
+
+	defer session.Close()
+
+	// combo, runErr := session.CombinedOutput(cmd)
+	session.Stderr = os.Stderr
+	session.Stdout = os.Stdout
+	session.Run(cmd)
 }
 
 func (server *Server) sshConnect() (*ssh.Session, error) {

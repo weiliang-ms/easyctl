@@ -1,6 +1,4 @@
-keepalive:
-  vip: 192.168.235.150
-  interface: ens33
+docker:
   server:
     - host: 192.168.235.129
       username: root

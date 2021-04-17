@@ -1,11 +1,20 @@
 harbor:
-  - host: 192.168.239.133
-    username: root
-    password: 123456
-    port: 22
-    dataDir: /data
-  - host: 192.168.239.134
-    username: root
-    password: 123456
-    port: 22
-    dataDir: /data
+  dataDir: /data
+  domain: harbor.wl.com
+  vip: 192.168.239.100
+  http-port: 80
+  password: Harbor-12345
+  project:
+    private:
+      - private
+    public:
+      - public
+  server:
+    - host: 192.168.239.133
+      username: root
+      password: 123456
+      port: 22
+    - host: 192.168.239.134
+      username: root
+      password: 123456
+      port: 22

@@ -1,0 +1,21 @@
+haproxy:
+  server:
+    - host: 192.168.235.129
+      username: root
+      password: 1
+      port: 22
+    - host: 192.168.235.130
+      username: root
+      password: 1
+      port: 22
+  balance:
+    - name: frontend
+      port: 80
+      address:
+        - 192.168.235.129:80
+        - 192.168.235.130:80
+    - name: backend
+      port: 8080
+      address:
+        - 192.168.235.129:8080
+        - 192.168.235.130:8080

@@ -1,26 +1,24 @@
 package set
 
 import (
-	"easyctl/asset"
-	"easyctl/pkg/runner"
 	"github.com/spf13/cobra"
+	"github.com/weiliang-ms/easyctl/asset"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"io/ioutil"
 	"log"
 	"os"
 )
 
 var (
-	repoDir="/etc/yum.repos.d/"
+	repoDir     = "/etc/yum.repos.d/"
 	aliBaseByte []byte
 	aliEpelByte []byte
 )
-
 
 const (
 	aliBaseRepo = "/etc/yum.repos.d/ali-base.repo"
 	aliEpelRepo = "/etc/yum.repos.d/ali-epel.repo"
 )
-
 
 // 配置yum repo
 var setYumRepoCmd = &cobra.Command{
@@ -46,7 +44,7 @@ func init() {
 func setYumRepo() {
 	if !multiNode {
 		setLocalYumRepo()
-	}else {
+	} else {
 		setRemoteYumRepo()
 	}
 }
@@ -70,12 +68,11 @@ func setLocalYumRepo() {
 		}
 	}
 
-
 	if aliRepo {
-		log.Printf("write repo config file -> %s",aliBaseRepo)
-		ioutil.WriteFile(aliBaseRepo,aliBaseByte,0644)
-		log.Printf("write repo config file -> %s",aliEpelRepo)
-		ioutil.WriteFile(aliEpelRepo,aliEpelByte,0644)
+		log.Printf("write repo config file -> %s", aliBaseRepo)
+		ioutil.WriteFile(aliBaseRepo, aliBaseByte, 0644)
+		log.Printf("write repo config file -> %s", aliEpelRepo)
+		ioutil.WriteFile(aliEpelRepo, aliEpelByte, 0644)
 	}
 
 	log.Println("配置yum repo成功...")
@@ -86,15 +83,15 @@ func setRemoteYumRepo() {
 
 	list := runner.ParseServerList(serverListFile)
 
-	for _, v := range list.Server{
+	for _, v := range list.Server {
 
-		log.Printf("[%s] 备份repo文件",v.Host)
-		v.MoveDirFiles(repoDir,repoDir+"/bak")
+		log.Printf("[%s] 备份repo文件", v.Host)
+		v.MoveDirFiles(repoDir, repoDir+"/bak")
 
-		log.Printf("[%s] write repo config file -> %s",v.Host,aliBaseRepo)
-		v.WriteRemoteFile(aliBaseByte,aliBaseRepo,0644)
-		log.Printf("[%s] write repo config file -> %s",v.Host,aliEpelRepo)
-		v.WriteRemoteFile(aliEpelByte,aliEpelRepo,0644)
+		log.Printf("[%s] write repo config file -> %s", v.Host, aliBaseRepo)
+		v.WriteRemoteFile(aliBaseByte, aliBaseRepo, 0644)
+		log.Printf("[%s] write repo config file -> %s", v.Host, aliEpelRepo)
+		v.WriteRemoteFile(aliEpelByte, aliEpelRepo, 0644)
 	}
 
 	log.Println("配置yum repo成功...")

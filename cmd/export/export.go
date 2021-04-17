@@ -1,13 +1,15 @@
-package cmd
+package export
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+)
 
 var (
 	packageName string
 )
 
 // export命令
-var exportCmd = &cobra.Command{
+var RootCmd = &cobra.Command{
 	Use:     "export [OPTIONS] [flags]",
 	Short:   "export something through easyctl",
 	Example: "\nexport yum-repo --package-name=gcc",
@@ -18,5 +20,5 @@ var exportCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.AddCommand(exportCmd)
+	RootCmd.AddCommand(imageCmd)
 }

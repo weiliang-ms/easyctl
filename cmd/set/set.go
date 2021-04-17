@@ -1,11 +1,11 @@
 package set
 
 import (
-	"easyctl/pkg/runner"
 	"flag"
 	"fmt"
 	"github.com/modood/table"
 	"github.com/spf13/cobra"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"log"
 	"sync"
 )

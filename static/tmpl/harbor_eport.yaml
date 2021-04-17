@@ -1,0 +1,7 @@
+harbor:
+  address: 192.168.239.100:80
+  user: admin
+  password: Harbor-12345
+  namespace:
+    - private
+    - public

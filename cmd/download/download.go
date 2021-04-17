@@ -1,11 +1,11 @@
 package download
 
 import (
-	"easyctl/util"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/vbauerster/mpb/v6"
 	"github.com/vbauerster/mpb/v6/decor"
+	"github.com/weiliang-ms/easyctl/util"
 	"io"
 	"log"
 	"net/http"

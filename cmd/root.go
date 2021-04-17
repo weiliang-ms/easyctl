@@ -1,14 +1,16 @@
 package cmd
 
 import (
-	close2 "easyctl/cmd/close"
-	"easyctl/cmd/download"
-	"easyctl/cmd/install"
-	"easyctl/cmd/set"
-	"easyctl/cmd/stat"
-	"easyctl/cmd/upgrade"
 	"fmt"
 	"github.com/spf13/cobra"
+	close2 "github.com/weiliang-ms/easyctl/cmd/close"
+	"github.com/weiliang-ms/easyctl/cmd/download"
+	"github.com/weiliang-ms/easyctl/cmd/export"
+	"github.com/weiliang-ms/easyctl/cmd/install"
+	"github.com/weiliang-ms/easyctl/cmd/scan"
+	"github.com/weiliang-ms/easyctl/cmd/set"
+	"github.com/weiliang-ms/easyctl/cmd/stat"
+	"github.com/weiliang-ms/easyctl/cmd/upgrade"
 	"github.com/weiliang-ms/easyctl/util"
 	"os"
 	"strings"
@@ -35,6 +37,8 @@ func init() {
 	RootCmd.AddCommand(download.Cmd)
 	RootCmd.AddCommand(upgrade.Cmd)
 	RootCmd.AddCommand(initTmplCmd)
+	RootCmd.AddCommand(scan.RootCmd)
+	RootCmd.AddCommand(export.RootCmd)
 }
 
 func Execute() {
@@ -75,15 +79,6 @@ func findSuggestions(c *cobra.Command, arg string) string {
 }
 
 func ParseCommand(cmd *cobra.Command, args []string, validArgs []string) error {
-	//func parseCommand(cmd *cobra.Command,args[] string,validArgs []string,minArgNum int,maxArgNum int) error{
-
-	//if minArgNum > len(args) {
-	//	return fmt.Errorf("requires at least %d arg(s), only received %d", minArgNum, len(args))
-	//}
-	//
-	//if maxArgNum < len(args) {
-	//	return fmt.Errorf("accepts at most %d arg(s), received %d", maxArgNum, len(args))
-	//}
 
 	for _, v := range validArgs {
 		validArgs = append(validArgs, strings.Split(v, "\t")[0])

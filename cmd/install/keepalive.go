@@ -1,11 +1,11 @@
 package install
 
 import (
-	"easyctl/asset"
-	"easyctl/pkg/runner"
 	"fmt"
 	"github.com/modood/table"
 	"github.com/spf13/cobra"
+	"github.com/weiliang-ms/easyctl/asset"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"io/ioutil"
 	"log"
 	"os"
@@ -14,8 +14,8 @@ import (
 
 func init() {
 	keepaliveCmd.Flags().BoolVarP(&offline, "offline", "", false, "是否离线安装")
-	keepaliveCmd.Flags().StringVarP(&offlineFilePath, "offline-file", "", "keepalived.tar.gz", "离线文件")
-	keepaliveCmd.Flags().StringVarP(&serverListFile, "server-list", "", "keepalived.yaml", "服务器批量连接信息")
+	keepaliveCmd.Flags().StringVarP(&offlineFilePath, "offline-file", "", "", "离线文件")
+	keepaliveCmd.Flags().StringVarP(&serverListFile, "server-list", "", "", "服务器批量连接信息")
 }
 
 // install keepalive
@@ -38,7 +38,7 @@ func keepaliveOffline() {
 
 	var wg sync.WaitGroup
 	re := runner.ParseKeepaliveList(serverListFile)
-	list := re.Server
+	list := re.Keepalive.Server
 
 	ch := make(chan runner.ShellResult, len(list))
 	// 拷贝文件
@@ -63,8 +63,8 @@ func keepaliveOffline() {
 
 	masterIP := list[0].Host
 	slaveIP := list[1].Host
-	vip := re.Vip
-	insterface := re.Interface
+	vip := re.Keepalive.Vip
+	insterface := re.Keepalive.Vip
 
 	cmd := fmt.Sprintf("/tmp/keepalived.sh %s %s %s %s ",
 		insterface, masterIP, slaveIP, vip)
