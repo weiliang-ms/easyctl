@@ -12,20 +12,17 @@ var (
 	serverListFile  string
 )
 
-const (
-	docker        = "docker-ce"
-	dockerCompose = "docker-compose"
-)
-
 func init() {
-	Cmd.AddCommand(installHarborCmd)
 	Cmd.AddCommand(keepaliveCmd)
+	Cmd.AddCommand(haproxyCmd)
+	Cmd.AddCommand(dockerCmd)
+	Cmd.AddCommand(dockerComposeCmd)
+	Cmd.AddCommand(harborCmd)
 }
 
 //
 var Cmd = &cobra.Command{
-	Use:     "install [OPTIONS] [flags]",
-	Short:   "install soft through easyctl",
-	Example: "\neasyctl install docker\n",
-	Args:    cobra.MinimumNArgs(1),
+	Use:   "install [OPTIONS] [flags]",
+	Short: "install soft through easyctl",
+	Args:  cobra.MinimumNArgs(1),
 }

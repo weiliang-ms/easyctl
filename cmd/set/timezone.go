@@ -1,9 +1,9 @@
 package set
 
 import (
-	"easyctl/pkg/runner"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
 )
 
 func init() {

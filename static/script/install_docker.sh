@@ -89,6 +89,11 @@ EOF
 
     config_daemon
 
+    sed -i "/net.ipv4.ip_forward/d" /etc/sysctl.conf
+    cat >> /etc/sysctl.conf<<EOF
+net.ipv4.ip_forward=1
+EOF
+    sysctl -p
 }
 
 do_install

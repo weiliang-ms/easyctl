@@ -1,8 +1,8 @@
 package set
 
 import (
-	"easyctl/sys"
 	"github.com/spf13/cobra"
+	"github.com/weiliang-ms/easyctl/sys"
 )
 
 // 配置hostname子命令

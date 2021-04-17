@@ -1,9 +1,9 @@
 package sys
 
 import (
-	"easyctl/constant"
-	"easyctl/util"
 	"fmt"
+	"github.com/weiliang-ms/easyctl/constant"
+	"github.com/weiliang-ms/easyctl/util"
 	"io/ioutil"
 	"log"
 	"os"

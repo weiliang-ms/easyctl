@@ -1,16 +1,17 @@
 package cmd
 
 import (
-	"easyctl/asset"
-	"easyctl/util"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/weiliang-ms/easyctl/asset"
+	"github.com/weiliang-ms/easyctl/util"
 	"io/ioutil"
 )
 
 func init() {
 	initTmplCmd.AddCommand(initServerTmplCmd)
 	initTmplCmd.AddCommand(initKeepaliveTmplCmd)
+	initTmplCmd.AddCommand(initHATmplCmd)
 }
 
 // 初始化模板命令
@@ -37,6 +38,16 @@ var initKeepaliveTmplCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		tmpl, _ := asset.Asset("static/tmpl/keepalived.yaml")
 		ioutil.WriteFile(fmt.Sprintf("%s/keepalived.yaml", util.CurrentPath()), tmpl, 0644)
+	},
+	Args: cobra.NoArgs,
+}
+
+// init keepalive servers template
+var initHATmplCmd = &cobra.Command{
+	Use: "haproxy [flags]",
+	Run: func(cmd *cobra.Command, args []string) {
+		tmpl, _ := asset.Asset("static/tmpl/haproxy.yaml")
+		ioutil.WriteFile(fmt.Sprintf("%s/haproxy.yaml", util.CurrentPath()), tmpl, 0644)
 	},
 	Args: cobra.NoArgs,
 }

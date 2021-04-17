@@ -2,12 +2,12 @@ package close
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctll/pkg/runner"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
 )
 
 var (
-	forever bool
-	remote bool
+	forever        bool
+	remote         bool
 	serverListFile string
 )
 
@@ -18,8 +18,8 @@ func init() {
 
 // close命令
 var RootCmd = &cobra.Command{
-	Use:   "close [OPTIONS] [flags]",
-	Short: "close some service through easyctl",
+	Use:     "close [OPTIONS] [flags]",
+	Short:   "close some service through easyctl",
 	Example: "\neasyctl close firewalld",
 	Run: func(cmd *cobra.Command, args []string) {
 	},
@@ -27,14 +27,13 @@ var RootCmd = &cobra.Command{
 	Args:      cobra.ExactValidArgs(1),
 }
 
-
-func close(cmd string,list []runner.Server)  {
+func close(cmd string, list []runner.Server) {
 	if len(list) == 0 {
 		runner.Shell(cmd)
 		return
 	}
 
-	for _, v := range list{
+	for _, v := range list {
 		v.RemoteShell(cmd)
 	}
 }

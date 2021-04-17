@@ -1,10 +1,10 @@
 package util
 
 import (
-	"easyctl/constant"
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/sftp"
+	"github.com/weiliang-ms/easyctl/constant"
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"

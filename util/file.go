@@ -1,8 +1,8 @@
 package util
 
 import (
-	"easyctl/constant"
 	"fmt"
+	"github.com/weiliang-ms/easyctl/constant"
 	"os"
 	"strings"
 	"sync"

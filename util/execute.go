@@ -3,9 +3,9 @@ package util
 import (
 	"bufio"
 	"bytes"
-	"easyctl/constant"
 	"errors"
 	"fmt"
+	"github.com/weiliang-ms/easyctl/constant"
 	"log"
 	"os/exec"
 )

@@ -1,11 +1,11 @@
 package upgrade
 
 import (
-	"easyctl/asset"
-	"easyctl/pkg/runner"
 	"fmt"
 	"github.com/modood/table"
 	"github.com/spf13/cobra"
+	"github.com/weiliang-ms/easyctl/asset"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"log"
 	"sync"
 )

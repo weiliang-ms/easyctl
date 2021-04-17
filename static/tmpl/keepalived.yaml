@@ -1,11 +1,12 @@
-vip: 192.168.235.150
-interface: ens33
-server:
-  - host: 192.168.235.129
-    username: root
-    password: 1
-    port: 22
-  - host: 192.168.235.130
-    username: root
-    password: 1
-    port: 22
+keepalive:
+  vip: 192.168.235.150
+  interface: ens33
+  server:
+    - host: 192.168.235.129
+      username: root
+      password: 1
+      port: 22
+    - host: 192.168.235.130
+      username: root
+      password: 1
+      port: 22

@@ -1,11 +1,5 @@
 #!/bin/bash
 
-interface_name=$1
-master_ip=$2
-slave_ip=$3
-virtual_ip=$4
-local_ip=$5
-
 role=""
 peer_ip=""
 

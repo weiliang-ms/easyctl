@@ -1,8 +1,8 @@
 package sys
 
 import (
-	"easyctl/constant"
-	"easyctl/util"
+	"github.com/weiliang-ms/easyctl/constant"
+	"github.com/weiliang-ms/easyctl/util"
 )
 
 func SelinuxStatus() string {
