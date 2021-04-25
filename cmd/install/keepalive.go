@@ -37,8 +37,8 @@ func keepalive() {
 func keepaliveOffline() {
 
 	var wg sync.WaitGroup
-	re := runner.ParseKeepaliveList(serverListFile)
-	list := re.Keepalive.Server
+	re := runner.ParseServerList(serverListFile, runner.KeepaliveServerList{})
+	list := re.Keepalive.Attribute.Server
 
 	ch := make(chan runner.ShellResult, len(list))
 	// 拷贝文件
@@ -61,13 +61,11 @@ func keepaliveOffline() {
 	// 清理文件
 	os.Remove("keepalived.sh")
 
-	masterIP := list[0].Host
-	slaveIP := list[1].Host
-	vip := re.Keepalive.Vip
-	insterface := re.Keepalive.Vip
+	vip := re.Keepalive.Attribute.Vip
+	insterface := re.Keepalive.Attribute.Interface
 
-	cmd := fmt.Sprintf("/tmp/keepalived.sh %s %s %s %s ",
-		insterface, masterIP, slaveIP, vip)
+	cmd := fmt.Sprintf("interface_name=%s virtual_ip=%s /tmp/keepalived.sh",
+		insterface, vip)
 
 	// 并行
 	log.Println("-> 批量安装更新...")
@@ -75,7 +73,8 @@ func keepaliveOffline() {
 		wg.Add(1)
 		go func(server runner.Server) {
 			defer wg.Done()
-			re := server.RemoteShell(cmd + server.Host)
+			r, peer := role(list, server.Host)
+			re := server.RemoteShell(fmt.Sprintf("role=%s peer_ip=%s local_ip=%s %s", r, peer, server.Host, cmd))
 			ch <- re
 		}(v)
 	}
@@ -91,4 +90,15 @@ func keepaliveOffline() {
 	// 表格输出
 	log.Println("执行结果如下：")
 	table.OutputA(as)
+}
+
+func role(server []runner.Server, ip string) (role string, peerIP string) {
+	if len(server) != 2 {
+		log.Fatal("error settings...")
+	}
+	if server[0].Host == ip {
+		return "MASTER", server[1].Host
+	} else {
+		return "BACKUP", server[0].Host
+	}
 }

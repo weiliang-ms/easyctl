@@ -4,13 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	close2 "github.com/weiliang-ms/easyctl/cmd/close"
-	"github.com/weiliang-ms/easyctl/cmd/download"
-	"github.com/weiliang-ms/easyctl/cmd/export"
 	"github.com/weiliang-ms/easyctl/cmd/install"
-	"github.com/weiliang-ms/easyctl/cmd/scan"
-	"github.com/weiliang-ms/easyctl/cmd/set"
-	"github.com/weiliang-ms/easyctl/cmd/stat"
-	"github.com/weiliang-ms/easyctl/cmd/upgrade"
 	"github.com/weiliang-ms/easyctl/util"
 	"os"
 	"strings"
@@ -31,14 +25,14 @@ var RootCmd = &cobra.Command{
 func init() {
 	//RootCmd.AddCommand(install.RootCmd)
 	RootCmd.AddCommand(close2.RootCmd)
-	RootCmd.AddCommand(set.RootCmd)
-	RootCmd.AddCommand(stat.RootCmd)
+	//RootCmd.AddCommand(set.RootCmd)
+	//RootCmd.AddCommand(stat.RootCmd)
 	RootCmd.AddCommand(install.Cmd)
-	RootCmd.AddCommand(download.Cmd)
-	RootCmd.AddCommand(upgrade.Cmd)
-	RootCmd.AddCommand(initTmplCmd)
-	RootCmd.AddCommand(scan.RootCmd)
-	RootCmd.AddCommand(export.RootCmd)
+	//RootCmd.AddCommand(download.Cmd)
+	//RootCmd.AddCommand(upgrade.Cmd)
+	//RootCmd.AddCommand(initTmplCmd)
+	//RootCmd.AddCommand(scan.RootCmd)
+	//RootCmd.AddCommand(export.RootCmd)
 }
 
 func Execute() {

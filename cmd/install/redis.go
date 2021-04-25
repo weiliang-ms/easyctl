@@ -16,7 +16,7 @@ package install
 //type mode string
 //
 //type redis struct {
-//	clusterNodes    []util.Server
+//	clusterNodes    []util.Servers
 //	cluster         bool
 //	remoteDeploy    bool
 //	offline         bool

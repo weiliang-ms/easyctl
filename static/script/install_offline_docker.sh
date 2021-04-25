@@ -28,8 +28,7 @@ cat > /etc/docker/daemon.json <<EOF
   "log-opts": {
     "max-size": "5m",
     "max-file":"3"
-  },
-  "exec-opts": ["native.cgroupdriver=systemd"],
+  }
 }
 EOF
 

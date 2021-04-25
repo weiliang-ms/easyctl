@@ -81,9 +81,9 @@ func setLocalYumRepo() {
 // 配置yum repo
 func setRemoteYumRepo() {
 
-	list := runner.ParseServerList(serverListFile)
+	list := runner.ParseServerList(serverListFile, runner.CommonServerList{})
 
-	for _, v := range list.Server {
+	for _, v := range list.Common.Server {
 
 		log.Printf("[%s] 备份repo文件", v.Host)
 		v.MoveDirFiles(repoDir, repoDir+"/bak")

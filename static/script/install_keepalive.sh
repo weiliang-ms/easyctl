@@ -1,22 +1,5 @@
 #!/bin/bash
 
-role=""
-peer_ip=""
-
-
-# shellcheck disable=SC2086
-if [ $local_ip == $slave_ip ]; then
-    role="BACKUP"
-    peer_ip=$master_ip
-else
-  if [ $local_ip == $master_ip ]; then
-    role="MASTER"
-    peer_ip=$slave_ip
-  fi
-fi
-
-echo "interface:$interface_name master:$master_ip slave:$slave_ip vip:$virtual_ip local:$local_ip"
-
 SOFT_NAME=keepalived
 filepath="/tmp/$SOFT_NAME.tar.gz"
 

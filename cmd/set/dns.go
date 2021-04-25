@@ -39,7 +39,7 @@ func setLocalDNS() {
 }
 
 func setMultiNodeDNS() {
-	list := runner.ParseServerList(serverListFile)
+	list := runner.ParseServerList(serverListFile, runner.CommonServerList{})
 	multiShell(list, dnsScript())
 }
 

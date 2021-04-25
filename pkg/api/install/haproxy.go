@@ -44,14 +44,14 @@ defaults
 )
 
 func Haproxy(i runner.Installer) {
-	re := runner.ParseHaProxyList(i.ServerListPath)
-	list := re.HaProxy.Server
+	re := runner.ParseServerList(i.ServerListPath, runner.HaProxyServerList{})
+	list := re.HA.Attribute.Server
 	script, _ := asset.Asset("static/script/install_offline_tmpl.sh")
 	i.Cmd = fmt.Sprintf("package_name=haproxy %s", string(script))
 	i.FileName = "haproxy.tar.gz"
 	if i.Offline {
 		offline(i, list)
-		configHA(re.HaProxy.BalanceList, list)
+		configHA(re.HA.Attribute.BalanceList, list)
 	}
 }
 

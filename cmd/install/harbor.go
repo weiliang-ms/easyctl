@@ -6,10 +6,13 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 )
 
+var offlineImages string
+
 func init() {
 	harborCmd.Flags().BoolVarP(&offline, "offline", "", false, "是否离线安装")
 	harborCmd.Flags().StringVarP(&offlineFilePath, "offline-file", "", "", "离线文件")
 	harborCmd.Flags().StringVarP(&serverListFile, "server-list", "", "", "服务器批量连接信息")
+	harborCmd.Flags().StringVarP(&offlineImages, "offline-images-path", "", "", "镜像文件")
 	harborCmd.MarkFlagRequired("domain")
 }
 
@@ -27,6 +30,7 @@ var harborCmd = &cobra.Command{
 func harbor() {
 	i := runner.Installer{
 		ServerListPath:  serverListFile,
+		InitImagesPath:  offlineImages,
 		Offline:         offline,
 		OfflineFilePath: offlineFilePath,
 	}

@@ -42,7 +42,7 @@ func upgradeKernel() {
 		upgradeKernelOffline(offlineFilePath)
 	}
 	if offline && serverListFile != "" {
-		list := runner.ParseServerList(serverListFile).Server
+		list := runner.ParseServerList(serverListFile, runner.CommonServerList{}).Common.Server
 		table.OutputA(list)
 		// todo: 确认交互
 		upgradeKernelOfflineParallel(list)
