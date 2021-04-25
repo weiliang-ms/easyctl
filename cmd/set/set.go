@@ -51,12 +51,12 @@ func local(msg string, cmd string) {
 func multiShell(list runner.ServerList, cmd string) {
 	var wg sync.WaitGroup
 
-	ch := make(chan runner.ShellResult, len(list.Server))
+	ch := make(chan runner.ShellResult, len(list.Common.Server))
 
 	// 拷贝文件
 	binaryName := "easyctl"
 
-	for _, v := range list.Server {
+	for _, v := range list.Common.Server {
 		log.Printf("传输数据文件%s至%s:/tmp/%s...", binaryName, v.Host, binaryName)
 		runner.ScpFile(binaryName, fmt.Sprintf("/tmp/%s", binaryName), v, 0755)
 		log.Println("-> done 传输完毕...")
@@ -64,7 +64,7 @@ func multiShell(list runner.ServerList, cmd string) {
 
 	// 并行
 	log.Println("-> 批量配置...")
-	for _, v := range list.Server {
+	for _, v := range list.Common.Server {
 		wg.Add(1)
 		go func(server runner.Server) {
 			defer wg.Done()

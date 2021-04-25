@@ -58,7 +58,7 @@ func HarborImage(path string) {
 
 	}
 
-	os.Mkdir("images", 0755)
+	_ = os.Mkdir("images", 0755)
 
 	// 初始化image-list.txt
 	imageList, _ := os.OpenFile("images/image-list.txt", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0755)
@@ -68,8 +68,8 @@ func HarborImage(path string) {
 	for k, v := range projectRepoMap {
 		for _, r := range v {
 			for _, t := range imageTags(h, k, r, d) {
-				imageList.WriteString(t)
-				imageList.WriteString("\n")
+				_, _ = imageList.WriteString(t)
+				_, _ = imageList.WriteString("\n")
 			}
 		}
 	}

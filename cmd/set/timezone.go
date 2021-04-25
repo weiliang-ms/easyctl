@@ -38,7 +38,7 @@ func setLocalTZ() {
 }
 
 func setMultiNodeTZ() {
-	list := runner.ParseServerList(serverListFile)
+	list := runner.ParseServerList(serverListFile, runner.CommonServerList{})
 	multiShell(list, timezoneScript())
 }
 

@@ -12,6 +12,7 @@ func init() {
 	initTmplCmd.AddCommand(initServerTmplCmd)
 	initTmplCmd.AddCommand(initKeepaliveTmplCmd)
 	initTmplCmd.AddCommand(initHATmplCmd)
+	initTmplCmd.AddCommand(initDockerTmplCmd)
 }
 
 // 初始化模板命令
@@ -48,6 +49,16 @@ var initHATmplCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		tmpl, _ := asset.Asset("static/tmpl/haproxy.yaml")
 		ioutil.WriteFile(fmt.Sprintf("%s/haproxy.yaml", util.CurrentPath()), tmpl, 0644)
+	},
+	Args: cobra.NoArgs,
+}
+
+// init docker servers template
+var initDockerTmplCmd = &cobra.Command{
+	Use: "docker [flags]",
+	Run: func(cmd *cobra.Command, args []string) {
+		tmpl, _ := asset.Asset("static/tmpl/docker.yaml")
+		ioutil.WriteFile(fmt.Sprintf("%s/docker.yaml", util.CurrentPath()), tmpl, 0644)
 	},
 	Args: cobra.NoArgs,
 }

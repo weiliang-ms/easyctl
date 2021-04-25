@@ -2,16 +2,16 @@ package close
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/pkg/runner"
 )
 
 var (
 	forever        bool
-	remote         bool
 	serverListFile string
 )
 
 func init() {
+	RootCmd.PersistentFlags().BoolVarP(&forever, "forever", "", true, "是否永久关闭服务")
+	RootCmd.PersistentFlags().StringVarP(&serverListFile, "server-list", "", "server.yaml", "服务器列表连接信息")
 	RootCmd.AddCommand(closeFirewallCmd)
 	RootCmd.AddCommand(closeSeLinuxCmd)
 }
@@ -19,21 +19,9 @@ func init() {
 // close命令
 var RootCmd = &cobra.Command{
 	Use:     "close [OPTIONS] [flags]",
-	Short:   "close some service through easyctl",
-	Example: "\neasyctl close firewalld",
+	Example: "\neasyctl close firewalld --forever",
 	Run: func(cmd *cobra.Command, args []string) {
 	},
-	ValidArgs: []string{"firewall"},
+	ValidArgs: []string{"firewall", "selinux"},
 	Args:      cobra.ExactValidArgs(1),
-}
-
-func close(cmd string, list []runner.Server) {
-	if len(list) == 0 {
-		runner.Shell(cmd)
-		return
-	}
-
-	for _, v := range list {
-		v.RemoteShell(cmd)
-	}
 }

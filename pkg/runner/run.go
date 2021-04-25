@@ -16,8 +16,18 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"reflect"
 	"time"
 )
+
+type ServerList struct {
+	Common    CommonServerList
+	Harbor    HarborServerList
+	HA        HaProxyServerList
+	Keepalive KeepaliveServerList
+	Docker    DockerServerList
+	Compose   DockerComposeServerList
+}
 
 type ExecResult struct {
 	ExitCode int
@@ -25,7 +35,7 @@ type ExecResult struct {
 	StdOut   string
 }
 
-type ServerList struct {
+type CommonServerList struct {
 	Server []Server `yaml:"server,flow"`
 }
 
@@ -37,7 +47,7 @@ type Server struct {
 }
 
 type KeepaliveServerList struct {
-	Keepalive Keepalive `yaml:"keepalive"`
+	Attribute Keepalive `yaml:"keepalive"`
 }
 
 type Keepalive struct {
@@ -47,19 +57,19 @@ type Keepalive struct {
 }
 
 type HaProxyServerList struct {
-	HaProxy HaProxy `yaml:"haproxy"`
+	Attribute HaProxy `yaml:"haproxy"`
 }
 
 type DockerServerList struct {
-	Docker Docker `yaml:"docker"`
+	Attribute Docker `yaml:"docker"`
 }
 
 type Docker struct {
-	Server []Server `yaml:"server,flow"`
+	Servers []Server `yaml:"server,flow"`
 }
 
 type DockerComposeServerList struct {
-	DockerCompose DockerCompose `yaml:"docker-compose"`
+	Attribute DockerCompose `yaml:"docker-compose"`
 }
 
 type DockerCompose struct {
@@ -77,24 +87,8 @@ type Balance struct {
 	Address []string `yaml:"address"`
 }
 
-//
-//harbor:
-//dataDir: /data
-//domain: harbor.wl.com
-//port:
-//http: 80
-//server:
-//- host: 192.168.239.133
-//username: root
-//password: 123456
-//port: 22
-//- host: 192.168.239.134
-//username: root
-//password: 123456
-//port: 22
-
 type HarborServerList struct {
-	Harbor Harbor `yaml:"harbor"`
+	Attribute Harbor `yaml:"harbor"`
 }
 
 type Harbor struct {
@@ -125,163 +119,195 @@ type Installer struct {
 	FileName        string
 	ServerListPath  string
 	OfflineFilePath string
+	InitImagesPath  string
 }
 
-func ParseServerList(yamlPath string) ServerList {
+func ParseServerList(yamlPath string, v interface{}) (list ServerList) {
 
-	var serverList ServerList
-	if f, err := os.Open(yamlPath); err != nil {
-		fmt.Println("open yaml...")
-		log.Fatal(err)
-	} else {
-		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
-		if decodeErr != nil {
-			fmt.Println("decode failed...")
-			log.Fatal(decodeErr)
-		}
-	}
-	_, err := json.Marshal(serverList)
+	var decodeErr, marshalErr error
+
+	f, err := os.Open(yamlPath)
 	if err != nil {
-		fmt.Println("marshal failed...")
 		log.Fatal(err)
 	}
 
-	return serverList
+	// todo:优化反射方式
+	switch reflect.ValueOf(v).Type().String() {
+	case "runner.DockerServerList":
+		decodeErr = yaml.NewDecoder(f).Decode(&list.Docker)
+		_, marshalErr = json.Marshal(&list.Docker)
+	case "runner.HarborServerList":
+		decodeErr = yaml.NewDecoder(f).Decode(&list.Harbor)
+		_, marshalErr = json.Marshal(&list.Docker)
+	case "runner.KeepaliveServerList":
+		decodeErr = yaml.NewDecoder(f).Decode(&list.Keepalive)
+		_, marshalErr = json.Marshal(&list.Docker)
+	default:
+		decodeErr = yaml.NewDecoder(f).Decode(&list.Common)
+		_, marshalErr = json.Marshal(&list.Docker)
+	}
+
+	if decodeErr != nil {
+		log.Fatal(decodeErr)
+	}
+
+	if marshalErr != nil {
+		log.Fatal(err)
+	}
+
+	return list
 }
 
-func ParseKeepaliveList(yamlPath string) KeepaliveServerList {
-
-	var serverList KeepaliveServerList
-	if f, err := os.Open(yamlPath); err != nil {
-		log.Println("open yaml...")
-		log.Fatal(err)
-	} else {
-		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
-		if decodeErr != nil {
-			log.Println("decode failed...")
-			log.Fatal(decodeErr)
-		}
-	}
-
-	_, err := json.Marshal(serverList)
-
-	if err != nil {
-		log.Println("marshal failed...")
-		log.Fatal(err)
-	}
-
-	return serverList
-}
-
-func ParseHaProxyList(yamlPath string) HaProxyServerList {
-
-	var serverList HaProxyServerList
-	if f, err := os.Open(yamlPath); err != nil {
-		log.Println("open yaml...")
-		log.Fatal(err)
-	} else {
-		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
-		if decodeErr != nil {
-			log.Println("decode failed...")
-			log.Fatal(decodeErr)
-		}
-	}
-
-	_, err := json.Marshal(serverList)
-
-	if err != nil {
-		log.Println("marshal failed...")
-		log.Fatal(err)
-	}
-	return serverList
-}
-
-func ParseDockerServerList(yamlPath string) DockerServerList {
-
-	var serverList DockerServerList
-	if f, err := os.Open(yamlPath); err != nil {
-		log.Println("open yaml...")
-		log.Fatal(err)
-	} else {
-		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
-		if decodeErr != nil {
-			log.Println("decode failed...")
-			log.Fatal(decodeErr)
-		}
-	}
-
-	_, err := json.Marshal(serverList)
-
-	if err != nil {
-		log.Println("marshal failed...")
-		log.Fatal(err)
-	}
-
-	return serverList
-}
-
-func ParseDockerComposeServerList(yamlPath string) DockerComposeServerList {
-
-	var serverList DockerComposeServerList
-	if f, err := os.Open(yamlPath); err != nil {
-		log.Println("open yaml...")
-		log.Fatal(err)
-	} else {
-		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
-		if decodeErr != nil {
-			log.Println("decode failed...")
-			log.Fatal(decodeErr)
-		}
-	}
-
-	_, err := json.Marshal(serverList)
-
-	if err != nil {
-		log.Println("marshal failed...")
-		log.Fatal(err)
-	}
-
-	return serverList
-}
-
-func ParseHarborServerList(yamlPath string) HarborServerList {
-
-	var serverList HarborServerList
-	if f, err := os.Open(yamlPath); err != nil {
-		log.Println("open yaml...")
-		log.Fatal(err)
-	} else {
-		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
-		if decodeErr != nil {
-			log.Println("decode failed...")
-			log.Fatal(decodeErr)
-		}
-	}
-
-	_, err := json.Marshal(serverList)
-
-	if err != nil {
-		log.Println("marshal failed...")
-		log.Fatal(err)
-	}
-
-	return serverList
-}
+//func ParseKeepaliveList(yamlPath string) KeepaliveServerList {
+//
+//	var serverList KeepaliveServerList
+//	if f, err := os.Open(yamlPath); err != nil {
+//		log.Println("open yaml...")
+//		log.Fatal(err)
+//	} else {
+//		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
+//		if decodeErr != nil {
+//			log.Println("decode failed...")
+//			log.Fatal(decodeErr)
+//		}
+//	}
+//
+//	_, err := json.Marshal(serverList)
+//
+//	if err != nil {
+//		log.Println("marshal failed...")
+//		log.Fatal(err)
+//	}
+//
+//	return serverList
+//}
+//
+//func ParseHaProxyList(yamlPath string) HaProxyServerList {
+//
+//	var serverList HaProxyServerList
+//	if f, err := os.Open(yamlPath); err != nil {
+//		log.Println("open yaml...")
+//		log.Fatal(err)
+//	} else {
+//		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
+//		if decodeErr != nil {
+//			log.Println("decode failed...")
+//			log.Fatal(decodeErr)
+//		}
+//	}
+//
+//	_, err := json.Marshal(serverList)
+//
+//	if err != nil {
+//		log.Println("marshal failed...")
+//		log.Fatal(err)
+//	}
+//	return serverList
+//}
+//
+//
+//
+//func ParseDockerServerList(yamlPath string) DockerServerList {
+//
+//	var serverList DockerServerList
+//	if f, err := os.Open(yamlPath); err != nil {
+//		log.Println("open yaml...")
+//		log.Fatal(err)
+//	} else {
+//		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
+//		if decodeErr != nil {
+//			log.Println("decode failed...")
+//			log.Fatal(decodeErr)
+//		}
+//	}
+//
+//	_, err := json.Marshal(serverList)
+//
+//	if err != nil {
+//		log.Println("marshal failed...")
+//		log.Fatal(err)
+//	}
+//
+//	return serverList
+//}
+//
+//func ParseDockerComposeServerList(yamlPath string) DockerComposeServerList {
+//
+//	var serverList DockerComposeServerList
+//	if f, err := os.Open(yamlPath); err != nil {
+//		log.Println("open yaml...")
+//		log.Fatal(err)
+//	} else {
+//		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
+//		if decodeErr != nil {
+//			log.Println("decode failed...")
+//			log.Fatal(decodeErr)
+//		}
+//	}
+//
+//	_, err := json.Marshal(serverList)
+//
+//	if err != nil {
+//		log.Println("marshal failed...")
+//		log.Fatal(err)
+//	}
+//
+//	return serverList
+//}
+//
+//func listType(i interface{}) interface{}{
+//
+//	v := reflect.ValueOf(i)
+//	switch v.Type().String() {
+//	case "runner.DockerServerList":
+//		return ServerList{}.Docker
+//	case "runner.HarborServerList":
+//		return ServerList{}.Harbor
+//	case "runner.KeepaliveServerList":
+//		return ServerList{}.Keepalive
+//	default:
+//		return ServerList{}.Common
+//	}
+//}
+//
+//func ParseHarborServerList(yamlPath string) HarborServerList {
+//
+//	var serverList HarborServerList
+//	if f, err := os.Open(yamlPath); err != nil {
+//		log.Println("open yaml...")
+//		log.Fatal(err)
+//	} else {
+//		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
+//		if decodeErr != nil {
+//			log.Println("decode failed...")
+//			log.Fatal(decodeErr)
+//		}
+//	}
+//
+//	_, err := json.Marshal(serverList)
+//
+//	if err != nil {
+//		log.Println("marshal failed...")
+//		log.Fatal(err)
+//	}
+//
+//	return serverList
+//}
 
 // 远程写文件
-func ScpFile(srcPath string, dstPath string, instance Server, mode os.FileMode) {
+func ScpFile(srcPath string, dstPath string, server Server, mode os.FileMode) {
 	// init sftp
-	sftp, err := sftpConnect(instance.Username, instance.Password, instance.Host, instance.Port)
+	sftp, err := sftpConnect(server.Username, server.Password, server.Host, server.Port)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Fatal(err.Error())
 	}
 
-	log.Printf("-> transfer %s to %s:%s", srcPath, instance.Host, dstPath)
+	log.Printf("-> transfer %s to %s:%s", srcPath, server.Host, dstPath)
 	dstFile, err := sftp.Create(dstPath)
 	sftp.Chmod(dstPath, mode)
 
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Fatal(err.Error())
 	}
 
 	f, _ := os.Open(srcPath)
@@ -317,6 +343,24 @@ func ScpFile(srcPath string, dstPath string, instance Server, mode os.FileMode) 
 	defer proxyReader.Close()
 	defer dstFile.Close()
 
+}
+
+func (server Server) CommandExists(cmd string) bool {
+
+	session, conErr := server.sshConnect()
+	if conErr != nil {
+		log.Fatal(conErr)
+	}
+
+	defer session.Close()
+
+	_, runErr := session.CombinedOutput(fmt.Sprintf("command -v %s > /dev/null 2>&1", cmd))
+
+	if runErr != nil {
+		return false
+	}
+
+	return true
 }
 
 func RemoteWriteFile(b []byte, dstPath string, instance Server, mode os.FileMode) {
@@ -373,6 +417,29 @@ func (server Server) MoveDirFiles(srcDir string, dstDir string) {
 			}
 		}
 	}
+}
+
+// 清理目录
+func (server Server) DelDirectory(dir string) error {
+
+	log.Printf("删除目录: %s:%s", server.Host, dir)
+	sftp, err := sftpConnect(server.Username, server.Password, server.Host, server.Port)
+	defer sftp.Close()
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	f, err := sftp.Stat(dir)
+	if err != nil {
+		return err
+	}
+
+	if !f.IsDir() {
+		log.Printf("%s不是目录...", dir)
+	}
+	server.RemoteShell(fmt.Sprintf("rm -rf %s", dir))
+	return nil
+
 }
 
 func sftpConnect(user, password, host string, port string) (sftpClient *sftp.Client, err error) { //参数: 远程服务器用户名, 密码, ip, 端口

@@ -25,8 +25,7 @@ config_daemon(){
   "log-opts": {
     "max-size": "5m",
     "max-file":"3"
-  },
-  "exec-opts": ["native.cgroupdriver=systemd"],
+  }
 }
 EOF
     sudo systemctl daemon-reload

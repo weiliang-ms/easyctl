@@ -31,7 +31,7 @@ func passwordLess() {
 	local("生成互信文件", passwordScript())
 
 	// 解析主机列表
-	list := runner.ParseServerList(serverListFile)
+	list := runner.ParseServerList(serverListFile, runner.CommonServerList{})
 
 	// 拷贝文件
 	u, _ := user.Current()
@@ -40,7 +40,7 @@ func passwordLess() {
 	rsaPub, _ := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/id_rsa.pub", u.HomeDir))
 	authorizedKeys, _ := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/authorized_keys", u.HomeDir))
 
-	for _, v := range list.Server {
+	for _, v := range list.Common.Server {
 
 		v.RemoteShell(fmt.Sprintf("mkdir -p %s/.ssh", runner.HomeDir(v)))
 

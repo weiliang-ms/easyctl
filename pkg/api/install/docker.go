@@ -10,8 +10,8 @@ import (
 
 // 单机本地离线
 func Docker(i runner.Installer) {
-	re := runner.ParseDockerServerList(i.ServerListPath)
-	list := re.Docker.Server
+	re := runner.ParseServerList(i.ServerListPath, runner.DockerServerList{})
+	list := re.Docker.Attribute.Servers
 	script, _ := asset.Asset("static/script/install_offline_docker.sh")
 	i.Cmd = fmt.Sprintf(string(script))
 	i.FileName = "docker-ce.tar.gz"
@@ -52,13 +52,5 @@ func offlineRemote(i runner.Installer, list []runner.Server) {
 	var as []runner.ShellResult
 	for target := range ch {
 		as = append(as, target)
-	}
-}
-
-func boot(cmd string, list []runner.Server) {
-	// 生成本地临时文件
-	for _, v := range list {
-		v.RemoteShell(cmd)
-		log.Println("-> boot service ...")
 	}
 }
