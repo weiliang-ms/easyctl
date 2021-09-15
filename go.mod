@@ -25,5 +25,3 @@ require (
 	k8s.io/apimachinery v0.20.6
 	k8s.io/klog v1.0.0
 )
-
-replace github.com/weiliang-ms/easyctl => ../easyctl
