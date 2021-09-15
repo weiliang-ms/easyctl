@@ -1,7 +1,8 @@
 harbor:
-  address: 192.168.239.100:80
+  address: 192.168.1.2
+  domain: harbor.wl.io
   user: admin
   password: Harbor-12345
-  namespace:
-    - private
-    - public
+  projects:
+    - kubesphere
+    - library

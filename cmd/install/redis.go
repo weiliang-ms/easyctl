@@ -133,7 +133,7 @@ package install
 //			redis.listenAddress = util.ExecuteCmdAcceptResult(constant.LocalIPCmd)
 //		}
 //		if len(redis.clusterNodes) == 1 {
-//			redis.listenAddress = redis.clusterNodes[0].Host
+//			redis.listenAddress = redis.clusterNodes[0].Server
 //		}
 //	}
 //
@@ -207,7 +207,7 @@ package install
 //			redis.banner(nil, initRedisCluster, constant.LoopbackAddress)
 //			redis.shell(initRedisCluster, redis.initializeClusterCmd())
 //		case true:
-//			redis.banner(nil, initRedisCluster, redis.clusterNodes[0].Host)
+//			redis.banner(nil, initRedisCluster, redis.clusterNodes[0].Server)
 //			redis.clusterNodes[0].ExecuteOriginCmd(redis.initializeClusterCmd())
 //		}
 //	}
@@ -233,9 +233,9 @@ package install
 //	} else {
 //		for _, v := range redis.clusterNodes {
 //			for i := 0; i < j; i++ {
-//				cmd += fmt.Sprintf(" %s:%s ", v.Host, ports[i])
+//				cmd += fmt.Sprintf(" %s:%s ", v.Server, ports[i])
 //				// 赋值节点地址信息
-//				redis.connectAddress = append(redis.connectAddress, fmt.Sprintf("%s:%s", v.Host, ports[i]))
+//				redis.connectAddress = append(redis.connectAddress, fmt.Sprintf("%s:%s", v.Server, ports[i]))
 //			}
 //		}
 //	}
@@ -313,7 +313,7 @@ package install
 //			fmt.Println(err.Error())
 //		}
 //		for _, v := range redis.clusterNodes {
-//			fmt.Printf("%s 拷贝源码包至%s:~/%s...\n", util.PrintOrangeMulti([]string{constant.Redis, constant.Remote, v.Host}), v.Host, file.Name())
+//			fmt.Printf("%s 拷贝源码包至%s:~/%s...\n", util.PrintOrangeMulti([]string{constant.Redis, constant.Remote, v.Server}), v.Server, file.Name())
 //			util.RemoteWriteFile(fmt.Sprintf("%s/%s", util.HomeDir(v), file.Name()), b, v)
 //		}
 //	}
@@ -342,7 +342,7 @@ package install
 //		if redis.remoteDeploy {
 //			for _, v := range redis.clusterNodes {
 //				configFilePath := fmt.Sprintf("%s/%s.conf", redisConfigDir, ports[i])
-//				redis.banner(nil, fmt.Sprintf("%s: %s", generateRedisConfigFile, configFilePath), v.Host)
+//				redis.banner(nil, fmt.Sprintf("%s: %s", generateRedisConfigFile, configFilePath), v.Server)
 //				util.RemoteWriteFile(configFilePath, []byte(redis.config(ports[i])), v)
 //			}
 //		} else {
@@ -410,12 +410,12 @@ package install
 //		}
 //	} else {
 //		for _, v := range redis.clusterNodes {
-//			redis.banner(nil, compileRedisEnvDetection, v.Host)
+//			redis.banner(nil, compileRedisEnvDetection, v.Server)
 //			if !v.ExecuteOriginCmdIgnoreRe(search) {
 //				if !v.ExecuteOriginCmdIgnoreRe(install) {
 //					fmt.Printf("%s 节点：%s %s...\n",
-//						util.PrintRedMulti([]string{constant.Error, constant.Remote, v.Host}),
-//						v.Host,
+//						util.PrintRedMulti([]string{constant.Error, constant.Remote, v.Server}),
+//						v.Server,
 //						dependenceDetectionNotPass)
 //					os.Exit(1)
 //				}
@@ -470,7 +470,7 @@ package install
 //func (redis *redis) status() {
 //	if redis.mode == cluster && redis.remoteDeploy {
 //		ssh := redis.clusterNodes[0]
-//		redis.banner(nil, clusterStatus, ssh.Host)
+//		redis.banner(nil, clusterStatus, ssh.Server)
 //		ssh.RemoteShellPrint(fmt.Sprintf("%s/redis-cli -p 26379 -a %s -c cluster nodes",
 //			redisBinaryPath, redisPassword))
 //	} else if redis.mode == cluster && !redis.remoteDeploy {
@@ -506,7 +506,7 @@ package install
 //		wg := sync.WaitGroup{}
 //		wg.Add(len(redis.clusterNodes))
 //		for _, v := range redis.clusterNodes {
-//			redis.banner([]string{parallel}, msg, v.Host)
+//			redis.banner([]string{parallel}, msg, v.Server)
 //			go v.RemoteShellParallel(cmd, &wg)
 //		}
 //		wg.Wait()

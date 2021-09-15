@@ -1,5 +1,4 @@
 #!/bin/bash
-
 cat > ali-Base.repo <<EOF
 [base]
 name=CentOS-\$releasever - Base - mirrors.aliyun.com

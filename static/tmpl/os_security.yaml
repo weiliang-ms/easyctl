@@ -1,0 +1,5 @@
+security:
+  ssh:
+    version: ""
+    port: 22122
+    PermitRootLogin: false

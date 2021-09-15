@@ -8,11 +8,10 @@ import (
 // 关闭防火墙
 var closeFirewallCmd = &cobra.Command{
 	Use:   "firewall [flags]",
-	Short: "easyctl close firewall [flags]",
+	Short: "关闭防火墙",
 	Run: func(cmd *cobra.Command, args []string) {
-		c := close.Closer{
-			ServerListFilePath: serverListFile,
-			Forever:            forever,
+		c := close.Actuator{
+			ServerListFile: serverListFile,
 		}
 		c.Firewall()
 	},

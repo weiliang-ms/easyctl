@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/pkg/sftp"
 	"github.com/vbauerster/mpb/v6"
 	"github.com/vbauerster/mpb/v6/decor"
+	"github.com/weiliang-ms/easyctl/pkg/util"
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v2"
 	"io"
@@ -17,6 +19,8 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -36,14 +40,16 @@ type ExecResult struct {
 }
 
 type CommonServerList struct {
-	Server []Server `yaml:"server,flow"`
+	Server  []Server `yaml:"server,flow"`
+	Exclude []string `yaml:"exclude,flow"`
 }
 
 type Server struct {
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	Host           string `yaml:"host"`
+	Port           string `yaml:"port"`
+	Username       string `yaml:"username"`
+	Password       string `yaml:"password"`
+	PrivateKeyPath string `yaml:"privateKeyPath,omitempty" json:"privateKeyPath,omitempty"`
 }
 
 type KeepaliveServerList struct {
@@ -92,13 +98,15 @@ type HarborServerList struct {
 }
 
 type Harbor struct {
-	Server   []Server      `yaml:"server,flow"`
-	Project  HarborProject `yaml:"project"`
-	Password string        `yaml:"password"`
-	DataDir  string        `yaml:"dataDir"`
-	Domain   string        `yaml:"domain"`
-	HttpPort string        `yaml:"http-port"`
-	Vip      string        `yaml:"vip"`
+	Server        []Server      `yaml:"server,flow"`
+	Project       HarborProject `yaml:"project"`
+	Password      string        `yaml:"password"`
+	DataDir       string        `yaml:"dataDir"`
+	Domain        string        `yaml:"domain"`
+	HttpPort      string        `yaml:"http-port"`
+	ResolvAddress string        `yaml:"resolve-ip"`
+	OpenGC        bool          `yaml:"openGC"`
+	ReserveNum    int8          `yaml:"reserveNum"`
 }
 
 type HarborProject struct {
@@ -107,10 +115,14 @@ type HarborProject struct {
 }
 
 type ShellResult struct {
-	Host   string
-	Cmd    string
-	Code   int
-	Status string
+	Host      string
+	Cmd       string
+	Code      int
+	Status    string
+	Stderr    error
+	StdOut    string // 标准输出
+	StdErrMsg string
+	Output    string // 所有输出
 }
 
 type Installer struct {
@@ -119,7 +131,77 @@ type Installer struct {
 	FileName        string
 	ServerListPath  string
 	OfflineFilePath string
-	InitImagesPath  string
+	DataDir         string
+}
+
+func ParseCommonServerList(yamlPath string) (c CommonServerList) {
+	var decodeErr, marshalErr error
+
+	f, err := os.Open(yamlPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	decodeErr = yaml.NewDecoder(f).Decode(&c)
+	_, marshalErr = json.Marshal(&c)
+
+	if decodeErr != nil {
+		log.Fatal(decodeErr)
+	}
+
+	if marshalErr != nil {
+		log.Fatal(err)
+	}
+
+	var serverList []Server
+
+	for _, v := range c.Server {
+		// 192.168.235.[1:3]
+		if strings.Contains(v.Host, "[") {
+			log.Println("检测到配置文件中含有IP段，开始解析组装...")
+			//192.168.235.
+			baseAddress := strings.Split(v.Host, "[")[0]
+			log.Printf("解析到IP子网网段为：%s...\n", baseAddress)
+
+			// 1:3] -> 1:3
+			ipRange := strings.Split(strings.Split(v.Host, "[")[1], "]")[0]
+			log.Printf("解析到IP区间为：%s...\n", ipRange)
+
+			// 1:3 -> 1
+			begin := strings.Split(ipRange, ":")[0]
+			log.Printf("解析到起始IP为：%s...\n", fmt.Sprintf("%s%s", baseAddress, begin))
+
+			// 1:3 -> 3
+			end := strings.Split(ipRange, ":")[1]
+			log.Printf("解析到末尾IP为：%s...\n", fmt.Sprintf("%s%s", baseAddress, end))
+
+			// string -> int
+			beginIndex, _ := strconv.Atoi(begin)
+			endIndex, _ := strconv.Atoi(end)
+
+			for i := beginIndex; i <= endIndex; i++ {
+				server := Server{
+					Host:           fmt.Sprintf("%s%d", baseAddress, i),
+					Port:           v.Port,
+					Username:       v.Username,
+					Password:       v.Password,
+					PrivateKeyPath: v.PrivateKeyPath,
+				}
+
+				if !util.SliceContain(c.Exclude, server.Host) {
+					//log.Printf("add host: %s\n", server.Host)
+					serverList = append(serverList, server)
+				}
+
+			}
+		} else {
+			serverList = append(serverList, v)
+		}
+	}
+
+	c.Server = serverList
+
+	return c
 }
 
 func ParseServerList(yamlPath string, v interface{}) (list ServerList) {
@@ -138,13 +220,13 @@ func ParseServerList(yamlPath string, v interface{}) (list ServerList) {
 		_, marshalErr = json.Marshal(&list.Docker)
 	case "runner.HarborServerList":
 		decodeErr = yaml.NewDecoder(f).Decode(&list.Harbor)
-		_, marshalErr = json.Marshal(&list.Docker)
+		_, marshalErr = json.Marshal(&list.Harbor)
 	case "runner.KeepaliveServerList":
 		decodeErr = yaml.NewDecoder(f).Decode(&list.Keepalive)
-		_, marshalErr = json.Marshal(&list.Docker)
+		_, marshalErr = json.Marshal(&list.Keepalive)
 	default:
 		decodeErr = yaml.NewDecoder(f).Decode(&list.Common)
-		_, marshalErr = json.Marshal(&list.Docker)
+		_, marshalErr = json.Marshal(&list.Common)
 	}
 
 	if decodeErr != nil {
@@ -158,142 +240,6 @@ func ParseServerList(yamlPath string, v interface{}) (list ServerList) {
 	return list
 }
 
-//func ParseKeepaliveList(yamlPath string) KeepaliveServerList {
-//
-//	var serverList KeepaliveServerList
-//	if f, err := os.Open(yamlPath); err != nil {
-//		log.Println("open yaml...")
-//		log.Fatal(err)
-//	} else {
-//		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
-//		if decodeErr != nil {
-//			log.Println("decode failed...")
-//			log.Fatal(decodeErr)
-//		}
-//	}
-//
-//	_, err := json.Marshal(serverList)
-//
-//	if err != nil {
-//		log.Println("marshal failed...")
-//		log.Fatal(err)
-//	}
-//
-//	return serverList
-//}
-//
-//func ParseHaProxyList(yamlPath string) HaProxyServerList {
-//
-//	var serverList HaProxyServerList
-//	if f, err := os.Open(yamlPath); err != nil {
-//		log.Println("open yaml...")
-//		log.Fatal(err)
-//	} else {
-//		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
-//		if decodeErr != nil {
-//			log.Println("decode failed...")
-//			log.Fatal(decodeErr)
-//		}
-//	}
-//
-//	_, err := json.Marshal(serverList)
-//
-//	if err != nil {
-//		log.Println("marshal failed...")
-//		log.Fatal(err)
-//	}
-//	return serverList
-//}
-//
-//
-//
-//func ParseDockerServerList(yamlPath string) DockerServerList {
-//
-//	var serverList DockerServerList
-//	if f, err := os.Open(yamlPath); err != nil {
-//		log.Println("open yaml...")
-//		log.Fatal(err)
-//	} else {
-//		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
-//		if decodeErr != nil {
-//			log.Println("decode failed...")
-//			log.Fatal(decodeErr)
-//		}
-//	}
-//
-//	_, err := json.Marshal(serverList)
-//
-//	if err != nil {
-//		log.Println("marshal failed...")
-//		log.Fatal(err)
-//	}
-//
-//	return serverList
-//}
-//
-//func ParseDockerComposeServerList(yamlPath string) DockerComposeServerList {
-//
-//	var serverList DockerComposeServerList
-//	if f, err := os.Open(yamlPath); err != nil {
-//		log.Println("open yaml...")
-//		log.Fatal(err)
-//	} else {
-//		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
-//		if decodeErr != nil {
-//			log.Println("decode failed...")
-//			log.Fatal(decodeErr)
-//		}
-//	}
-//
-//	_, err := json.Marshal(serverList)
-//
-//	if err != nil {
-//		log.Println("marshal failed...")
-//		log.Fatal(err)
-//	}
-//
-//	return serverList
-//}
-//
-//func listType(i interface{}) interface{}{
-//
-//	v := reflect.ValueOf(i)
-//	switch v.Type().String() {
-//	case "runner.DockerServerList":
-//		return ServerList{}.Docker
-//	case "runner.HarborServerList":
-//		return ServerList{}.Harbor
-//	case "runner.KeepaliveServerList":
-//		return ServerList{}.Keepalive
-//	default:
-//		return ServerList{}.Common
-//	}
-//}
-//
-//func ParseHarborServerList(yamlPath string) HarborServerList {
-//
-//	var serverList HarborServerList
-//	if f, err := os.Open(yamlPath); err != nil {
-//		log.Println("open yaml...")
-//		log.Fatal(err)
-//	} else {
-//		decodeErr := yaml.NewDecoder(f).Decode(&serverList)
-//		if decodeErr != nil {
-//			log.Println("decode failed...")
-//			log.Fatal(decodeErr)
-//		}
-//	}
-//
-//	_, err := json.Marshal(serverList)
-//
-//	if err != nil {
-//		log.Println("marshal failed...")
-//		log.Fatal(err)
-//	}
-//
-//	return serverList
-//}
-
 // 远程写文件
 func ScpFile(srcPath string, dstPath string, server Server, mode os.FileMode) {
 	// init sftp
@@ -304,7 +250,7 @@ func ScpFile(srcPath string, dstPath string, server Server, mode os.FileMode) {
 
 	log.Printf("-> transfer %s to %s:%s", srcPath, server.Host, dstPath)
 	dstFile, err := sftp.Create(dstPath)
-	sftp.Chmod(dstPath, mode)
+	_ = sftp.Chmod(dstPath, mode)
 
 	if err != nil {
 		log.Fatal(err.Error())
@@ -312,15 +258,16 @@ func ScpFile(srcPath string, dstPath string, server Server, mode os.FileMode) {
 
 	f, _ := os.Open(srcPath)
 	ff, _ := os.Stat(srcPath)
-
 	total := ff.Size()
 	reader := io.LimitReader(f, total)
 
+	// 初始化进度条
 	p := mpb.New(
-		mpb.WithWidth(60),
-		mpb.WithRefreshRate(180*time.Millisecond),
+		mpb.WithWidth(60),                  // 进度条长度
+		mpb.WithRefreshRate(1*time.Second), // 刷新速度
 	)
 
+	//
 	bar := p.Add(total,
 		mpb.NewBarFiller("[=>-|"),
 		mpb.PrependDecorators(
@@ -339,10 +286,76 @@ func ScpFile(srcPath string, dstPath string, server Server, mode os.FileMode) {
 
 	p.Wait()
 
+	log.Println("传输成功...")
 	defer f.Close()
 	defer proxyReader.Close()
 	defer dstFile.Close()
 
+}
+
+// Scp 远程写文件
+func (server Server) Scp(srcPath string, dstPath string, mode os.FileMode) error {
+	// init sftp
+	sftp, connetErr := sftpConnect(server.Username, server.Password, server.Host, server.Port)
+	if connetErr != nil {
+		return errors.New(fmt.Sprintf("连接远程主机：%s失败 ->%s",
+			server.Host, connetErr.Error()))
+	}
+
+	defer sftp.Close()
+
+	log.Printf("-> transfer %s to %s:%s\n", srcPath, server.Host, dstPath)
+	dstFile, createErr := sftp.Create(dstPath)
+	if createErr != nil {
+		return errors.New(fmt.Sprintf("创建远程主机：%s文件句柄: %s失败 ->%s",
+			server.Host, dstPath, createErr.Error()))
+	}
+	defer dstFile.Close()
+
+	modErr := sftp.Chmod(dstPath, mode)
+	if modErr != nil {
+		return errors.New(fmt.Sprintf("修改%s:%s文件句柄权限失败 ->%s",
+			server.Host, dstPath, createErr.Error()))
+	}
+
+	// 获取文件大小信息
+	f, _ := os.Open(srcPath)
+	defer f.Close()
+	ff, _ := os.Stat(srcPath)
+	reader := io.LimitReader(f, ff.Size())
+
+	// 初始化进度条
+	p := mpb.New(
+		mpb.WithWidth(60),                  // 进度条长度
+		mpb.WithRefreshRate(1*time.Second), // 刷新速度
+	)
+
+	//
+	bar := p.Add(ff.Size(),
+		mpb.NewBarFiller("[=>-|"),
+		mpb.PrependDecorators(
+			decor.CountersKibiByte("% .2f / % .2f"),
+		),
+		mpb.AppendDecorators(
+			decor.EwmaETA(decor.ET_STYLE_GO, 90),
+			decor.Name(" ] "),
+			decor.EwmaSpeed(decor.UnitKiB, "% .2f", 60),
+		),
+	)
+
+	// create proxy reader
+	proxyReader := bar.ProxyReader(reader)
+	_, ioErr := io.Copy(dstFile, proxyReader)
+	if ioErr != nil {
+		return errors.New(fmt.Sprintf("传输%s:%s失败 ->%s",
+			server.Host, dstPath, createErr.Error()))
+	}
+
+	p.Wait()
+
+	defer proxyReader.Close()
+
+	return nil
 }
 
 func (server Server) CommandExists(cmd string) bool {
@@ -360,6 +373,14 @@ func (server Server) CommandExists(cmd string) bool {
 		return false
 	}
 
+	return true
+}
+
+func LocalCommandExists(cmd string) bool {
+	re := Shell(fmt.Sprintf("command -v %s > /dev/null 2>&1", cmd))
+	if re.ExitCode != 0 {
+		return false
+	}
 	return true
 }
 
@@ -397,7 +418,7 @@ func (server Server) WriteRemoteFile(b []byte, dstPath string, mode os.FileMode)
 		fmt.Println(err.Error())
 	}
 
-	dstFile.Write(b)
+	_, _ = dstFile.Write(b)
 
 	defer dstFile.Close()
 
@@ -486,17 +507,33 @@ func (server Server) RemoteShellReturnStd(cmd string) string {
 	return string(combo)
 }
 
+func (server Server) InstallSoft(installScript string) error {
+	session, conErr := server.sshConnect()
+	if conErr != nil {
+		log.Fatal(conErr)
+	}
+
+	defer session.Close()
+
+	_, runErr := session.CombinedOutput(installScript)
+
+	if runErr != nil {
+		return runErr
+	}
+
+	return nil
+}
+
 func (server Server) RemoteShell(cmd string) ShellResult {
 
-	var resulft ShellResult
+	var result ShellResult
 	if len(cmd) < 60 {
-		resulft.Cmd = cmd
+		result.Cmd = cmd
 	} else {
-		resulft.Cmd = "built-in shell"
+		result.Cmd = "built-in shell"
 	}
-	resulft.Host = server.Host
+	result.Host = server.Host
 
-	//log.Printf("-> [%s] shell => %s", server.Host, cmd)
 	log.Printf("-> [%s] => exec shell...", server.Host)
 	session, conErr := server.sshConnect()
 	if conErr != nil {
@@ -509,32 +546,35 @@ func (server Server) RemoteShell(cmd string) ShellResult {
 
 	if runErr != nil {
 		e, _ := runErr.(*ssh.ExitError)
-		resulft.Code = e.ExitStatus()
+		result.Code = e.ExitStatus()
+		result.Stderr = runErr
+		result.StdErrMsg = runErr.Error()
 		log.Print(runErr.Error())
 	}
 
-	if resulft.Code == 0 {
+	if result.Code == 0 {
 		log.Printf("<- call back [%s] exec shell successful...", server.Host)
-		resulft.Status = "success"
+		result.Status = "success"
+		result.StdOut = string(combo)
 	} else {
 		log.Printf("<- call back [%s]\n %s", server.Host, string(combo))
-		resulft.Status = "failed"
+		result.Status = "failed"
 	}
 
-	return resulft
+	return result
 }
 
 func (server Server) RemoteShellOutput(cmd string) {
 
-	var resulft ShellResult
+	var result ShellResult
 	if len(cmd) < 60 {
-		resulft.Cmd = cmd
+		result.Cmd = cmd
 	} else {
-		resulft.Cmd = "built-in shell"
+		result.Cmd = "built-in shell"
 	}
-	resulft.Host = server.Host
+	result.Host = server.Host
 
-	//log.Printf("-> [%s] shell => %s", server.Host, cmd)
+	//log.Printf("-> [%s] shell => %s", server.Server, cmd)
 	log.Printf("-> [%s] => exec shell...", server.Host)
 	session, conErr := server.sshConnect()
 	if conErr != nil {
@@ -588,16 +628,38 @@ func (server *Server) sshConnect() (*ssh.Session, error) {
 	return session, nil
 }
 
+// 立即返回，执行状态及结果
+func ShortShell(command string) (re ExecResult) {
+
+	//函数返回一个*Cmd，用于使用给出的参数执行name指定的程序
+	cmd := exec.Command("/bin/bash", "-c", command)
+
+	var stdOut, stdErr bytes.Buffer
+	cmd.Stdout = &stdOut
+	cmd.Stderr = &stdErr
+
+	err := cmd.Run()
+	if err != nil {
+		log.Printf("执行：%s失败 -> %s...\n", cmd, err.Error())
+	}
+
+	re.StdOut = stdOut.String()
+	re.StdErr = stdErr.String()
+
+	re.ExitCode = cmd.ProcessState.ExitCode()
+
+	return re
+}
+
 func Shell(command string) (re ExecResult) {
 	//函数返回一个*Cmd，用于使用给出的参数执行name指定的程序
 	cmd := exec.Command("/bin/bash", "-c", command)
-	//log.Printf("%s 执行语句：%s\n", PrintCyan(constant.Shell), command)
-	//读取io.Writer类型的cmd.Stdout，再通过bytes.Buffer(缓冲byte类型的缓冲器)将byte类型转化为string类型(out.String():这是bytes类型提供的接口)
 
 	stderr, _ := cmd.StderrPipe()
 	stdout, _ := cmd.StdoutPipe()
 	if err := cmd.Start(); err != nil {
-		log.Fatal(err.Error())
+		re.StdErr = err.Error()
+		return re
 	}
 
 	// 标准输出
@@ -614,10 +676,9 @@ func Shell(command string) (re ExecResult) {
 	scan := bufio.NewScanner(stderr)
 	for scan.Scan() {
 		s := scan.Text()
-		log.Println("build error: ", s)
 		errBuf.WriteString(s)
 		errBuf.WriteString("\n")
-		re.StdErr = logScan.Text()
+		re.StdErr = s
 	}
 
 	// 等待命令执行完

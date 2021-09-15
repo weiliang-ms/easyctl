@@ -1,10 +1,7 @@
 package scan
 
 import (
-	"fmt"
-	"github.com/weiliang-ms/easyctl/asset"
 	"github.com/weiliang-ms/easyctl/pkg/file"
-	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"log"
 	"net"
 	"regexp"
@@ -19,14 +16,21 @@ type system struct {
 	Platform string
 	CPUCores int
 	Time     string
+	OpenSSH  OpenSSH
+}
+
+type OpenSSH struct {
+	Version         string `yaml:"version",json:"version"`
+	Port            int    `yaml:"port",json:"port"`
+	PermitRootLogin bool   `yaml:"PermitRootLogin",json:"PermitRootLogin"`
 }
 
 const cpuInfo = "/proc/cpuinfo"
 
 func OSSecurity() {
-	b, _ := asset.Asset("static/script/scan/scan_os.sh")
-	re := runner.Shell(string(b))
-	fmt.Println(re.StdOut)
+	//b, _ := asset.Asset("static/script/scan/scan_os.sh")
+	//re := runner.Shell(string(b))
+	//fmt.Println(re.StdOut)
 }
 
 func (sys system) kernel() system {
@@ -54,6 +58,7 @@ func (sys system) ip() system {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	for _, address := range addrs {
 		// 检查ip地址判断是否回环地址
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {

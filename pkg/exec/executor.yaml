@@ -1,0 +1,9 @@
+executor:
+  server:
+    - host: 10.10.10.[1:40]
+      username: root
+      password: 123456
+      port: 22
+  excludes:
+    - 192.168.235.132
+  script: "1.sh"

@@ -1,40 +1,39 @@
 package set
 
 import (
-	"flag"
 	"fmt"
 	"github.com/modood/table"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
+	"github.com/weiliang-ms/easyctl/pkg/util"
 	"log"
 	"sync"
 )
 
 var (
 	value          string //默认参数
-	multiNode      bool   // 是否多节点
 	serverListFile string // 服务器列表配置文件
-	aliRepo        bool   // 阿里云镜像源yum仓库
-	tsinghuaRepo   bool   // 清华镜像源yum仓库
+	configFile     string
+	debug          bool
 )
 
-// set命令
+// RootCmd set命令
 var RootCmd = &cobra.Command{
 	Use:   "set [OPTIONS] [flags]",
-	Short: "set something through easyctl",
+	Short: "设置指令集",
 	Args:  cobra.ExactValidArgs(1),
 }
 
 func init() {
+	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "-c", "", "主机列表")
+	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "开启debug模式")
 
-	RootCmd.AddCommand(setDNSCmd)
-	RootCmd.AddCommand(setPasswordLessCmd)
-	RootCmd.AddCommand(setTimeZoneCmd)
-	RootCmd.AddCommand(setYumRepoCmd)
+	RootCmd.AddCommand(ulimitCmd)
 
-	//RootCmd.AddCommand(setHostnameCmd)
-	flag.Parse()
-
+	RootCmd.AddCommand(dnsCmd)
+	RootCmd.AddCommand(hostResolveCmd)
+	RootCmd.AddCommand(timeZoneCmd)
+	RootCmd.AddCommand(yumRepoCmd)
 }
 
 // 单机本地
@@ -84,4 +83,12 @@ func multiShell(list runner.ServerList, cmd string) {
 	// 表格输出
 	log.Println("执行结果如下：")
 	table.OutputA(as)
+}
+
+func level() util.LogLevel {
+	level := util.Info
+	if debug {
+		level = util.Debug
+	}
+	return level
 }

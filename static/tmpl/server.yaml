@@ -1,5 +1,5 @@
 server:
-  - host: 192.168.235.129
+  - host: 192.168.235.[1:10]
     username: root
     password: 1
     port: 22
@@ -7,3 +7,6 @@ server:
     username: root
     password: 1
     port: 22
+exclude:
+  - 192.168.235.5
+  - 192.168.235.6

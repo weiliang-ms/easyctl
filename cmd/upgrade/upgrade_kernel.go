@@ -1,30 +1,22 @@
 package upgrade
 
 import (
+	_ "embed"
 	"fmt"
 	"github.com/modood/table"
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/asset"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"log"
 	"sync"
 )
 
-var (
-	offline         bool
-	kernelVersion   string
-	offlineFilePath string
-	serverListFile  string
-)
+//go:embed asset/upgrade_kernel.sh
+var kernelScript []byte
 
 const kernel = "kernel"
 
 func init() {
-	upgradeKernelCmd.Flags().BoolVarP(&offline, "offline", "", false, "是否离线安装")
-	upgradeKernelCmd.Flags().StringVarP(&offlineFilePath, "offline-file", "", "", "离线文件")
-	upgradeKernelCmd.Flags().StringVarP(&serverListFile, "server-list", "", "", "服务器批量连接信息")
 	upgradeKernelCmd.Flags().StringVarP(&kernelVersion, "kernel-version", "", "lt", "内核版本 lt|ml")
-	//upgradeKernelCmd.MarkFlagRequired("kernel-version")
 }
 
 // install kernel
@@ -39,7 +31,7 @@ var upgradeKernelCmd = &cobra.Command{
 
 func upgradeKernel() {
 	if offline && serverListFile == "" {
-		upgradeKernelOffline(offlineFilePath)
+		upgradeKernelOffline(filePath)
 	}
 	if offline && serverListFile != "" {
 		list := runner.ParseServerList(serverListFile, runner.CommonServerList{}).Common.Server
@@ -52,9 +44,8 @@ func upgradeKernel() {
 // 单机本地离线
 func upgradeKernelOffline(filePath string) {
 	var re runner.ExecResult
-	script, _ := asset.Asset("static/script/upgrade_kernel.sh")
 	log.Printf("开始升级安装%s...\n", kernel)
-	re = runner.Shell(fmt.Sprintf("version=%s filepath=%s %s", kernelVersion, filePath, string(script)))
+	re = runner.Shell(fmt.Sprintf("version=%s filepath=%s %s", kernelVersion, filePath, string(kernelScript)))
 	if re.ExitCode != 0 {
 		log.Fatal(re.StdErr)
 	}
@@ -71,7 +62,7 @@ func upgradeKernelOfflineParallel(list []runner.Server) {
 
 	for _, v := range list {
 		log.Printf("传输数据文件%s至%s:/tmp/kernel-%s.tar.gz...", dstPath, v.Host, kernelVersion)
-		runner.ScpFile(offlineFilePath, dstPath, v, 0755)
+		runner.ScpFile(filePath, dstPath, v, 0755)
 		log.Println("-> done 传输完毕...")
 
 		log.Printf("传输数据文件%s至%s:/tmp/%s...", binaryName, v.Host, binaryName)
@@ -92,8 +83,6 @@ func upgradeKernelOfflineParallel(list []runner.Server) {
 			ch <- re
 		}(v)
 	}
-	wg.Wait()
-	close(ch)
 
 	// ch -> slice
 	var as []runner.ShellResult
@@ -106,4 +95,5 @@ func upgradeKernelOfflineParallel(list []runner.Server) {
 	table.OutputA(as)
 
 	log.Println("-> 重启主机生效...")
+	wg.Wait()
 }

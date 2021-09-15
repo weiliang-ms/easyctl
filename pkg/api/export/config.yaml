@@ -1,0 +1,10 @@
+harbor:
+  address: 192.168.1.1
+  domain: harbor.wl.io
+  user: admin
+  password: Harbor-12345
+  export-all: false
+  preserve-dir: images2
+  projects:
+    - apache
+    - weaveworks

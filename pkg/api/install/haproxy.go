@@ -1,107 +1,101 @@
 package install
 
 import (
+	_ "embed"
 	"fmt"
-	"github.com/lithammer/dedent"
-	"github.com/weiliang-ms/easyctl/asset"
+	"github.com/modood/table"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util"
 	"log"
-	"sync"
-	"text/template"
+	"os"
 )
 
-var (
-	HaProxyConfigTmpl = template.Must(template.New("HaProxyConfig").Parse(
-		dedent.Dedent(`
-global
-   log /dev/log  local0 warning
-   chroot      /var/lib/haproxy
-   pidfile     /var/run/haproxy.pid
-   maxconn     4000
-   user        haproxy
-   group       haproxy
-   daemon
-
-  stats socket /var/lib/haproxy/stats
-
-defaults
- log global
- option  httplog
- option  dontlognull
-       timeout connect 5000
-       timeout client 50000
-       timeout server 50000
-
-{{- if .Balance }}
-
-{{- range .Balance }}
-{{ . }}
-{{- end }}
-
-{{- end}}
-   `)))
-)
-
-func Haproxy(i runner.Installer) {
-	re := runner.ParseServerList(i.ServerListPath, runner.HaProxyServerList{})
-	list := re.HA.Attribute.Server
-	script, _ := asset.Asset("static/script/install_offline_tmpl.sh")
-	i.Cmd = fmt.Sprintf("package_name=haproxy %s", string(script))
-	i.FileName = "haproxy.tar.gz"
-	if i.Offline {
-		offline(i, list)
-		configHA(re.HA.Attribute.BalanceList, list)
+func Haproxy(configPath string) {
+	b, err := os.ReadFile(configPath)
+	if err != nil {
+		panic(err)
 	}
+	h, err := ParseConfig(b, HaproxyMeta{})
+	if err != nil {
+		panic(err)
+	}
+	h.(*HaproxyMeta).prepare().installHA().configHA()
 }
 
-func offline(i runner.Installer, list []runner.Server) {
-	var wg sync.WaitGroup
-	ch := make(chan runner.ShellResult, len(list))
-	// 拷贝文件
-	dstPath := fmt.Sprintf("/tmp/%s", i.FileName)
+// 预安装阶段：下载文件、解析server列表、检测依赖
+func (h *HaproxyMeta) prepare() *HaproxyMeta {
+	//path, err := Download(h.Haproxy.FilePath)
+	//if err != nil {
+	//	panic(err)
+	//}
 
-	// 生成本地临时文件
-	for _, v := range list {
-		runner.ScpFile(i.OfflineFilePath, dstPath, v, 0755)
-		log.Println("<- transfer done ...")
+	var servers []runner.Server
+	for _, s := range h.Haproxy.Server {
+		for _, v := range ParseServer(h.Haproxy.Excludes, s) {
+			servers = append(servers, v)
+		}
 	}
 
-	// 并行
-	log.Println("-> 批量安装...")
-	for _, v := range list {
-		wg.Add(1)
-		go func(server runner.Server) {
-			defer wg.Done()
-			re := server.RemoteShell(i.Cmd)
-			ch <- re
-		}(v)
+	//h.Haproxy.FilePath = path
+	h.Haproxy.Server = servers
+
+	// 分发文件
+	//if err := HandFile(h.Haproxy.Server, h.Haproxy.FilePath);err != nil {
+	//	panic(err)
+	//}
+
+	need := map[string]struct {
+		DetectShell  string
+		InstallShell string
+	}{}
+
+	// 检测依赖
+	need["gcc"] = struct {
+		DetectShell  string
+		InstallShell string
+	}{DetectShell: "gcc -v", InstallShell: "yum install -y gcc"}
+
+	for _, s := range h.Haproxy.Server {
+		d := Dependency{
+			Needs:  need,
+			Server: s,
+		}
+
+		d.DetectDep()
 	}
 
-	wg.Wait()
-	close(ch)
-
-	// ch -> slice
-	var as []runner.ShellResult
-	for target := range ch {
-		as = append(as, target)
-	}
+	return h
 }
 
-func configHA(balance []runner.Balance, list []runner.Server) {
+// 预安装阶段：下载文件、解析server列表、检测依赖
+func (h *HaproxyMeta) installHA() *HaproxyMeta {
+	script, err := util.Render(HaproxyScriptTmpl, util.Data{
+		"FilePath": subFilename(h.Haproxy.FilePath),
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	table.OutputA(Execute(h.Haproxy.Server, "安装haproxy", script))
+
+	return h
+}
+
+func (h *HaproxyMeta) configHA() {
 
 	var slice []string
 	var ports []int
 	var openPortCmd string
 
-	for _, v := range balance {
+	for _, v := range h.Haproxy.Balance {
 
-		ports = append(ports, v.Port)
+		ports = append(ports, v.ListenPort)
 
-		listen := fmt.Sprintf("listen %s\n   bind *:%d\n   mode tcp\n   option tcplog\n   balance source\n", v.Name, v.Port)
+		listen := fmt.Sprintf("listen %s\n   bind *:%d\n   mode tcp\n   option tcplog\n   balance source\n", v.Name, v.ListenPort)
 		var server string
 		i := 1
-		for _, s := range v.Address {
+		for _, s := range v.Endpoint {
 			server += fmt.Sprintf("   server %s-%d %s weight 1\n", v.Name, i, s)
 			i++
 		}
@@ -119,7 +113,7 @@ func configHA(balance []runner.Balance, list []runner.Server) {
 		openPortCmd += util.OpenPortCmd(p)
 	}
 
-	for _, v := range list {
+	for _, v := range h.Haproxy.Server {
 		log.Printf("config harproxy node -> %s", v.Host)
 		v.WriteRemoteFile([]byte(config), "/etc/haproxy/haproxy.cfg", 0644)
 		log.Printf("open firewalld port -> %s", v.Host)

@@ -5,14 +5,15 @@ import (
 )
 
 var (
-	packageName string
+	packageName    string
+	serverListFile string
+	configFilePath string
 )
 
-// export命令
+// RootCmd export命令
 var RootCmd = &cobra.Command{
-	Use:     "export [OPTIONS] [flags]",
-	Short:   "export something through easyctl",
-	Example: "\nexport yum-repo --package-name=gcc",
+	Use:   "export [OPTIONS] [flags]",
+	Short: "导出指令集",
 	Run: func(cmd *cobra.Command, args []string) {
 	},
 	ValidArgs: []string{"yum-repo"},
@@ -20,5 +21,9 @@ var RootCmd = &cobra.Command{
 }
 
 func init() {
+	// todo: 变更入参 --server-list -> --config or -c
+	RootCmd.PersistentFlags().StringVarP(&serverListFile, "server-list", "", "", "服务器批量连接信息")
 	RootCmd.AddCommand(imageCmd)
+	RootCmd.AddCommand(localImagesCmd)
+	RootCmd.AddCommand(chartCmd)
 }
