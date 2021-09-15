@@ -1,0 +1,6 @@
+helm-repo:
+  endpoint: 192.168.174.95:80
+  username: admin
+  password: Harbor-12345
+  preserveDir: charts
+  package: true

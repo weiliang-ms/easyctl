@@ -1,10 +1,10 @@
 package install
 
 import (
+	_ "embed"
 	"fmt"
 	"github.com/modood/table"
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/asset"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"io/ioutil"
 	"log"
@@ -12,11 +12,8 @@ import (
 	"sync"
 )
 
-func init() {
-	keepaliveCmd.Flags().BoolVarP(&offline, "offline", "", false, "是否离线安装")
-	keepaliveCmd.Flags().StringVarP(&offlineFilePath, "offline-file", "", "", "离线文件")
-	keepaliveCmd.Flags().StringVarP(&serverListFile, "server-list", "", "", "服务器批量连接信息")
-}
+//go:embed asset/install-keepalive-script
+var keepaliveScript []byte
 
 // install keepalive
 var keepaliveCmd = &cobra.Command{
@@ -45,8 +42,8 @@ func keepaliveOffline() {
 	dstPath := "/tmp/keepalived.tar.gz"
 
 	// 生成本地临时文件
-	script, _ := asset.Asset("static/script/install_keepalive.sh")
-	ioutil.WriteFile("keepalived.sh", script, 0644)
+	//script, _ := asset.Asset("static/script/install_keepalive.sh")
+	ioutil.WriteFile("keepalived.sh", keepaliveScript, 0644)
 
 	for _, v := range list {
 		log.Printf("传输数据文件%s至%s...", dstPath, v.Host)

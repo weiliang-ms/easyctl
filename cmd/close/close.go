@@ -10,15 +10,16 @@ var (
 )
 
 func init() {
-	RootCmd.PersistentFlags().BoolVarP(&forever, "forever", "", true, "是否永久关闭服务")
-	RootCmd.PersistentFlags().StringVarP(&serverListFile, "server-list", "", "server.yaml", "服务器列表连接信息")
+	RootCmd.PersistentFlags().StringVarP(&serverListFile, "server-list", "", "", "服务器列表连接信息")
 	RootCmd.AddCommand(closeFirewallCmd)
 	RootCmd.AddCommand(closeSeLinuxCmd)
+	RootCmd.AddCommand(closePingCmd)
 }
 
-// close命令
+// RootCmd close命令
 var RootCmd = &cobra.Command{
 	Use:     "close [OPTIONS] [flags]",
+	Short:   "关闭指令集",
 	Example: "\neasyctl close firewalld --forever",
 	Run: func(cmd *cobra.Command, args []string) {
 	},

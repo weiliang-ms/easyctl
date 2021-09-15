@@ -2,97 +2,35 @@ package set
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/asset"
-	"github.com/weiliang-ms/easyctl/pkg/runner"
-	"io/ioutil"
-	"log"
-	"os"
+	"github.com/weiliang-ms/easyctl/pkg/set"
 )
 
-var (
-	repoDir     = "/etc/yum.repos.d/"
-	aliBaseByte []byte
-	aliEpelByte []byte
-)
+var repoUrl string
+var isoPath string
 
-const (
-	aliBaseRepo = "/etc/yum.repos.d/ali-base.repo"
-	aliEpelRepo = "/etc/yum.repos.d/ali-epel.repo"
-)
+func init() {
+	yumRepoCmd.Flags().StringVarP(&repoUrl, "repo-url", "", "http://mirrors.163.com", "yum仓库地址，默认为")
+	yumRepoCmd.Flags().StringVarP(&isoPath, "iso-path", "", "", "iso文件url地址或离线文件地址")
+}
 
-// 配置yum repo
-var setYumRepoCmd = &cobra.Command{
-	Use:     "yum-repo",
-	Short:   "easyctl set yum-repo [flags]",
-	Example: "\neasyctl set yum-repo",
+//// 配置yum repo
+var yumRepoCmd = &cobra.Command{
+	Use:   "yum-repo",
+	Short: "配置yum仓库",
+	Example: "\neasyctl set yum-repo" +
+		"\neasyctl set yum-repo --repo-url=http://mirrors.163.com" +
+		"\neasyctl set yum-repo --iso-path=CentOS-7-x86_64-DVD-2009.iso" +
+		"\neasyctl set yum-repo --iso-path=https://mirrors.ustc.edu.cn/centos/7.9.2009/isos/x86_64/CentOS-7-x86_64-DVD-2009.iso",
 	Run: func(cmd *cobra.Command, args []string) {
 		setYumRepo()
 	},
 }
 
-func init() {
-	aliBaseByte, _ = asset.Asset("static/conf/yum-ali-base.repo")
-	aliEpelByte, _ = asset.Asset("static/conf/yum-ali-epel.repo")
-	setYumRepoCmd.Flags().BoolVarP(&aliRepo, "ali-repo", "", false, "阿里云镜像源yum仓库")
-	//setYumRepoCmd.Flags().BoolVarP(&tsinghuaRepo, "tsinghua-repo", "", false, "清华镜像源yum仓库")
-	setYumRepoCmd.Flags().BoolVarP(&multiNode, "multi-node", "", false, "是否配置多节点")
-	setYumRepoCmd.Flags().StringVarP(&serverListFile, "server-list", "", "server.yaml", "服务器列表")
-}
-
-// 配置yum repo
-// todo: 优化判断语句
 func setYumRepo() {
-	if !multiNode {
-		setLocalYumRepo()
-	} else {
-		setRemoteYumRepo()
+	ac := set.Actuator{
+		ServerListFile: serverListFile,
+		Value:          repoUrl,
+		FilePath:       isoPath,
 	}
-}
-
-// 配置yum repo
-func setLocalYumRepo() {
-
-	// backup repo file
-	os.MkdirAll(repoDir+"bak", 0644)
-	log.Println("开始备份，yum仓库配置文件...")
-	files, _ := ioutil.ReadDir(repoDir)
-	for _, f := range files {
-		if !f.IsDir() {
-			oldpath := repoDir + f.Name()
-			newPath := repoDir + "bak/" + f.Name()
-			log.Printf("%s => %s", oldpath, newPath)
-			err := os.Rename(oldpath, newPath)
-			if err != nil {
-				log.Fatal(err.Error())
-			}
-		}
-	}
-
-	if aliRepo {
-		log.Printf("write repo config file -> %s", aliBaseRepo)
-		ioutil.WriteFile(aliBaseRepo, aliBaseByte, 0644)
-		log.Printf("write repo config file -> %s", aliEpelRepo)
-		ioutil.WriteFile(aliEpelRepo, aliEpelByte, 0644)
-	}
-
-	log.Println("配置yum repo成功...")
-}
-
-// 配置yum repo
-func setRemoteYumRepo() {
-
-	list := runner.ParseServerList(serverListFile, runner.CommonServerList{})
-
-	for _, v := range list.Common.Server {
-
-		log.Printf("[%s] 备份repo文件", v.Host)
-		v.MoveDirFiles(repoDir, repoDir+"/bak")
-
-		log.Printf("[%s] write repo config file -> %s", v.Host, aliBaseRepo)
-		v.WriteRemoteFile(aliBaseByte, aliBaseRepo, 0644)
-		log.Printf("[%s] write repo config file -> %s", v.Host, aliEpelRepo)
-		v.WriteRemoteFile(aliEpelByte, aliEpelRepo, 0644)
-	}
-
-	log.Println("配置yum repo成功...")
+	ac.SetYumRepo()
 }

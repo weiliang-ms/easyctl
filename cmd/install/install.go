@@ -10,19 +10,25 @@ var (
 	offline         bool
 	offlineFilePath string
 	serverListFile  string
+	ConfigFilePath  string
 )
 
 func init() {
-	Cmd.AddCommand(keepaliveCmd)
-	Cmd.AddCommand(haproxyCmd)
-	Cmd.AddCommand(dockerCmd)
-	Cmd.AddCommand(dockerComposeCmd)
-	Cmd.AddCommand(harborCmd)
+	RootCmd.PersistentFlags().BoolVarP(&offline, "offline", "", false, "是否离线安装")
+	RootCmd.PersistentFlags().StringVarP(&offlineFilePath, "offline-file", "", "", "离线文件")
+	RootCmd.PersistentFlags().StringVarP(&serverListFile, "server-list", "", "", "服务器批量连接信息")
+	RootCmd.PersistentFlags().StringVarP(&ConfigFilePath, "config", "c", "", "配置文件路径")
+
+	RootCmd.AddCommand(keepaliveCmd)
+	RootCmd.AddCommand(haproxyCmd)
+	RootCmd.AddCommand(dockerCmd)
+	RootCmd.AddCommand(dockerComposeCmd)
+	RootCmd.AddCommand(harborCmd)
 }
 
 //
-var Cmd = &cobra.Command{
+var RootCmd = &cobra.Command{
 	Use:   "install [OPTIONS] [flags]",
-	Short: "install soft through easyctl",
+	Short: "安装指令集",
 	Args:  cobra.MinimumNArgs(1),
 }
