@@ -2,7 +2,7 @@ package set
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/pkg/set/ulimit"
+	"github.com/weiliang-ms/easyctl/pkg/set"
 )
 
 // 文件描述符
@@ -12,9 +12,8 @@ var ulimitCmd = &cobra.Command{
 	Example: "\neasyctl set ulimit -c config.yaml",
 	Args:    cobra.ExactValidArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		err := ulimit.Config(configFile, level())
-		if err != nil {
-			panic(err)
+		if runErr := Set(Entity{Cmd: cmd, Fnc: set.Ulimit}); runErr != nil {
+			panic(runErr)
 		}
 	},
 }

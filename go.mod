@@ -10,18 +10,22 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/lithammer/dedent v1.1.0
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/mitchellh/mapstructure v1.4.2
 	github.com/moby/term v0.0.0-20210610120745-9d4ed1856297 // indirect
 	github.com/modood/table v0.0.0-20200225102042-88de94bb9876
 	github.com/morikuni/aec v1.0.0 // indirect
+	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.12.0
-	github.com/sirupsen/logrus v1.7.0
+	github.com/sethvargo/go-password v0.2.0
+	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
-	github.com/tmc/scp v0.0.0-20170824174625-f7b48647feef
+	github.com/tmc/scp v0.0.0-20170824174625-f7b48647feef // indirect
 	github.com/vbauerster/mpb/v6 v6.0.3
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.20.6
 	k8s.io/klog v1.0.0
+	k8s.io/klog/v2 v2.4.0
 )

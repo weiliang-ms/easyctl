@@ -2,7 +2,6 @@ package upgrade
 
 import (
 	"github.com/lithammer/dedent"
-	"github.com/weiliang-ms/easyctl/pkg/util"
 	"text/template"
 )
 
@@ -66,23 +65,23 @@ fi
 
 // 下载安装介质->解析列表->检测依赖是否安装->检测yum可用性->尝试安装依赖->
 
-func (ac *Actuator) OpenSSH() {
-	ac.DependenciesList = []string{
-		"telnet-server",
-		"telnet",
-		"xinetd",
-		"pam-devel",
-		"zlib-devel",
-		"openssl-devel",
-	}
-	ac.download().parseServerList().detect().handoutFile().compileOpenSSHCmd().execute("编译安装openssh", 0)
-}
-
-func (ac *Actuator) compileOpenSSHCmd() *Actuator {
-	content, _ := util.Render(sshUpgradeShellTmpl, util.Data{
-		"FilePath":    ac.FilePath,
-		"OpensslPath": ac.OpensslDir,
-	})
-	ac.Cmd = content
-	return ac
-}
+//func (ac *Actuator) OpenSSH() {
+//	ac.DependenciesList = []string{
+//		"telnet-server",
+//		"telnet",
+//		"xinetd",
+//		"pam-devel",
+//		"zlib-devel",
+//		"openssl-devel",
+//	}
+//	ac.download().parseServerList().detect().handoutFile().compileOpenSSHCmd().execute("编译安装openssh", 0)
+//}
+//
+//func (ac *Actuator) compileOpenSSHCmd() *Actuator {
+//	content, _ := util.Render(sshUpgradeShellTmpl, util.Data{
+//		"FilePath":    ac.FilePath,
+//		"OpensslPath": ac.OpensslDir,
+//	})
+//	ac.Cmd = content
+//	return ac
+//}

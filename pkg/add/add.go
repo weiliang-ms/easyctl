@@ -2,7 +2,6 @@ package add
 
 import (
 	"github.com/modood/table"
-	"github.com/weiliang-ms/easyctl/pkg/runner"
 )
 
 const (
@@ -28,31 +27,31 @@ type Actuator struct {
 	UserName       string
 	Password       string
 	NoLogin        bool
-	ServerList     runner.CommonServerList
-	Err            error
+	//ServerList     runner.CommonServerList
+	Err error
 }
 
 func (ac *Actuator) parseServerList() *Actuator {
 	if ac.ServerListFile == "" {
 		return ac
 	}
-	serverList := runner.ParseCommonServerList(ac.ServerListFile)
-	ac.ServerList = serverList
+	//serverList := runner.ParseCommonServerList(ac.ServerListFile)
+	//ac.ServerList = serverList
 	return ac
 }
 
 func (ac *Actuator) execute(action string) {
 
 	var result []ActuatorExecRe
-	if len(ac.ServerList.Server) <= 0 {
-		re := runner.Shell(ac.Cmd)
-		result = append(result, packageRe(localhost, action, re.StdErr, re.ExitCode))
-	} else {
-		for _, v := range ac.ServerList.Server {
-			re := v.RemoteShell(ac.Cmd)
-			result = append(result, packageRe(v.Host, action, re.StdErrMsg, re.Code))
-		}
-	}
+	//if len(ac.ServerList.Server) <= 0 {
+	//	re := runner.Shell(ac.Cmd)
+	//	result = append(result, packageRe(localhost, action, re.StdErr, re.ExitCode))
+	//} else {
+	//	for _, v := range ac.ServerList.Server {
+	//		re := v.RemoteShell(ac.Cmd)
+	//		result = append(result, packageRe(v.Host, action, re.StdErrMsg, re.Code))
+	//	}
+	//}
 
 	table.OutputA(result)
 }

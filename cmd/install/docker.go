@@ -2,8 +2,6 @@ package install
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/pkg/api/install"
-	"github.com/weiliang-ms/easyctl/pkg/runner"
 )
 
 // install docker
@@ -23,11 +21,11 @@ func init() {
 
 // 单机本地离线
 func docker() {
-	i := runner.Installer{
-		DataDir:         dataDir,
-		ServerListPath:  serverListFile,
-		Offline:         offline,
-		OfflineFilePath: offlineFilePath,
-	}
-	install.Docker(i)
+	//i := runner.Installer{
+	//	DataDir:         dataDir,
+	//	ServerListPath:  serverListFile,
+	//	Offline:         offline,
+	//	OfflineFilePath: offlineFilePath,
+	//}
+	//install.Docker(i)
 }
