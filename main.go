@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/cmd/add"
 	"github.com/weiliang-ms/easyctl/cmd/clean"
-	close2 "github.com/weiliang-ms/easyctl/cmd/close"
+	"github.com/weiliang-ms/easyctl/cmd/deny"
 	"github.com/weiliang-ms/easyctl/cmd/export"
 	"github.com/weiliang-ms/easyctl/cmd/install"
 	"github.com/weiliang-ms/easyctl/cmd/secure"
@@ -42,7 +42,7 @@ func init() {
 	subCmds := []*cobra.Command{
 		add.RootCmd,
 		clean.RootCmd,
-		close2.RootCmd,
+		deny.RootCmd,
 		set.RootCmd,
 		install.RootCmd,
 		upgrade.Cmd,

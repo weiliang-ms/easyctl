@@ -8,9 +8,7 @@ import (
 // todo
 var dnsCmd = &cobra.Command{
 	Use:   "dns [flags]",
-	Short: "easyctl set dns --value",
-	Example: "\neasyctl set dns --value=8.8.8.8\n" +
-		"easyctl set dns --value=8.8.8.8,114.114.114.114",
+	Short: "easyctl set dns",
 	Run: func(cmd *cobra.Command, args []string) {
 		//setDNS()
 	},

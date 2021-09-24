@@ -11,7 +11,7 @@ func init() {
 	RootCmd.AddCommand(dnsCmd)
 }
 
-// clean命令
+// RootCmd clean命令
 var RootCmd = &cobra.Command{
 	Use:     "clean [OPTIONS] [flags]",
 	Short:   "清理指令集",

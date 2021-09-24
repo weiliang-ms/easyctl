@@ -6,9 +6,6 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/set"
 )
 
-//go:embed asset/config.yaml
-var config []byte
-
 // PasswordLessCmd 主机互信
 var passwordLessCmd = &cobra.Command{
 	Use:     "password-less [flags]",
