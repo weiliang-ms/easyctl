@@ -1,0 +1,10 @@
+server:
+  - host: 10.10.10.[1:40]
+    username: root
+    password: 123456
+    port: 22
+excludes:
+  - 192.168.235.132
+redis:
+  paasword: ""
+  package: "redis-5.0.13.tar.gz"

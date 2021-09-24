@@ -5,28 +5,16 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/set"
 )
 
-func init() {
-	timeZoneCmd.Flags().StringVarP(&value, "value", "v", "Asia/Shanghai", "时区")
-}
-
 // 配置时区子命令
 var timeZoneCmd = &cobra.Command{
 	Use:     "timezone",
-	Short:   "easyctl set tz/timezone [value]",
+	Short:   "设置为上海时区",
 	Example: "\neasyctl set tz/timezone",
 	Aliases: []string{"tz"},
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		setTimeZone()
+		if runErr := Set(Entity{Cmd: cmd, Fnc: set.Timezone}); runErr != nil {
+			panic(runErr)
+		}
 	},
-}
-
-// 配置时区
-func setTimeZone() {
-	ac := &set.Actuator{
-		ServerListFile: serverListFile,
-		Value:          value,
-	}
-
-	ac.TimeZone()
 }

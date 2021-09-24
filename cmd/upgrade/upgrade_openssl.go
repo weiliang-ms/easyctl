@@ -2,7 +2,6 @@ package upgrade
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/pkg/upgrade"
 )
 
 func init() {
@@ -21,9 +20,9 @@ var upgradeOpensslCmd = &cobra.Command{
 }
 
 func upgradeOpenssl() {
-	upgrade := upgrade.Actuator{
-		ServerListFile: serverListFile,
-		FilePath:       filePath,
-	}
-	upgrade.Openssl()
+	//	upgrade := upgrade.Actuator{
+	//		ServerListFile: serverListFile,
+	//		FilePath:       filePath,
+	//	}
+	//	upgrade.Openssl()
 }

@@ -2,7 +2,6 @@ package install
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/pkg/api/install"
 )
 
 // install keepalive
@@ -16,5 +15,5 @@ var haproxyCmd = &cobra.Command{
 }
 
 func haproxy() {
-	install.Haproxy(ConfigFilePath)
+	//install.Haproxy(ConfigFilePath)
 }

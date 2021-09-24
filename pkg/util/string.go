@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 )
@@ -24,4 +25,13 @@ func SubSlash(s string) []string {
 	}
 
 	return strings.Split(s, slash)
+}
+
+func SubFileName(s string) string {
+
+	f, err := os.Stat(s)
+	if err != nil {
+		panic(err)
+	}
+	return f.Name()
 }

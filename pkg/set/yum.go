@@ -1,9 +1,7 @@
 package set
 
 import (
-	"fmt"
 	"github.com/lithammer/dedent"
-	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util"
 	"log"
 	"text/template"
@@ -76,20 +74,12 @@ EOF
 {{- end}}
 `)))
 
-func (ac *Actuator) SetYumRepo() {
-	ac.parseServerList().download().handoutIso().setRepoCmd().execute(fmt.Sprintf("配置yum仓库地址为：%s", ac.Value))
+type YUM struct {
 }
 
-func (ac *Actuator) setRepoCmd() *Actuator {
-	if ac.FilePath == "" {
-		ac.Cmd = repoSetCmd(ac.Value)
-	} else {
-		ac.Cmd = localRepoSetCmd(ac.FilePath)
-		ac.Value = "file:///yum"
-	}
-	return ac
+func (yum YUM) Config(b []byte, debug bool) error {
+	return nil
 }
-
 func repoSetCmd(repoUrl string) string {
 	content, err := util.Render(baseRepoConfigTmpl, util.Data{
 		"RepoUrl": repoUrl,
@@ -110,17 +100,4 @@ func localRepoSetCmd(isoPath string) string {
 	}
 
 	return content
-}
-
-// 分发iso文件
-func (ac *Actuator) handoutIso() *Actuator {
-	if len(ac.ServerList.Server) <= 0 {
-		return ac
-	}
-	localIsoPath := ac.FilePath
-	ac.FilePath = fmt.Sprintf("/tmp/%s", ac.FilePath)
-	for _, v := range ac.ServerList.Server {
-		runner.ScpFile(localIsoPath, ac.FilePath, v, 0644)
-	}
-	return ac
 }

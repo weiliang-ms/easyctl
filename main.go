@@ -21,6 +21,7 @@ import (
 var (
 	GitTag    = "2000.01.01.release"
 	BuildTime = "2000-01-01T00:00:00+0800"
+	Debug     bool
 )
 
 var RootCmd = &cobra.Command{
@@ -37,6 +38,7 @@ var RootCmd = &cobra.Command{
 
 func init() {
 
+	RootCmd.PersistentFlags().BoolVarP(&Debug, "debug", "d", false, "开启debug模式")
 	subCmds := []*cobra.Command{
 		add.RootCmd,
 		clean.RootCmd,

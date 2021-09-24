@@ -2,7 +2,6 @@ package upgrade
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/pkg/upgrade"
 )
 
 var opensslDir string
@@ -18,16 +17,16 @@ var upgradeOpenSSHCmd = &cobra.Command{
 	Use:   "openssh [flags]",
 	Short: "更新openssh",
 	Run: func(cmd *cobra.Command, args []string) {
-		upgradeOpenSSH()
+		//upgradeOpenSSH()
 	},
 	Args: cobra.NoArgs,
 }
 
-func upgradeOpenSSH() {
-	upgrade := upgrade.Actuator{
-		ServerListFile: serverListFile,
-		FilePath:       filePath,
-		OpensslDir:     opensslDir,
-	}
-	upgrade.OpenSSH()
-}
+//func upgradeOpenSSH() {
+//	upgrade := upgrade.Actuator{
+//		ServerListFile: serverListFile,
+//		FilePath:       filePath,
+//		OpensslDir:     opensslDir,
+//	}
+//	upgrade.OpenSSH()
+//}

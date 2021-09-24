@@ -2,8 +2,6 @@ package install
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/pkg/api/install"
-	"github.com/weiliang-ms/easyctl/pkg/runner"
 )
 
 // install docker-compose
@@ -18,10 +16,10 @@ var dockerComposeCmd = &cobra.Command{
 
 // 单机本地离线
 func dockerCompose() {
-	i := runner.Installer{
-		ServerListPath:  serverListFile,
-		Offline:         offline,
-		OfflineFilePath: offlineFilePath,
-	}
-	install.DockerCompose(i)
+	//i := runner.Installer{
+	//	ServerListPath:  serverListFile,
+	//	Offline:         offline,
+	//	OfflineFilePath: offlineFilePath,
+	//}
+	//install.DockerCompose(i)
 }

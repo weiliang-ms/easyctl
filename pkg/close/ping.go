@@ -7,7 +7,7 @@ sysctl -p
 `
 
 func (ac *Actuator) Ping() {
-	ac.parseServerList().denyPingCmd().execute("禁ping", 0)
+	//ac.parseServerList().denyPingCmd().execute("禁ping", 0)
 }
 
 func (ac *Actuator) denyPingCmd() *Actuator {

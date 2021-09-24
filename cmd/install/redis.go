@@ -356,7 +356,6 @@ package install
 //// 编译
 //func (redis *redis) compile() {
 //	directoryName := util.CutCharacter(strings.TrimSuffix(sourceFilePath, ".tar.gz"), []string{"./", ""})
-//	compileCmd := fmt.Sprintf("tar zxvf %s >/dev/null && cd %s && sed -i \"s#\\$(PREFIX)/bin#%s#g\" src/Makefile && make -j $(nproc) && make install && cd ~",
 //		sourceFilePath, directoryName, redisBinaryPath)
 //
 //	redis.shell(startToCompileRedis, compileCmd)
@@ -395,34 +394,7 @@ package install
 //		constant.RootDetectionCmd, constant.OverCommitMemoryOptimizeCmd, constant.LimitOptimizeCmd)
 //}
 //
-//func (redis *redis) compileEnvDetection() {
-//	search := fmt.Sprintf("%s %s", constant.RpmSearch, constant.Gcc)
-//	install := fmt.Sprintf("%s %s", constant.YumInstall, "gcc")
-//
-//	if !redis.remoteDeploy {
-//		redis.banner(nil, compileRedisEnvDetection, constant.Local)
-//		if !util.ExecuteIgnoreStd(search) {
-//			if !util.ExecuteIgnoreStd(install) {
-//				fmt.Printf("%s %s...\n",
-//					util.PrintRedMulti([]string{constant.Error, constant.Local, constant.LoopbackAddress}),
-//					dependenceDetectionNotPass)
-//			}
-//		}
-//	} else {
-//		for _, v := range redis.clusterNodes {
-//			redis.banner(nil, compileRedisEnvDetection, v.Server)
-//			if !v.ExecuteOriginCmdIgnoreRe(search) {
-//				if !v.ExecuteOriginCmdIgnoreRe(install) {
-//					fmt.Printf("%s 节点：%s %s...\n",
-//						util.PrintRedMulti([]string{constant.Error, constant.Remote, v.Server}),
-//						v.Server,
-//						dependenceDetectionNotPass)
-//					os.Exit(1)
-//				}
-//			}
-//		}
-//	}
-//}
+
 //
 //// 开启端口
 //func (redis *redis) openFirewallPort() {

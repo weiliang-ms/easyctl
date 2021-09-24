@@ -2,104 +2,62 @@ package set
 
 import (
 	"fmt"
-	"github.com/modood/table"
+	"github.com/mitchellh/mapstructure"
+	"github.com/olekukonko/tablewriter"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
-	"github.com/weiliang-ms/easyctl/pkg/util"
-	"log"
-	"net/url"
 	"os"
-	"strings"
+	"sort"
 )
 
-const (
-	localhost = "localhost"
-	success   = "success"
-	fail      = "fail"
-)
+func Config(b []byte, debug bool, cmd string) error {
 
-// ActuatorExecRe 执行器执行结果
-type ActuatorExecRe struct {
-	Host     string `table:"主机IP"`
-	Action   string `table:"执行操作"`
-	Status   string `table:"执行状态"`
-	ErrorMsg string `table:"错误信息"`
+	results, err := GetResult(b, debug, cmd)
+	if err != nil {
+		return err
+	}
+	var data [][]string
+
+	for _, v := range results {
+		data = append(data, []string{v.Host, v.Cmd, fmt.Sprintf("%d", v.Code), v.Status, v.StdOut, v.StdErrMsg})
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"IP ADDRESS", "cmd", "exit code", "result", "output", "exception"})
+	table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
+	table.SetCenterSeparator("|")
+	//table.SetRowLine(true)
+	table.SetAlignment(tablewriter.ALIGN_CENTER)
+	table.AppendBulk(data) // Add Bulk Data
+	table.Render()
+
+	return nil
 }
 
-type Actuator struct {
-	ServerListFile string
-	Cmd            string
-	Value          string
-	FilePath       string
-	ServerList     runner.CommonServerList
-	Err            error
-}
+func GetResult(b []byte, debug bool, cmd string) ([]runner.ShellResult, error) {
 
-func (ac *Actuator) parseServerList() *Actuator {
-	if ac.ServerListFile == "" {
-		return ac
-	}
-	serverList := runner.ParseCommonServerList(ac.ServerListFile)
-	ac.ServerList = serverList
-	return ac
-}
-
-func (ac *Actuator) download() *Actuator {
-
-	if ac.FilePath == "" {
-		return ac
-	}
-	// 判断是否为 url 类型
-	_, err := url.ParseRequestURI(ac.FilePath)
-	requestUrl := ac.FilePath
-	if err == nil {
-		strSlice := strings.Split(ac.FilePath, "/")
-		if len(strSlice) > 0 {
-			ac.FilePath = strSlice[len(strSlice)-1]
-		}
-		log.Println(fmt.Sprintf("检测到文件类型为url，尝试下载: %s...", requestUrl))
-		err := util.DownloadFile(requestUrl, ac.FilePath)
-		if err != nil {
-			log.Fatalln(err.Error())
-		}
-	} else {
-		_, err := os.Stat(ac.FilePath)
-		if err != nil {
-			log.Fatalf(fmt.Sprintf("检测到：%s异常 -> %s", ac.FilePath, err.Error()))
-		}
+	servers, err := runner.ParseServerList(b)
+	if err != nil {
+		return []runner.ShellResult{}, err
 	}
 
-	return ac
-}
+	executor := runner.ExecutorInternal{Servers: servers, Script: cmd}
 
-func (ac *Actuator) execute(action string) {
+	ch := executor.ParallelRun(debug)
 
-	var result []ActuatorExecRe
-	if len(ac.ServerList.Server) <= 0 {
-		re := runner.Shell(ac.Cmd)
-		result = append(result, packageRe(localhost, action, re.StdErr, re.ExitCode))
-	} else {
-		for _, v := range ac.ServerList.Server {
-			re := v.RemoteShell(ac.Cmd)
-			result = append(result, packageRe(v.Host, action, re.StdErrMsg, re.Code))
-		}
+	results := []runner.ShellResult{}
+
+	//if v, err := runner.ReadWithSelect(ch); err == nil {
+	//	results=append(results, v)
+	//}
+
+	for re := range ch {
+		var result runner.ShellResult
+		_ = mapstructure.Decode(re, &result)
+		results = append(results, result)
 	}
 
-	table.OutputA(result)
-}
+	// todo: ip地址排序
+	sort.Sort(runner.ShellResultSlice(results))
 
-func packageRe(host, action, errMsg string, code int) ActuatorExecRe {
-
-	var status string
-
-	if code == 0 {
-		status = success
-	} else {
-		status = fail
-	}
-	return ActuatorExecRe{
-		Host:     host,
-		Action:   action,
-		Status:   status,
-		ErrorMsg: errMsg,
-	}
+	return results, nil
 }
