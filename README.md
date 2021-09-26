@@ -1,709 +1,240 @@
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
-
 - [easyctl](#easyctl)
   - [安装](#%E5%AE%89%E8%A3%85)
-- [指令集](#%E6%8C%87%E4%BB%A4%E9%9B%86)
-  - [add](#add)
-    - [user](#user)
-  - [close](#close)
-    - [firewalld](#firewalld)
-    - [selinux](#selinux)
-  - [install](#install)
-    - [keepalive](#keepalive)
-      - [离线](#%E7%A6%BB%E7%BA%BF)
-  - [安装docker](#%E5%AE%89%E8%A3%85docker)
-  - [安装nginx](#%E5%AE%89%E8%A3%85nginx)
-  - [安装redis](#%E5%AE%89%E8%A3%85redis)
-- [search指令集](#search%E6%8C%87%E4%BB%A4%E9%9B%86)
-  - [端口监听查询](#%E7%AB%AF%E5%8F%A3%E7%9B%91%E5%90%AC%E6%9F%A5%E8%AF%A2)
-- [set指令集](#set%E6%8C%87%E4%BB%A4%E9%9B%86)
-  - [yum镜像源](#yum%E9%95%9C%E5%83%8F%E6%BA%90)
-  - [yum代理配置](#yum%E4%BB%A3%E7%90%86%E9%85%8D%E7%BD%AE)
-  - [dns](#dns)
-    - [可选参数](#%E5%8F%AF%E9%80%89%E5%8F%82%E6%95%B0)
-    - [命令格式](#%E5%91%BD%E4%BB%A4%E6%A0%BC%E5%BC%8F)
-    - [使用样例](#%E4%BD%BF%E7%94%A8%E6%A0%B7%E4%BE%8B)
-  - [password-less](#password-less)
-    - [可选参数](#%E5%8F%AF%E9%80%89%E5%8F%82%E6%95%B0-1)
-    - [命令格式](#%E5%91%BD%E4%BB%A4%E6%A0%BC%E5%BC%8F-1)
-    - [使用样例](#%E4%BD%BF%E7%94%A8%E6%A0%B7%E4%BE%8B-1)
-  - [timezone](#timezone)
-    - [可选参数](#%E5%8F%AF%E9%80%89%E5%8F%82%E6%95%B0-2)
-    - [命令格式](#%E5%91%BD%E4%BB%A4%E6%A0%BC%E5%BC%8F-2)
-    - [使用样例](#%E4%BD%BF%E7%94%A8%E6%A0%B7%E4%BE%8B-2)
-  - [配置主机名](#%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E5%90%8D)
-  - [upgrade 命令](#upgrade-%E5%91%BD%E4%BB%A4)
-    - [内核](#%E5%86%85%E6%A0%B8)
-      - [离线](#%E7%A6%BB%E7%BA%BF-1)
-  - [todo](#todo)
-  - [开源项目](#%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
+    - [编译安装最新版](#%E7%BC%96%E8%AF%91%E5%AE%89%E8%A3%85%E6%9C%80%E6%96%B0%E7%89%88)
+  - [set指令集](#set%E6%8C%87%E4%BB%A4%E9%9B%86)
+    - [配置主机间host解析](#%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E9%97%B4host%E8%A7%A3%E6%9E%90)
+    - [配置主机间免密登录](#%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E9%97%B4%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95)
+    - [配置主机文件描述符](#%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E6%96%87%E4%BB%B6%E6%8F%8F%E8%BF%B0%E7%AC%A6)
+    - [配置主机时区](#%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E6%97%B6%E5%8C%BA)
+    - [修改主机root口令](#%E4%BF%AE%E6%94%B9%E4%B8%BB%E6%9C%BAroot%E5%8F%A3%E4%BB%A4)
+    
 # easyctl
 
-基于golang轻量级运维工具集
+基于`golang`轻量级运维工具集
 
 ** 适用平台：** `CentOS7`
 
-
 ## 安装
 
-> 下载上传
+### 编译安装最新版
 
-[下载release版本](https://github.com/weiliang-ms/easyctl/releases/)
+```shell
+git clone https://github.com/weiliang-ms/easyctl.git
+cd easyctl
+go build -ldflags "-w -s" -o /usr/local/bin/easyctl
+```
 
-上传至/usr/bin/下
+## set指令集
 
-> 添加执行权限
+### 配置主机间host解析
 
-    chmod +x /usr/bin/easyctl
-    
-> 查看版本信息
+采集将多主机间的`hostname`与`IP`解析，过滤`hostname`为`localhost`的条例，配置到`/etc/hosts`中
 
-    easyctl version
-    
-> 配置命令补全
+> 生成默认配置文件
 
-    yum install bash-completion -y
-    ./easyctl completion bash > /etc/bash_completion.d/easyctl
-    source <(./easyctl completion bash)
+```shell
+easyctl set host-resolv
+```
 
-# 指令集
+> 修改配置文件
 
-    Usage:
-      easyctl [command] [flags]
-    
-    Available Commands:
-      help        Print the version number of easyctl
-      search      search something through easyctl
-      set         set something through easyctl
-      version     Print the version number of easyctl
-    
-    Flags:
-      -h, --help   help for easyctl
+`config.yaml`
 
-## add
+```yaml
+server:
+  - host: 10.10.1.[1:3]
+    username: root
+    password: 111111
+    port: 22
+excludes:
+  - 192.168.235.132
+```
 
-### user
+> 配置`host`解析
 
-> 添加用户
+`--debug`输出`debug`日志，可选参数
 
-1.添加可登录的linux用户(password可省，默认密码：user123)
+```shell
+easyctl set host-resolv -c config.yaml --debug
+```
 
-    easyctl add userad -u username -p password
-    
-2.添加非登录linux用户
+> 查看解析
 
-    easyctl add -u username --no-login
+```shell
+[root@scq-dc01 ~]# cat /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
 
-## close
+# easyctl hosts BEGIN
+10.10.1.1 scq-dc01
+10.10.1.2 scq-dc02
+10.10.1.3 scq-dc03
+# easyctl hosts END
+```
 
-### firewalld
+### 配置主机间免密登录
 
-> 格式
+多主机间配置免密`ssh`登录（基于密钥登录）
 
-    easyctl close firewalld [flags]
-    
-    flags 可选 -f(永久关闭)
-    
-> 样例
+> 生成默认配置文件
 
-临时关闭firewalld
-    
-    easyctl close firewalld
-    
-永久关闭firewalld
+```shell
+easyctl set password-less
+```
 
-    easyctl close firewalld -f
+> 修改配置文件
 
-### selinux
+`config.yaml`
 
-> 格式
+```yaml
+server:
+  - host: 10.10.1.[1:3]
+    username: root
+    password: 111111
+    port: 22
+excludes:
+  - 192.168.235.132
+```
 
-    easyctl close selinux [flags]
-    
-    flags 可选 -f(永久关闭)
-    
-> 样例
+> 配置免密登录
 
-临时关闭selinux
-    
-    easyctl close selinux
-    
-永久关闭selinux
+`--debug`输出`debug`日志，可选参数
 
-    easyctl close selinux -f
-    
-## install
+```shell
+easyctl set password-less -c config.yaml --debug
+```
 
-### keepalive
+> 测试
 
-安装keepalived
+`10.10.1.2`为主机列表内的主机
 
-#### 离线
+```shell
+ssh 10.10.1.2
+```
 
-> 1.下载`keepalived`离线仓库
+### 配置主机文件描述符
 
-联网主机下执行以下命令:
+多主机配置文件描述符数量（65535）
 
-    sudo docker pull xzxwl/keepalived-repo:latest
-    sudo docker run -idt --name keepalived xzxwl/keepalived-repo:latest /bin/bash
-    sudo docker cp keepalived:/keepalived.tar.gz ./
-    sudo docker rm -f keepalived
-    
-> 2.安装
-
-初始化生成`server`模板
-
-    ./easyctl init-tmpl keepalived
-    
-修改`keepalived.yaml`文件内容
-
-    # 虚拟IP
-    vip: 192.168.235.150
-    # 网卡名称
-    interface: ens33
-    server:
-      - host: 192.168.235.129
-        username: root
-        password: 1
-        port: 22
-      - host: 192.168.235.130
-        username: root
-        password: 1
-        port: 22
+> 生成默认配置文件
 
-执行安装
+```shell
+easyctl set ulimit
+```
 
-    ./easyctl install keepalived --offline --offline-file=keepalived.tar.gz --server-list=keepalived.yaml
-    
-安装结果
+> 修改配置文件
 
-    ...
-    omplete!
-    [keepalived] config keepalived...
-    [keepalived] boot keepalived...
-    Created symlink from /etc/systemd/system/multi-user.target.wants/keepalived.service to /usr/lib/systemd/system/keepalived.service.
-    2021/04/02 05:44:56 执行结果如下：
-    +-----------------+------------------------------------------------------------------------------------------+------+---------+
-    | Host            | Cmd                                                                                      | Code | Status  |
-    +-----------------+------------------------------------------------------------------------------------------+------+---------+
-    | 192.168.235.129 | /tmp/keepalived.sh ens33 192.168.235.129 192.168.235.130 192.168.235.150 192.168.235.129 | 0    | success |
-    | 192.168.235.130 | /tmp/keepalived.sh ens33 192.168.235.129 192.168.235.130 192.168.235.150 192.168.235.130 | 0    | success |
-    +-----------------+------------------------------------------------------------------------------------------+------+---------+
+`config.yaml`
 
-## 安装docker
+```yaml
+server:
+  - host: 10.10.1.[1:3]
+    username: root
+    password: 111111
+    port: 22
+excludes:
+  - 192.168.235.132
+```
 
-> 格式
+> 配置免密登录
 
-    easyctl install docker [flags]
-    
-    flags 可选 --offline --file=./v19.03.13.tar.gz (离线安装)
-    
-> 在线安装样例
+`--debug`输出`debug`日志，可选参数
 
-在线安装`docker`(确保宿主机可访问http://mirrors.aliyun.com)
-    
-    easyctl install docker
-    
-> 离线安装样例
+```shell
+easyctl set ulimit -c config.yaml --debug
+```
 
-**适用于CentOS7**
+### 配置主机时区
 
-[下载docker x86压缩包](https://download.docker.com/linux/static/stable/x86_64/)
+多主机配置时区（上海时区）
 
-执行命令安装（--offline --file为必须参数）
+> 生成默认配置文件
 
-    easyctl install docker --file=./docker-19.03.9.tgz --offline
+```shell
+easyctl set tz
+```
 
-## 安装nginx
+> 修改配置文件
 
-> 格式
+`config.yaml`
 
-    easyctl install nginx [flags]
-    
-    flags 可选 --offline=true --file=./nginx-1.16.0.tar.gz (离线安装)
-    
-> 样例
+```yaml
+server:
+  - host: 10.10.1.[1:3]
+    username: root
+    password: 111111
+    port: 22
+excludes:
+  - 192.168.235.132
+```
 
-在线安装`nginx`(确保宿主机可访问http://mirrors.aliyun.com)
-    
-    easyctl install nginx
-    
-## 安装redis
+> 配置免密登录
 
-> 格式
+`--debug`输出`debug`日志，可选参数
 
-    easyctl install redis [flags]
-    
-flag
+```shell
+easyctl set tz -c config.yaml --debug
+```
 
-    Flags:
-      -b, --bind string       Redis bind address (default "0.0.0.0")
-      -d, --data string       Redis persistent directory (default "/var/lib/redis")
-      -h, --help              help for redis
-      -l, --log-file string   Redis logfile directory (default "/var/log/redis")
-      -o, --offline           offline mode
-      -a, --password string   Redis password (default "redis")
-      -p, --port string       Redis listen port (default "6379")
-    
-> 在线安装样例
+> 测试
 
-在线安装`redis`(确保宿主机可访问http://mirrors.aliyun.com)
-    
-    easyctl install redis
-    
-参数定制
+```shell
+date
+```
 
-    easyctl install redis --bind=192.168.131.36 --data=/var/lib/redis --port=6380 --password=redis567
+### 修改主机root口令
 
-> 离线安装样例
+> 生成默认配置文件
 
-[下载redis release版本包](http://download.redis.io/releases/),如redis-5.0.5.tar.gz
+```shell
+easyctl set new-password
+```
 
-执行命令安装（其他参数可选，--offline --file为必须参数）
+> 修改配置文件
 
-    easyctl install redis --offline --file=./redis-5.0.5.tar.gz
+`config.yaml`
 
-# search指令集
+- 调整主机信息，新`root`口令的值
 
-## 端口监听查询
+```yaml
+server:
+  - host: 10.10.10.[1:40]
+    username: root
+    password: 123456
+    port: 22
+excludes:
+  - 192.168.235.132
+newRootPassword: "3LEPnok84HxYc5"
+```
 
-> 命令格式
+> 运行
 
-    easyctl search port 端口值
+`--debug`输出`debug`日志，可选参数
 
-> 使用样例
+```shell
+easyctl set new-password -c config.yaml --debug
+```
 
-    easyctl search port 22
+> 成功样例
 
-## set
+```
+[root@localhost ~]# ./easyctl set new-password -c config.yaml
+I0926 15:14:56.431946  112411 log.go:184] 检测到配置文件中含有IP段，开始解析组装...
+I0926 15:14:56.431999  112411 parse.go:113] 解析到IP子网网段为：10.10.1....
+I0926 15:14:56.432021  112411 parse.go:117] 解析到IP区间为：1:2...
+I0926 15:14:56.432026  112411 parse.go:121] 解析到起始IP为：10.10.1.1...
+I0926 15:14:56.432031  112411 parse.go:125] 解析到末尾IP为：10.10.1.2...
+I0926 15:14:56.432037  112411 exec.go:43] 开始并行执行命令...
+I0926 15:14:56.432084  112411 exec.go:105] [10.10.1.2] 开始执行指令 ->
+I0926 15:14:56.432114  112411 exec.go:105] [10.10.1.1] 开始执行指令 ->
+I0926 15:14:56.634224  112411 log.go:184] <- 10.10.1.1执行命令成功...
+I0926 15:14:56.634472  112411 log.go:184] <- 10.10.1.2执行命令成功...
+| IP ADDRESS  |  CMD   | EXIT CODE | RESULT  |        OUTPUT        | EXCEPTION |
+|-------------|--------|-----------|---------|----------------------|-----------|
+| 10.10.1.1 | ****** |     0     | success | Changing password fo |           |
+| 10.10.1.2 | ****** |     0     | success | Changing password fo |           |
+```
 
-使用方式：easyctl set [options] [flags] 
+> 测试
 
-### yum-repo
-
-> 可选参数
-
-    [root@localhost ~]# ./easyctl set yum-repo -h
-    easyctl set yum-repo [flags]
-    
-    Usage:
-      easyctl set yum-repo [flags]
-    
-    Examples:
-    
-    easyctl set yum-repo
-    
-    Flags:
-          --ali-repo             阿里云镜像源yum仓库
-      -h, --help                 help for yum-repo
-          --multi-node           是否配置多节点
-          --server-list string   服务器列表 (default "server.yaml")
-
-> 命令格式
-
-- 单节点
-
-
-    easyctl set yum-repo --ali-repo
-    
-- 多节点
-
-
-    easyctl set yum-repo --ali-repo --multi-node
-
-> 使用样例
-
-#### 单节点
-
-
-配置阿里云yum源
-
-    easyctl set yum-repo --ali-repo
-    
-成功返回
-
-    [root@localhost ~]# ./easyctl set yum-repo --ali-repo
-    2021/04/04 10:20:01 开始备份，yum仓库配置文件...
-    2021/04/04 10:20:01 /etc/yum.repos.d/ali-base.repo => /etc/yum.repos.d/bak/ali-base.repo
-    2021/04/04 10:20:01 /etc/yum.repos.d/ali-epel.repo => /etc/yum.repos.d/bak/ali-epel.repo
-    2021/04/04 10:20:01 write repo config file -> /etc/yum.repos.d/ali-base.repo
-    2021/04/04 10:20:01 write repo config file -> /etc/yum.repos.d/ali-epel.repo
-    2021/04/04 10:20:01 配置yum repo成功...
-    
-#### 多节点
-
-配置阿里云yum源
-    - 生成`server.yaml`模板文件:
-    
-     `./easyctl init-tmpl server`
-    
-- 调整`server.yaml`内容（默认内容如下：）
-    
-
-    server:
-      - host: 192.168.235.129
-        username: root
-        password: 1
-        port: 22
-      - host: 192.168.235.130
-        username: root
-        password: 1
-        port: 22
-
-配置主机列表内的主机`yum repo`
-
-    ./easyctl set yum-repo --ali-repo --multi-node
-  
-## yum代理配置
-
-
-> 配置yum代理
-
-待添加
-    
-## dns
-
-### 可选参数
-
-    [root@localhost ~]# ./easyctl set dns -h
-    easyctl set dns --value
-    
-    Usage:
-      easyctl set dns [flags]
-    
-    Examples:
-    
-    easyctl set dns --value=8.8.8.8
-    
-    Flags:
-      -h, --help                 help for dns
-          --multi-node           是否配置多节点
-          --server-list string   服务器列表 (default "server.yaml")
-      -v, --value string         dns 地址...
-
-### 命令格式
-
-> 单节点
-
-    easyctl set dns -v x.x.x.x
-    
-> 多节点
-
-    easyctl set dns -v x.x.x.x --multi-node
-
-### 使用样例
-
-> 单节点
-
-配置当前主机`dns`
-
-    easyctl set dns -v 8.8.8.8
-    
-> 多节点
-
-生成`server.yaml`模板文件
-
-    ./easyctl init-tmpl server
-    
-调整`server.yaml`内容（默认内容如下：）
-
-    server:
-      - host: 192.168.235.129
-        username: root
-        password: 1
-        port: 22
-      - host: 192.168.235.130
-        username: root
-        password: 1
-        port: 22
-
-配置主机列表内的主机`dns`
-
-    ./easyctl set dns -v 7.7.7.7 --multi-node
-  
-成功返回  
-    
-    2021/04/03 02:00:21 <- call back 192.168.235.129
-     [dns] 配置成功...
-    [dns] 当前dns列表:
-    nameserver 114.114.114.114
-    nameserver 7.7.7.7
-    2021/04/03 02:00:21 <- call back 192.168.235.130
-     [dns] 配置成功...
-    [dns] 当前dns列表:
-    nameserver 114.114.114.114
-    nameserver 7.7.7.7
-    2021/04/03 02:00:21 执行结果如下：
-    +-----------------+----------------+------+---------+
-    | Host            | Cmd            | Code | Status  |
-    +-----------------+----------------+------+---------+
-    | 192.168.235.129 | built-in shell | 0    | success |
-    | 192.168.235.130 | built-in shell | 0    | success |
-    +-----------------+----------------+------+---------+
-
-## password-less
-
-配置主机间ssh免密登录
-
-### 可选参数
-
-    easyctl set password-less -h
-    easyctl set password-less --server-list=xxx
-    
-    Usage:
-      easyctl set password-less [flags]
-    
-    Examples:
-    
-    easyctl set password-less --server-list=server.yaml
-    
-    Flags:
-      -h, --help                 help for password-less
-          --server-list string   服务器列表 (default "server.yaml")
-
-
-### 命令格式
-
-    easyctl set password-less
-
-### 使用样例
-
-> 生成`server.yaml`模板文件
-
-    ./easyctl init-tmpl server
-    
-> 调整`server.yaml`内容（默认内容如下：）
-
-    server:
-      - host: 192.168.235.129
-        username: root
-        password: 1
-        port: 22
-      - host: 192.168.235.130
-        username: root
-        password: 1
-        port: 22
-
-配置主机列表内的主机间免密访问
-
-    easyctl set password-less
-  
-成功返回  
-    
-    
-    2021/04/03 15:50:40 生成互信文件
-    2021/04/03 15:50:40 -> [192.168.235.129] shell => mkdir -p /root/.ssh
-    2021/04/03 15:50:40 <- call back 192.168.235.129
-  
-    2021/04/03 15:50:40 传输数据文件/root/.ssh/id_rsa至192.168.235.129...
-    2021/04/03 15:50:40 -> transfer /root/.ssh/id_rsa to 192.168.235.129
-    1.64 KiB / 1.64 KiB [==========================================================| 0s ] 0.00 b/s
-    2021/04/03 15:50:40 -> done 传输完毕...
-    2021/04/03 15:50:40 传输数据文件/root/.ssh/id_rsa至192.168.235.129...
-    2021/04/03 15:50:40 -> transfer /root/.ssh/id_rsa.pub to 192.168.235.129
-    408.00 b / 408.00 b [==========================================================| 0s ] 0.00 b/s
-    2021/04/03 15:50:40 -> done 传输完毕...
-    2021/04/03 15:50:40 传输数据文件/root/.ssh/id_rsa至192.168.235.129...
-    2021/04/03 15:50:40 -> transfer /root/.ssh/authorized_keys to 192.168.235.129
-    408.00 b / 408.00 b [==========================================================| 0s ] 0.00 b/s
-    2021/04/03 15:50:40 -> done 传输完毕...
-    2021/04/03 15:50:40 -> [192.168.235.130] shell => mkdir -p /root/.ssh
-    2021/04/03 15:50:40 <- call back 192.168.235.130
-    
-    2021/04/03 15:50:40 传输数据文件/root/.ssh/id_rsa至192.168.235.130...
-    2021/04/03 15:50:40 -> transfer /root/.ssh/id_rsa to 192.168.235.130
-    1.64 KiB / 1.64 KiB [==========================================================| 0s ] 0.00 b/s
-    2021/04/03 15:50:40 -> done 传输完毕...
-    2021/04/03 15:50:40 传输数据文件/root/.ssh/id_rsa至192.168.235.130...
-    2021/04/03 15:50:40 -> transfer /root/.ssh/id_rsa.pub to 192.168.235.130
-    408.00 b / 408.00 b [==========================================================| 0s ] 0.00 b/s
-    2021/04/03 15:50:40 -> done 传输完毕...
-    2021/04/03 15:50:40 传输数据文件/root/.ssh/id_rsa至192.168.235.130...
-    2021/04/03 15:50:40 -> transfer /root/.ssh/authorized_keys to 192.168.235.130
-    408.00 b / 408.00 b [==========================================================| 0s ] 0.00 b/s
-    2021/04/03 15:50:40 -> done 传输完毕...
-    2021/04/03 15:50:40 主机免密配置完毕，请验证...
-    
-## timezone
-
-默认配置时区为`上海`，暂不支持可选时区
-
-### 可选参数
-
-    easyctl set tz/timezone [value]
-    
-    Usage:
-      easyctl set timezone [flags]
-    
-    Aliases:
-      timezone, tz
-    
-    Examples:
-    
-    easyctl set tz/timezone
-    
-    Flags:
-      -h, --help                 help for timezone
-          --multi-node           是否配置多节点
-          --server-list string   服务器列表 (default "server.yaml")
-      -v, --value string         时区 (default "Asia/Shanghai")
-
-### 命令格式
-
-> 单节点
-
-    easyctl set timezone
-    
-> 多节点
-
-    easyctl set timezone --multi-node
-
-### 使用样例
-
-> 单节点
-
-配置当前主机时区
-
-    easyctl set timezone
-    
-> 多节点
-
-生成`server.yaml`模板文件
-
-    ./easyctl init-tmpl server
-    
-调整`server.yaml`内容（默认内容如下：）
-
-    server:
-      - host: 192.168.235.129
-        username: root
-        password: 1
-        port: 22
-      - host: 192.168.235.130
-        username: root
-        password: 1
-        port: 22
-
-配置主机列表内的主机时区
-
-    ./easyctl set timezone --multi-node
-  
-成功返回  
-    
-    2021/04/03 14:51:47 <- call back 192.168.235.129
-    
-    2021/04/03 14:51:47 <- call back 192.168.235.130
-    
-    2021/04/03 14:51:47 执行结果如下：
-    +-----------------+---------------------------------------------------------+------+---------+
-    | Host            | Cmd                                                     | Code | Status  |
-    +-----------------+---------------------------------------------------------+------+---------+
-    | 192.168.235.129 | \cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime -R | 0    | success |
-    | 192.168.235.130 | \cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime -R | 0    | success |
-    +-----------------+---------------------------------------------------------+------+---------+
-
-
-## 配置主机名
-
-> 命令格式
-
-    easyctl set hostname 主机名
-
-> 使用方式
-
-    easyctl set hostname nginx-server1
-    
-## upgrade 命令
-
-升级`CentOS7`上一些软件
-
-### 内核
-
-更新升级内核
-
-#### 离线
-
-> 1.下载`kernel`离线仓库
-
-联网主机下执行以下命令:
-
-    sudo docker pull xzxwl/kernel-repo:lt
-    sudo docker run -idt --name kernel-lt xzxwl/kernel-repo:lt /bin/bash
-    sudo docker cp kernel-lt:/data/kernel-lt.tar.gz ./
-    sudo docker rm -f kernel-lt
-    
-> 2.本地更新
-
-    ./easyctl upgrade kernel \
-    --offline-file=./kernel-lt.tar.gz --offline
-    
-> 3.批量更新
-
-初始化生成`server`模板
-
-    ./easyctl init-tmpl server
-    
-修改`server.yaml`文件内容
-
-    # 默认值
-    server:
-      - host: 192.168.239.133
-        username: root
-        password: 123456
-        port: 22
-      - host: 192.168.239.134
-        username: root
-        password: 123456
-        port: 22
-
-执行安装
-
-    ./easyctl upgrade kernel --offline-file=./kernel-lt.tar.gz --offline --server-list=./server.yaml
-    
-安装结果
-
-    ...
-    2021/04/01 04:53:49 [kernel] check kernel-lt exist ...
-    2021/04/01 04:53:49 [kernel] kernel-lt had been installed...
-    2021/04/01 04:53:49 0 : CentOS Linux (5.4.108-1.el7.elrepo.x86_64) 7 (Core)
-    2021/04/01 04:53:49 1 : CentOS Linux (3.10.0-1062.el7.x86_64) 7 (Core)
-    2021/04/01 04:53:49 2 : CentOS Linux (0-rescue-cf09c44eebea4dff8aac64fb57191034) 7 (Core)
-    2021/04/01 04:53:49 执行结果如下：
-    +-----------------+----------------------------------------------------------------------------+------+---------+
-    | Host            | Cmd                                                                        | Code | Status  |
-    +-----------------+----------------------------------------------------------------------------+------+---------+
-    | 192.168.235.129 | /tmp/easyctl upgrade kernel --offline-file=/tmp/kernel-lt.tar.gz --offline | 0    | success |
-    | 192.168.235.130 | /tmp/easyctl upgrade kernel --offline-file=/tmp/kernel-lt.tar.gz --offline | 0    | success |
-    +-----------------+----------------------------------------------------------------------------+------+---------+
-    2021/04/01 04:53:49 -> 重启主机生效...
-
-    
-## todo
-
-1.安全加固脚本（可排除选项）
-
-2.升级软件（在线|离线源码）
-
-3.获取系统信息
-
-4.调整文件描述符|进程数
-
-5.多主机间互信
-
-6.开启端口监听用以测试网络连通性
-  
-7.关闭某一服务
-
-8.主机host解析
-
-9.添加命令自动补全(已完成)
-
-## 开源项目
-
-- [cobra](https://github.com/spf13/cobra)
-- [vssh](https://github.com/yahoo/vssh)
+重新连接列表主机

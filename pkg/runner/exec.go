@@ -95,9 +95,9 @@ func runOnNode(s ServerInternal, cmd string, debug bool) ShellResult {
 	}
 
 	// 截取cmd output 长度
-	var subCmd, out string
-	if len(cmd) > 15 {
-		subCmd = cmd[:15]
+	var subCmd string
+	if len(cmd) > 10 {
+		subCmd = "******"
 	} else {
 		subCmd = cmd
 	}
@@ -106,30 +106,27 @@ func runOnNode(s ServerInternal, cmd string, debug bool) ShellResult {
 	session, err := s.sshConnect()
 	if err != nil {
 		// todo: code
-		return ShellResult{Host: s.Host, Err: errors.New(fmt.Sprintf("ssh会话建立失败->%s", err.Error())),
-			Cmd: cmd, Status: util.Fail, Code: -1}
+		errMsg := fmt.Sprintf("ssh会话建立失败->%s", err.(*net.OpError).Error())
+		return ShellResult{Host: s.Host, Err: errors.New(errMsg),
+			Cmd: cmd, Status: util.Fail, Code: -1, StdErrMsg: errMsg}
 	}
 
-	combo, err := session.CombinedOutput(cmd)
+	out, err := session.Output(cmd)
 	if err != nil {
-		//klog.Fatal("远程执行cmd 失败",err)
-		return ShellResult{Host: s.Host, Err: errors.New(fmt.Sprintf("%s执行失败, %s", s.Host, combo)),
-			Cmd: cmd, Status: util.Fail, Code: -1}
+		return ShellResult{Host: s.Host, Err: errors.New(err.(*ssh.ExitError).String()),
+			Cmd: cmd, Status: util.Fail, Code: err.(*ssh.ExitError).ExitStatus(), StdErrMsg: err.(*ssh.ExitError).String()}
 	}
 	log.Printf("<- %s执行命令成功...\n", s.Host)
-	if string(combo) != "" && debug {
-		fmt.Printf("<- [%s] 命令输出: ->\n\n%s\n", s.Host, string(combo))
-	}
-
 	defer session.Close()
 
-	if len(string(combo)) > 15 {
-		out = string(combo)[:15]
+	var subOut string
+	if len(string(out)) > 20 {
+		subOut = string(out)[:20]
 	} else {
-		out = string(combo)
+		subOut = string(out)
 	}
 
-	return ShellResult{Host: s.Host, StdOut: out,
+	return ShellResult{Host: s.Host, StdOut: subOut,
 		Cmd: strings.TrimPrefix(subCmd, "\n"), Status: util.Success}
 }
 
@@ -185,9 +182,9 @@ func (server ServerInternal) sshConnect() (*ssh.Session, error) {
 	}
 
 	clientConfig = &ssh.ClientConfig{
-		User: s.Username,
-		Auth: auth,
-		// Timeout:             30 * time.Second,
+		User:            s.Username,
+		Auth:            auth,
+		Timeout:         3 * time.Second,
 		HostKeyCallback: hostKeyCallbk,
 	}
 

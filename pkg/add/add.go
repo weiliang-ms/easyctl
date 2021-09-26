@@ -10,7 +10,7 @@ const (
 	fail      = "fail"
 )
 
-// 执行器执行结果
+// ActuatorExecRe 执行器执行结果
 type ActuatorExecRe struct {
 	Host     string `table:"主机IP"`
 	Action   string `table:"操作内容"`
@@ -18,7 +18,7 @@ type ActuatorExecRe struct {
 	ErrorMsg string `table:"错误信息"`
 }
 
-// 动作
+// Action 动作
 type Action string
 
 type Actuator struct {

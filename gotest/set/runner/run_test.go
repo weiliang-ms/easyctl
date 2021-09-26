@@ -1,6 +1,8 @@
 package runner
 
 import (
+	"fmt"
+	"github.com/olekukonko/tablewriter"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"os"
 	"testing"
@@ -13,9 +15,24 @@ func TestRun(t *testing.T) {
 	}
 
 	executor, err := runner.ParseExecutor(b)
-	executor.Script = "mv /etc/sudoers.old /etc/sudoers"
+	executor.Script = "date"
 	if err != nil {
 		panic(err)
 	}
-	executor.ParallelRun(true)
+	results := executor.ParallelRun(true)
+
+	var data [][]string
+
+	for v := range results {
+		data = append(data, []string{v.Host, v.Cmd, fmt.Sprintf("%d", v.Code), v.Status, v.StdOut, v.StdErrMsg})
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"IP ADDRESS", "cmd", "exit code", "result", "output", "exception"})
+	table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
+	table.SetCenterSeparator("|")
+	//table.SetRowLine(true)
+	table.SetAlignment(tablewriter.ALIGN_CENTER)
+	table.AppendBulk(data) // Add Bulk Data
+	table.Render()
 }

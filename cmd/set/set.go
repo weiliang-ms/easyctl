@@ -31,17 +31,25 @@ func init() {
 	RootCmd.AddCommand(hostResolveCmd)
 	RootCmd.AddCommand(timeZoneCmd)
 	RootCmd.AddCommand(yumRepoCmd)
+	RootCmd.AddCommand(newPasswordCmd)
 }
 
 type Entity struct {
-	Cmd *cobra.Command
-	Fnc func(b []byte, debug bool) error
+	Cmd           *cobra.Command
+	Fnc           func(b []byte, debug bool) error
+	DefaultConfig []byte
 }
 
 func Set(entity Entity) error {
+
+	if entity.DefaultConfig == nil {
+		entity.DefaultConfig = config
+	}
+
 	if configFile == "" {
-		klog.Infof("检测到配置文件为空，生成配置文件样例 -> %s", util.ConfigFile)
-		_ = os.WriteFile(util.ConfigFile, config, 0666)
+		klog.Infof("检测到配置文件参数为空，生成配置文件样例 -> %s", util.ConfigFile)
+		_ = os.WriteFile(util.ConfigFile, entity.DefaultConfig, 0666)
+		os.Exit(0)
 	}
 
 	flagset := entity.Cmd.Parent().Parent().PersistentFlags()
