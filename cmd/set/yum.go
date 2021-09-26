@@ -13,7 +13,8 @@ func init() {
 	yumRepoCmd.Flags().StringVarP(&isoPath, "iso-path", "", "", "iso文件url地址或离线文件地址")
 }
 
-//// 配置yum repo
+// 配置yum repo
+// todo
 var yumRepoCmd = &cobra.Command{
 	Use:   "yum-repo",
 	Short: "配置yum仓库",
