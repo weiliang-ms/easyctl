@@ -117,6 +117,11 @@ func runOnNode(s ServerInternal, cmd string, debug bool) ShellResult {
 			Cmd: cmd, Status: util.Fail, Code: err.(*ssh.ExitError).ExitStatus(), StdErrMsg: err.(*ssh.ExitError).String()}
 	}
 	log.Printf("<- %s执行命令成功...\n", s.Host)
+
+	if debug {
+		klog.Info(s.Host,"\n",string(out), "\n")
+	}
+
 	defer session.Close()
 
 	var subOut string
@@ -175,7 +180,13 @@ func (server ServerInternal) sshConnect() (*ssh.Session, error) {
 	)
 	// get auth method
 	auth = make([]ssh.AuthMethod, 0)
-	auth = append(auth, ssh.Password(s.Password))
+
+	if server.Password == "" || server.PrivateKeyPath != "" {
+		auth= append(auth, publicKeyAuthFunc(server.PrivateKeyPath))
+	}else {
+		auth = append(auth, ssh.Password(s.Password))
+	}
+
 
 	hostKeyCallbk := func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 		return nil
@@ -215,7 +226,7 @@ func session(server ServerInternal) (*ssh.Session, error) {
 		//HostKeyCallback: hostKeyCallBackFunc(h.Host),
 	}
 	//if sshType == "password" {
-	config.Auth = []ssh.AuthMethod{ssh.Password(server.Password)}
+	//config.Auth = []ssh.AuthMethod{ssh.Password(server.Password)}
 	//} else {
 	//	config.Auth = []ssh.AuthMethod{publicKeyAuthFunc(sshKeyPath)}
 	//}
@@ -265,8 +276,8 @@ func (server ServerInternal) completeDefault() ServerInternal {
 		server.Username = "root"
 	}
 
-	if server.PublicKeyPath == "" {
-		server.PublicKeyPath = "~/.ssh/id_rsa.pub"
+	if server.PrivateKeyPath == "" {
+		server.PrivateKeyPath = "~/.ssh/id_rsa.pub"
 	}
 
 	return server
