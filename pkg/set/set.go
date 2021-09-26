@@ -9,6 +9,10 @@ import (
 	"sort"
 )
 
+type ParseConfig interface {
+	Parse(b []byte, debug bool) (error, interface{})
+}
+
 func Config(b []byte, debug bool, cmd string) error {
 
 	results, err := GetResult(b, debug, cmd)
