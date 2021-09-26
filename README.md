@@ -7,6 +7,11 @@
     - [配置主机文件描述符](#%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E6%96%87%E4%BB%B6%E6%8F%8F%E8%BF%B0%E7%AC%A6)
     - [配置主机时区](#%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E6%97%B6%E5%8C%BA)
     - [修改主机root口令](#%E4%BF%AE%E6%94%B9%E4%B8%BB%E6%9C%BAroot%E5%8F%A3%E4%BB%A4)
+    - [多主机配置dns](#%E5%A4%9A%E4%B8%BB%E6%9C%BA%E9%85%8D%E7%BD%AEdns)
+  - [deny指令集](#deny%E6%8C%87%E4%BB%A4%E9%9B%86)
+    - [配置主机禁Ping](#%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E7%A6%81ping)
+    - [配置主机禁用selinux](#%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E7%A6%81%E7%94%A8selinux)
+    - [配置主机禁用防火墙](#%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E7%A6%81%E7%94%A8%E9%98%B2%E7%81%AB%E5%A2%99)
     
 # easyctl
 
@@ -238,3 +243,142 @@ I0926 15:14:56.634472  112411 log.go:184] <- 10.10.1.2执行命令成功...
 > 测试
 
 重新连接列表主机
+
+### 多主机配置dns
+
+> 生成默认配置文件
+
+```shell
+easyctl set dns
+```
+
+> 修改配置文件
+
+`config.yaml`
+
+- 调整主机信息
+- 调整`dns`地址列表
+
+```yaml
+server:
+  - host: 10.10.10.[1:40]
+    username: root
+    privateKeyPath: "" # ~/.ssh/id_rsa，为空默认走password登录；不为空默认走密钥登录
+    password: 123456
+    port: 22
+excludes:
+  - 192.168.235.132
+dns:
+  - 114.114.114.114
+  - 8.8.8.8
+```
+
+> 运行
+
+`--debug`输出`debug`日志，可选参数
+
+```shell
+easyctl set dns -c config.yaml --debug
+```
+
+> 测试
+
+任意主机列表内的主机执行：
+
+```shell
+cat /etc/hosts
+```
+
+## deny指令集
+
+### 配置主机禁Ping
+
+配置主机禁`Ping`
+
+> 生成默认配置文件
+
+```shell
+easyctl deny ping
+```
+
+> 修改配置文件
+
+`config.yaml`
+
+```yaml
+server:
+  - host: 10.10.1.[1:3]
+    username: root
+    password: 111111
+    port: 22
+excludes:
+  - 192.168.235.132
+```
+
+> 配置
+
+`--debug`输出`debug`日志，可选参数
+
+```shell
+easyctl deny ping -c config.yaml --debug
+```
+
+### 配置主机禁用selinux
+
+> 生成默认配置文件
+
+```shell
+easyctl deny selinux
+```
+
+> 修改配置文件
+
+`config.yaml`
+
+```yaml
+server:
+  - host: 10.10.1.[1:3]
+    username: root
+    password: 111111
+    port: 22
+excludes:
+  - 192.168.235.132
+```
+
+> 配置
+
+`--debug`输出`debug`日志，可选参数
+
+```shell
+easyctl deny selinux -c config.yaml --debug
+```
+
+### 配置主机禁用防火墙
+
+> 生成默认配置文件
+
+```shell
+easyctl deny firewall
+```
+
+> 修改配置文件
+
+`config.yaml`
+
+```yaml
+server:
+  - host: 10.10.1.[1:3]
+    username: root
+    password: 111111
+    port: 22
+excludes:
+  - 192.168.235.132
+```
+
+> 配置
+
+`--debug`输出`debug`日志，可选参数
+
+```shell
+easyctl deny firewall -c config.yaml --debug
+```

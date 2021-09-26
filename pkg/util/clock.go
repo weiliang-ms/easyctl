@@ -13,7 +13,7 @@ type Timer interface {
 	Reset(d time.Duration) bool
 }
 
-// count秒后执行msg
+// CountDown count秒后执行msg
 func CountDown(count int, msg string) {
 	tick := time.Tick(1 * time.Second)
 	for countdown := count; countdown > 0; countdown-- {
