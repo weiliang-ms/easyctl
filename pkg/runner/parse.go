@@ -92,7 +92,7 @@ func serverDeepCopy(serverExternal ServerExternal) ServerInternal {
 		serverExternal.Port,
 		serverExternal.Username,
 		serverExternal.Password,
-		serverExternal.PublicKeyPath,
+		serverExternal.PrivateKeyPath,
 	}
 }
 
@@ -134,7 +134,7 @@ func (server ServerInternal) ServerFilter(excludes []string) []ServerInternal {
 				Port:          server.Port,
 				Username:      server.Username,
 				Password:      server.Password,
-				PublicKeyPath: server.PublicKeyPath,
+				PrivateKeyPath: server.PrivateKeyPath,
 			}
 
 			if !util.SliceContain(excludes, server.Host) {

@@ -10,7 +10,7 @@ type ServerExternal struct {
 	Port          string `yaml:"port"`
 	Username      string `yaml:"username"`
 	Password      string `yaml:"password"`
-	PublicKeyPath string `yaml:"publicKeyPath"`
+	PrivateKeyPath string `yaml:"privateKeyPath"`
 }
 
 type ServerInternal struct {
@@ -18,7 +18,7 @@ type ServerInternal struct {
 	Port          string
 	Username      string
 	Password      string
-	PublicKeyPath string
+	PrivateKeyPath string
 }
 
 type ServerListExternal struct {
