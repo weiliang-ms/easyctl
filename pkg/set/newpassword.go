@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lithammer/dedent"
+	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util"
 	"gopkg.in/yaml.v2"
 	"text/template"
@@ -21,12 +22,12 @@ type PasswordConfig struct {
 	Password string `yaml:"newRootPassword"`
 }
 
-func NewPassword(config []byte, debug bool) error {
+func NewPassword(config []byte, logger *logrus.Logger) error {
 	script, err := NewPasswordScript(config, NewPasswordTmpl)
 	if err != nil {
 		return err
 	}
-	return Config(config, debug, script)
+	return Config(config, logger, script)
 }
 
 func NewPasswordScript(b []byte, tmpl *template.Template) (string, error) {

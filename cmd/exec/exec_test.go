@@ -2,6 +2,7 @@ package exec
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"os"
 	"testing"
@@ -9,7 +10,9 @@ import (
 
 func TestRun(t *testing.T) {
 	b, _ := os.ReadFile("asset/executor.yaml")
-	err := runner.Run(b, true)
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+	err := runner.Run(b, logger)
 	if err != nil {
 		t.Error(err)
 	}

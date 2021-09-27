@@ -2,6 +2,7 @@ package ulimit
 
 import (
 	_ "embed"
+	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/set"
 	"os"
 	"testing"
@@ -13,7 +14,9 @@ func TestUlimit(t *testing.T) {
 		panic(readErr)
 	}
 
-	err := set.Ulimit(b, true)
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+	err := set.Ulimit(b, logger)
 	if err != nil {
 		panic(err)
 	}

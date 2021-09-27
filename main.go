@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/cmd/add"
 	"github.com/weiliang-ms/easyctl/cmd/clean"
@@ -35,6 +36,8 @@ var RootCmd = &cobra.Command{
 		// Do Stuff Here
 	},
 }
+
+var Logger logrus.Logger
 
 func init() {
 

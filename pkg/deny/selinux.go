@@ -2,11 +2,12 @@ package deny
 
 import (
 	"bufio"
+	"github.com/sirupsen/logrus"
 	"strings"
 )
 
-func Selinux(config []byte, debug bool) error {
-	return Item(config, debug, closeSELinuxShell)
+func Selinux(config []byte, logger *logrus.Logger) error {
+	return Item(config, logger, closeSELinuxShell)
 }
 
 // todo confirm

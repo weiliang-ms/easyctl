@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lithammer/dedent"
+	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util"
 	"gopkg.in/yaml.v2"
 	"net"
@@ -22,12 +23,12 @@ type DnsConfig struct {
 	DnsList []string `yaml:"dns"`
 }
 
-func Dns(b []byte, debug bool) error {
+func Dns(b []byte, logger *logrus.Logger) error {
 	script, err := AddDnsScript(b, setDnsShellTmpl)
 	if err != nil {
 		return err
 	}
-	return Config(b, debug, script)
+	return Config(b, logger, script)
 }
 
 func AddDnsScript(b []byte, tmpl *template.Template) (string, error) {
@@ -37,7 +38,7 @@ func AddDnsScript(b []byte, tmpl *template.Template) (string, error) {
 		return "", err
 	}
 
-	ok , err := IsValid(p.DnsList)
+	ok, err := IsValid(p.DnsList)
 	if !ok {
 		return "", err
 	}
@@ -57,8 +58,8 @@ func ParseDnsConfig(b []byte) (DnsConfig, error) {
 }
 
 func IsValid(dnsList []string) (bool, error) {
-	for _ , v := range dnsList {
-		if ok := net.ParseIP(v);ok == nil {
+	for _, v := range dnsList {
+		if ok := net.ParseIP(v); ok == nil {
 			return false, errors.New(fmt.Sprintf("%s地址非法", v))
 		}
 	}

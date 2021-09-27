@@ -1,15 +1,21 @@
 package export
 
 import (
+	_ "embed"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/export"
 )
 
+//go:embed asset/chart-repo.yaml
+var chartConfig []byte
+
 // 导出chart
 var chartCmd = &cobra.Command{
 	Use:   "chart [flags]",
-	Short: "export chart from harbor through easyctl...",
+	Short: "导出charts指令",
 	Run: func(cmd *cobra.Command, args []string) {
-		export.Chart(serverListFile)
+		if runErr := Export(Entity{Cmd: cmd, Fnc: export.Chart, DefaultConfig: chartConfig}); runErr != nil {
+			panic(runErr)
+		}
 	},
 }

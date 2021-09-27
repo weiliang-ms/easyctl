@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mitchellh/mapstructure"
 	"github.com/olekukonko/tablewriter"
+	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"os"
 	"sort"
@@ -26,9 +27,9 @@ sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
 `
 )
 
-func Item(b []byte, debug bool, cmd string) error {
+func Item(b []byte, logger *logrus.Logger, cmd string) error {
 
-	results, err := GetResult(b, debug, cmd)
+	results, err := GetResult(b, logger, cmd)
 	if err != nil {
 		return err
 	}
@@ -50,7 +51,7 @@ func Item(b []byte, debug bool, cmd string) error {
 	return nil
 }
 
-func GetResult(b []byte, debug bool, cmd string) ([]runner.ShellResult, error) {
+func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResult, error) {
 
 	servers, err := runner.ParseServerList(b)
 	if err != nil {
@@ -59,7 +60,7 @@ func GetResult(b []byte, debug bool, cmd string) ([]runner.ShellResult, error) {
 
 	executor := runner.ExecutorInternal{Servers: servers, Script: cmd}
 
-	ch := executor.ParallelRun(debug)
+	ch := executor.ParallelRun(logger)
 
 	results := []runner.ShellResult{}
 

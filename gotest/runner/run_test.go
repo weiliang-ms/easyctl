@@ -3,6 +3,7 @@ package runner
 import (
 	"fmt"
 	"github.com/olekukonko/tablewriter"
+	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"os"
 	"testing"
@@ -20,7 +21,10 @@ func TestRun(t *testing.T) {
 		panic(err)
 	}
 
-	results := executor.ParallelRun(true)
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	results := executor.ParallelRun(logger)
 
 	var data [][]string
 

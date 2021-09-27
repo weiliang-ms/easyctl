@@ -2,6 +2,7 @@ package set
 
 import (
 	_ "embed"
+	"github.com/sirupsen/logrus"
 )
 
 const ulimitShell = `
@@ -18,7 +19,7 @@ cat >> /etc/security/limits.conf <<EOF
 EOF
 `
 
-func Ulimit(b []byte, debug bool) error {
+func Ulimit(b []byte, logger *logrus.Logger) error {
 
-	return Config(b, debug, ulimitShell)
+	return Config(b, logger, ulimitShell)
 }

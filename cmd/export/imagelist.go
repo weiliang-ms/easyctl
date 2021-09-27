@@ -2,18 +2,13 @@ package export
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/pkg/api/export"
 )
 
 var imageCmd = &cobra.Command{
-	Use:   "image-list [flags]",
-	Short: "export harbor images list through easyctl...",
+	Use:   "harbor-image-list [flags]",
+	Short: "导出harbor项目内的镜像列表",
 	Run: func(cmd *cobra.Command, args []string) {
-		exportImage()
+
 	},
 	Args: cobra.NoArgs,
-}
-
-func exportImage() {
-	export.ImageList(serverListFile)
 }

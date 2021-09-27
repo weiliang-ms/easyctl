@@ -3,6 +3,7 @@ package set
 import (
 	_ "embed"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/util"
 	"k8s.io/klog"
@@ -36,7 +37,7 @@ func init() {
 
 type Entity struct {
 	Cmd           *cobra.Command
-	Fnc           func(b []byte, debug bool) error
+	Fnc           func(b []byte, logger *logrus.Logger) error
 	DefaultConfig []byte
 }
 
@@ -63,5 +64,12 @@ func Set(entity Entity) error {
 		klog.Fatalf("读取配置文件失败")
 	}
 
-	return entity.Fnc(b, debug)
+	logger := logrus.New()
+	if debug {
+		logger.SetLevel(logrus.DebugLevel)
+	} else {
+		logger.SetLevel(logrus.InfoLevel)
+	}
+
+	return entity.Fnc(b, logger)
 }

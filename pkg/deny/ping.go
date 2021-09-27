@@ -1,5 +1,7 @@
 package deny
 
-func Ping(config []byte, debug bool) error {
-	return Item(config, debug, denyPingShell)
+import "github.com/sirupsen/logrus"
+
+func Ping(config []byte, logger *logrus.Logger) error {
+	return Item(config, logger, denyPingShell)
 }

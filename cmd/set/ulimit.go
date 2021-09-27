@@ -7,10 +7,9 @@ import (
 
 // 文件描述符
 var ulimitCmd = &cobra.Command{
-	Use:     "ulimit [flags]",
-	Short:   "配置ulimit",
-	Example: "\neasyctl set ulimit -c config.yaml",
-	Args:    cobra.ExactValidArgs(0),
+	Use:   "ulimit [flags]",
+	Short: "配置ulimit",
+	Args:  cobra.ExactValidArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		if runErr := Set(Entity{Cmd: cmd, Fnc: set.Ulimit}); runErr != nil {
 			panic(runErr)

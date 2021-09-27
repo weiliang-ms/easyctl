@@ -2,6 +2,7 @@ package passwordless
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/set"
 	"os"
 	"testing"
@@ -13,7 +14,10 @@ func TestGenRsaKey(t *testing.T) {
 		panic(readErr)
 	}
 
-	err := set.PasswordLess(b, false)
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	err := set.PasswordLess(b, logger)
 	if err != nil {
 		panic(err)
 	}

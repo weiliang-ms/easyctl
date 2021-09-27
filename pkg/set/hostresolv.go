@@ -3,6 +3,7 @@ package set
 import (
 	"fmt"
 	"github.com/lithammer/dedent"
+	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util"
 	"strconv"
 	"strings"
@@ -28,9 +29,9 @@ EOF
 {{- end }}
 `)))
 
-func HostResolve(b []byte, debug bool) error {
+func HostResolve(b []byte, logger *logrus.Logger) error {
 
-	results, err := GetResult(b, debug, "hostname")
+	results, err := GetResult(b, logger, "hostname")
 	if err != nil {
 		return err
 	}
@@ -57,7 +58,7 @@ func HostResolve(b []byte, debug bool) error {
 		return err
 	}
 
-	return Config(b, debug, shell)
+	return Config(b, logger, shell)
 }
 
 func (addresses IPAddress) Len() int { return len(addresses) }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"github.com/modood/table"
+	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
@@ -18,14 +19,14 @@ import (
 	"time"
 )
 
-func Run(b []byte, debug bool) error {
+func Run(b []byte, logger *logrus.Logger) error {
 
 	exec, err := ParseExecutor(b)
 	if err != nil {
 		return err
 	}
 
-	ch := exec.ParallelRun(debug)
+	ch := exec.ParallelRun(logger)
 
 	result := []ShellResult{}
 
@@ -38,7 +39,7 @@ func Run(b []byte, debug bool) error {
 	return nil
 }
 
-func (executor ExecutorInternal) ParallelRun(debug bool) chan ShellResult {
+func (executor ExecutorInternal) ParallelRun(logger *logrus.Logger) chan ShellResult {
 
 	klog.Infoln("开始并行执行命令...")
 	wg := sync.WaitGroup{}
@@ -56,7 +57,7 @@ func (executor ExecutorInternal) ParallelRun(debug bool) chan ShellResult {
 	for _, v := range executor.Servers {
 		wg.Add(1)
 		go func(s ServerInternal) {
-			ch <- runOnNode(s, script, debug)
+			ch <- runOnNode(s, script, logger)
 			defer wg.Done()
 		}(v)
 	}
@@ -86,11 +87,11 @@ func ReadErrorChanWithSelect(ch chan ShellResult) (value ShellResult, err error)
 	}
 }
 
-func runOnNode(s ServerInternal, cmd string, debug bool) ShellResult {
+func runOnNode(s ServerInternal, cmd string, logger *logrus.Logger) ShellResult {
 	//session , err := session(s)
 	var shell string
 
-	if debug {
+	if logger.Level == logrus.DebugLevel {
 		shell = cmd
 	}
 
@@ -102,8 +103,9 @@ func runOnNode(s ServerInternal, cmd string, debug bool) ShellResult {
 		subCmd = cmd
 	}
 
-	klog.Infof("[%s] 开始执行指令 -> %s\n", s.Host, shell)
+	logger.Infof("[%s] 开始执行指令 -> %s\n", s.Host, shell)
 	session, err := s.sshConnect()
+
 	if err != nil {
 		// todo: code
 		errMsg := fmt.Sprintf("ssh会话建立失败->%s", err.(*net.OpError).Error())
@@ -116,15 +118,15 @@ func runOnNode(s ServerInternal, cmd string, debug bool) ShellResult {
 		return ShellResult{Host: s.Host, Err: errors.New(err.(*ssh.ExitError).String()),
 			Cmd: cmd, Status: util.Fail, Code: err.(*ssh.ExitError).ExitStatus(), StdErrMsg: err.(*ssh.ExitError).String()}
 	}
-	log.Printf("<- %s执行命令成功...\n", s.Host)
 
-	if debug {
-		klog.Info(s.Host,"\n",string(out), "\n")
-	}
+	logger.Infof("<- %s执行命令成功...\n", s.Host)
+
+	logger.Debug(s.Host, "\n", string(out), "\n")
 
 	defer session.Close()
 
 	var subOut string
+
 	if len(string(out)) > 20 {
 		subOut = string(out)[:20]
 	} else {
@@ -182,11 +184,10 @@ func (server ServerInternal) sshConnect() (*ssh.Session, error) {
 	auth = make([]ssh.AuthMethod, 0)
 
 	if server.Password == "" || server.PrivateKeyPath != "" {
-		auth= append(auth, publicKeyAuthFunc(server.PrivateKeyPath))
-	}else {
+		auth = append(auth, publicKeyAuthFunc(server.PrivateKeyPath))
+	} else {
 		auth = append(auth, ssh.Password(s.Password))
 	}
-
 
 	hostKeyCallbk := func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 		return nil
