@@ -3,6 +3,7 @@ package set
 import (
 	_ "embed"
 	"github.com/lithammer/dedent"
+	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/ssh"
 	"github.com/weiliang-ms/easyctl/pkg/util"
 	"text/template"
@@ -28,12 +29,12 @@ EOF
 chmod 600 ~/.ssh -R
 `)))
 
-func PasswordLess(config []byte, debug bool) error {
+func PasswordLess(config []byte, logger *logrus.Logger) error {
 	script, err := MakeKeyPairScript(PasswordLessTmpl)
 	if err != nil {
 		return err
 	}
-	return Config(config, debug, script)
+	return Config(config, logger, script)
 }
 
 func MakeKeyPairScript(tmpl *template.Template) (string, error) {

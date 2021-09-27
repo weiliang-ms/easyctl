@@ -4,16 +4,22 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"time"
 )
 
-type ChartExporter struct {
+// ChartRepoConfig chart仓库实体
+type ChartRepoConfig struct {
 	HelmRepo HelmRepo `yaml:"helm-repo"`
+}
+
+type ChartExecutor struct {
+	Config ChartRepoConfig
+	Logger *logrus.Logger
 }
 
 type HelmRepo struct {
@@ -36,58 +42,53 @@ type ChartItem struct {
 	Deprecated    bool      `json:"deprecated"`
 }
 
-func Chart(configPath string) (err error) {
+func Chart(b []byte, logger *logrus.Logger) error {
 	// todo: 生成样例文件
-	exporter, err := parseHelmExporter(configPath)
+	logger.Info("解析chart仓库配置...")
+	config, err := ParseHelmRepoConfig(b, logger)
 	if err != nil {
 		return err
 	}
 
-	err = exporter.chart()
-
-	return nil
-}
-
-func parseHelmExporter(configPath string) (*ChartExporter, error) {
-
-	exporter := &ChartExporter{}
-
-	f, err := os.Open(configPath)
-	if err != nil {
-		return nil, err
+	executor := ChartExecutor{
+		Config: config,
+		Logger: logger,
 	}
 
-	decoder := yaml.NewDecoder(f)
-	err = decoder.Decode(exporter)
-
-	log.Printf("chart导出器结构体: %v", exporter)
-	return exporter, err
-}
-
-func (export ChartExporter) chart() error {
-	log.Println("导出逻辑...")
-	list, err := export.chartList()
+	list, err := executor.ChartList()
 	if err != nil {
 		return err
 	}
-	log.Printf("待导出chart数量为: %d", len(list))
 
-	export.save(list)
+	logger.Infof("待导出chart数量为: %d", len(list))
+
+	executor.Save(list)
 
 	return nil
 }
 
-// 获取chart列表
-func (export ChartExporter) chartList() ([]ChartItem, error) {
+func ParseHelmRepoConfig(b []byte, logger *logrus.Logger) (ChartRepoConfig, error) {
+	config := ChartRepoConfig{}
+	if err := yaml.Unmarshal(b, &config); err != nil {
+		return ChartRepoConfig{}, err
+	} else {
+		logger.Debugf("chart导出器结构体: %v", config)
+		return config, nil
+	}
+}
+
+// ChartList 获取chart列表
+func (executor ChartExecutor) ChartList() ([]ChartItem, error) {
 	var items []ChartItem
-	url := fmt.Sprintf("http://%s/api/chartrepo/charts/charts", export.HelmRepo.Endpoint)
+	// todo ssl
+	url := fmt.Sprintf("http://%s/api/chartrepo/charts/charts", executor.Config.HelmRepo.Endpoint)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 
 	if err != nil {
 		return nil, err
 	}
 
-	req.SetBasicAuth(export.HelmRepo.Username, export.HelmRepo.Password)
+	req.SetBasicAuth(executor.Config.HelmRepo.Username, executor.Config.HelmRepo.Password)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -102,39 +103,45 @@ func (export ChartExporter) chartList() ([]ChartItem, error) {
 	return items, nil
 }
 
+// Save
 // 保存chart列表
-func (export ChartExporter) save(list []ChartItem) {
+func (executor ChartExecutor) Save(list []ChartItem) {
 
-	log.Printf("创建目录: %s\n", export.HelmRepo.PreserveDir)
-	err := os.Mkdir(export.HelmRepo.PreserveDir, 0755)
+	executor.Logger.Info("导出chart...")
+
+	executor.Logger.Infof("创建目录: %s\n", executor.Config.HelmRepo.PreserveDir)
+	err := os.Mkdir(executor.Config.HelmRepo.PreserveDir, 0755)
 	if err != nil {
-		panic(err)
+		if err.(*os.PathError) == nil {
+			panic(err)
+		}
 	}
+
+	executor.Logger.Info("逐一导出chart中...")
 
 	for _, v := range list {
 		name := fmt.Sprintf("%s-%s.tgz", v.Name, v.LatestVersion)
-		url := fmt.Sprintf("http://%s/chartrepo/charts/charts/%s", export.HelmRepo.Endpoint, name)
-		resp, err := export.doGET(url)
+		url := fmt.Sprintf("http://%s/chartrepo/charts/charts/%s", executor.Config.HelmRepo.Endpoint, name)
+		resp, err := executor.doGET(url)
 		if err != nil {
-			log.Fatal(err)
+			executor.Logger.Fatal(err)
 		}
-
-		path := fmt.Sprintf("%s/%s", export.HelmRepo.PreserveDir, name)
-		export.saveChart(path, resp.Body)
-
+		path := fmt.Sprintf("%s/%s", executor.Config.HelmRepo.PreserveDir, name)
+		executor.SaveChart(path, resp.Body)
 	}
 
+	executor.Logger.Infof("导出完毕，chart总数为:%d", len(list))
 	// todo: tar打包功能
 }
 
-func (export ChartExporter) doGET(url string) (*http.Response, error) {
+func (executor ChartExecutor) doGET(url string) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 
 	if err != nil {
 		return nil, err
 	}
 
-	req.SetBasicAuth(export.HelmRepo.Username, export.HelmRepo.Password)
+	req.SetBasicAuth(executor.Config.HelmRepo.Username, executor.Config.HelmRepo.Password)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -143,17 +150,17 @@ func (export ChartExporter) doGET(url string) (*http.Response, error) {
 	return resp, err
 }
 
-func (export ChartExporter) saveChart(dst string, src io.Reader) {
+func (executor ChartExecutor) SaveChart(dst string, src io.Reader) {
 
-	log.Printf("创建文件句柄: %s", dst)
+	executor.Logger.Debugf("创建文件句柄: %s", dst)
 	out, err := os.Create(dst)
 	defer out.Close()
 
-	log.Printf("生成文件:%s内容", dst)
+	executor.Logger.Debugf("生成文件:%s内容", dst)
 	count, err := io.Copy(bufio.NewWriter(out), src)
 	if err != nil {
 		panic(err)
 	}
 
-	log.Printf("文件大小为: %d", count)
+	executor.Logger.Debugf("文件大小为: %d", count)
 }

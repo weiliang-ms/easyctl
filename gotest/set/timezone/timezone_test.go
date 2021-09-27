@@ -2,6 +2,7 @@ package ulimit
 
 import (
 	_ "embed"
+	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/set"
 	"os"
 	"testing"
@@ -13,7 +14,10 @@ func TestTimezone(t *testing.T) {
 		panic(readErr)
 	}
 
-	err := set.Timezone(b, true)
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	err := set.Timezone(b, logger)
 	if err != nil {
 		panic(err)
 	}

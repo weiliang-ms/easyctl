@@ -1,0 +1,8 @@
+helm-repo:
+  endpoint: 10.10.1.3:80   # harbor访问地址
+  domain: harbor.wl.io      # harbor域
+  username: admin           # harbor用户
+  password: 123456          # harbor密码
+  preserveDir: /root/charts # chart包持久化目录
+  package: true             # 是否打成tar包
+  repo-name: charts         # chart repo harbor内的名称
