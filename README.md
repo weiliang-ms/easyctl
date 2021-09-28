@@ -1,4 +1,5 @@
 - [easyctl](#easyctl)
+  - [迭代计划](#%E8%BF%AD%E4%BB%A3%E8%AE%A1%E5%88%92)
   - [安装](#%E5%AE%89%E8%A3%85)
     - [编译安装最新版](#%E7%BC%96%E8%AF%91%E5%AE%89%E8%A3%85%E6%9C%80%E6%96%B0%E7%89%88)
   - [set指令集](#set%E6%8C%87%E4%BB%A4%E9%9B%86)
@@ -12,7 +13,15 @@
     - [配置主机禁Ping](#%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E7%A6%81ping)
     - [配置主机禁用selinux](#%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E7%A6%81%E7%94%A8selinux)
     - [配置主机禁用防火墙](#%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E7%A6%81%E7%94%A8%E9%98%B2%E7%81%AB%E5%A2%99)
-    
+  - [export指令集](#export%E6%8C%87%E4%BB%A4%E9%9B%86)
+    - [chart导出](#chart%E5%AF%BC%E5%87%BA)
+    - [导出harbor镜像tag列表](#%E5%AF%BC%E5%87%BAharbor%E9%95%9C%E5%83%8Ftag%E5%88%97%E8%A1%A8)
+      - [1.1 单项目导出](#11-%E5%8D%95%E9%A1%B9%E7%9B%AE%E5%AF%BC%E5%87%BA)
+      - [1.2 多项目导出](#12-%E5%A4%9A%E9%A1%B9%E7%9B%AE%E5%AF%BC%E5%87%BA)
+      - [1.3 全项目导出](#13-%E5%85%A8%E9%A1%B9%E7%9B%AE%E5%AF%BC%E5%87%BA)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # easyctl
 
 基于`golang`轻量级运维工具集
@@ -504,7 +513,7 @@ INFO[0000] 逐一导出chart中...
 INFO[0002] 导出完毕，chart总数为:135
 ```
 
-### 1.1 单项目导出
+#### 1.1 单项目导出
 
 导出单项目镜像列表
 
@@ -555,7 +564,7 @@ harbor.wl.io/apache/skywalking-oap-server:8.6.0-es7
 harbor.wl.io/apache/skywalking-ui:8.6.0
 ```
 
-### 1.2 多项目导出
+#### 1.2 多项目导出
 
 导出一个以上项目下镜像列表
 
@@ -636,7 +645,7 @@ harbor.wl.io/b2i/tomcat8-java8-centos7:latest
 harbor.wl.io/b2i/tomcat9-java8-centos7:latest
 ```
 
-### 1.3 全项目导出
+#### 1.3 全项目导出
 
 导出全部项目下镜像列表
 
