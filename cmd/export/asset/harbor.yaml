@@ -1,8 +1,11 @@
-harbor:
-  address: 192.168.1.2
-  domain: harbor.wl.io
-  user: admin
-  password: Harbor-12345
-  projects:
-    - kubesphere
-    - library
+harbor-repo:
+  address: 192.168.1.1              # harbor连接地址
+  domain: harbor.wl.io              # harbor域
+  user: admin                       # harbor用户
+  password: Harbor-12345            # harbor用户密码
+  preserve-dir: harbor-image-list   # 持久化tag
+  projects:                         # 导出哪些项目下的镜像tag（如果为空表示全库导出）
+    - apache                        # project名称
+    - weaveworks
+  excludes:                         # 配置'projects'空值使用，过滤某些project
+    - ddd

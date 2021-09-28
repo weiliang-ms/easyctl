@@ -16,7 +16,7 @@ func TestRun(t *testing.T) {
 	}
 
 	executor, err := runner.ParseExecutor(b)
-	executor.Script = "cat /etc/resolv.conf"
+	executor.Script = "date"
 	if err != nil {
 		panic(err)
 	}
