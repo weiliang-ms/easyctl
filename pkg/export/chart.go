@@ -14,7 +14,7 @@ import (
 
 // ChartRepoConfig chart仓库实体
 type ChartRepoConfig struct {
-	HelmRepo HelmRepo `yaml:"helm-repo"`
+	HelmRepo HelmRepo `yaml:"helm-Repository"`
 }
 
 type ChartExecutor struct {
@@ -28,7 +28,7 @@ type HelmRepo struct {
 	Password    string `yaml:"password"`
 	PreserveDir string `yaml:"preserveDir"`
 	Package     bool   `yaml:"package"`
-	RepoName    string `yaml:"repo-name"`
+	RepoName    string `yaml:"Repository-name"`
 }
 
 type ChartItem struct {

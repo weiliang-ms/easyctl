@@ -121,7 +121,9 @@ func runOnNode(s ServerInternal, cmd string, logger *logrus.Logger) ShellResult 
 
 	logger.Infof("<- %s执行命令成功...\n", s.Host)
 
-	logger.Debug(s.Host, "\n", string(out), "\n")
+	if logger.Level == logrus.DebugLevel {
+		fmt.Printf("%s -> %s\n", s.Host, string(out))
+	}
 
 	defer session.Close()
 
