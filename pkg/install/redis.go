@@ -77,7 +77,8 @@ func (meta *RedisMeta) Detect(executor Executor, debug bool) error {
 		Servers: executor.Servers,
 		Script:  check,
 	}
-	for v := range exec.ParallelRun(debug) {
+	// todo:  fix logger
+	for v := range exec.ParallelRun(nil) {
 		if v.Err != nil {
 			return errors.New(fmt.Sprintf("依赖检测失败 -> %s", v.Err))
 		}
@@ -121,7 +122,8 @@ func (meta *RedisMeta) Compile(executor Executor, debug bool) error {
 		Script:  compileCmd,
 	}
 
-	ch := exec.ParallelRun(debug)
+	// todo fix logger
+	ch := exec.ParallelRun(nil)
 	for v := range ch {
 		if v.Err != nil {
 			return v.Err

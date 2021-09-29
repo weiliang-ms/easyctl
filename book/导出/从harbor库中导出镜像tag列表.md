@@ -32,20 +32,6 @@ harbor-repo:
     - ddd
 ```
 
-> 配置
-
-`--debug`输出`debug`日志，可选参数
-
-```shell
-[root@node1 ~]# easyctl export chart -c config.yaml
-INFO[0000] 解析chart仓库配置...
-INFO[0000] 待导出chart数量为: 135
-INFO[0000] 导出chart...
-INFO[0000] 创建目录: /root/charts
-INFO[0000] 逐一导出chart中...
-INFO[0002] 导出完毕，chart总数为:135
-```
-
 ### 单项目导出
 
 导出单项目镜像列表

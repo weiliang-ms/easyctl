@@ -55,7 +55,7 @@ func Deny(entity Entity) error {
 		klog.Fatalf("读取配置文件失败")
 	}
 
-	logger := &logrus.Logger{}
+	logger := logrus.New()
 	if debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	} else {

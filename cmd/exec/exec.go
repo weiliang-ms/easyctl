@@ -2,6 +2,8 @@ package exec
 
 import (
 	_ "embed"
+	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util"
@@ -26,25 +28,47 @@ var RootCmd = &cobra.Command{
 	Short:   "执行命令指令集",
 	Example: "\neasyctl exec -c config.yaml",
 	Run: func(cmd *cobra.Command, args []string) {
-
-		if configFile == "" {
-			klog.Infof("检测到配置文件为空，生成配置文件样例 -> %s", util.ConfigFile)
-			os.WriteFile(util.ConfigFile, config, 0666)
-		}
-
-		b, err := os.ReadFile(configFile)
-		if err != nil {
-			panic(err)
-		}
-
-		flagset := cmd.Parent().Parent().PersistentFlags()
-		debug, err := flagset.GetBool("debug")
-		if err != nil {
-			panic(err)
-		}
-
-		if err := runner.Run(b, debug); err != nil {
-			klog.Fatalln(err)
+		if runErr := Exec(Entity{Cmd: cmd, Fnc: runner.Run}); runErr != nil {
+			panic(runErr)
 		}
 	},
+}
+
+type Entity struct {
+	Cmd           *cobra.Command
+	Fnc           func(b []byte, logger *logrus.Logger) error
+	DefaultConfig []byte
+}
+
+func Exec(entity Entity) error {
+
+	if entity.DefaultConfig == nil {
+		entity.DefaultConfig = config
+	}
+
+	if configFile == "" {
+		klog.Infof("检测到配置文件参数为空，生成配置文件样例 -> %s", util.ConfigFile)
+		_ = os.WriteFile(util.ConfigFile, entity.DefaultConfig, 0666)
+		os.Exit(0)
+	}
+
+	flagset := entity.Cmd.Parent().Parent().PersistentFlags()
+	debug, err := flagset.GetBool("debug")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	b, readErr := os.ReadFile(configFile)
+	if readErr != nil {
+		klog.Fatalf("读取配置文件失败")
+	}
+
+	logger := logrus.New()
+	if debug {
+		logger.SetLevel(logrus.DebugLevel)
+	} else {
+		logger.SetLevel(logrus.InfoLevel)
+	}
+
+	return entity.Fnc(b, logger)
 }

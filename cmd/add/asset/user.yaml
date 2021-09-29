@@ -1,0 +1,13 @@
+server:
+  - host: 10.10.10.[1:45]
+    username: root
+    privateKeyPath: /root/.ssh/id_rsa
+    #    password: ""
+    port: 22
+excludes:
+  - 192.168.235.132
+new-user:
+  name: user01
+  nologin: false
+  password: "dddd"  #
+  user-dir: ""      # default /home/username
