@@ -42,7 +42,7 @@ jobs:
         run: |
           mkdir -p deploy-doc-dir
           cd deploy-doc-dir
-          echo ${{ secrets.publish }}
+          echo ${{ secrets.EASYCTL_PUBLISH_TOKEN }}
 #          git init
 #          git config user.name "weiliang-ms"
 #          git config user.email "xzx.weiliang@gmail.com"
