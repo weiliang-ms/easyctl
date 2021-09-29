@@ -38,6 +38,18 @@ jobs:
         run: ls
       - name: install git
         run: sudo apt-get install git -y
+      - name: publish
+        run: |
+          mkdir -p deploy-doc-dir
+          cd deploy-doc-dir
+          echo ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+#          git init
+#          git config user.name "weiliang-ms"
+#          git config user.email "xzx.weiliang@gmail.com"
+#          mv ../book/_book docs
+#          git add docs
+#          git commit -m "Update docs"
+#          git push --force "https://$GH_TOKEN@$GH_REF" master:docs
 
         #    - name: Test
 #      run: go test -v ./...
