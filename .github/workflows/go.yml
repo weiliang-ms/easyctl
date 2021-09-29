@@ -35,7 +35,7 @@ jobs:
       - name: build
         run: gitbook build book
       - name: index
-        run: ls book
+        run: ls book/_book && cat book/_book/index.html
       - name: install git
         run: sudo apt-get install git -y
       - name: publish
