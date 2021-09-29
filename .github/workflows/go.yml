@@ -29,7 +29,7 @@ jobs:
       - name: install
         run: gitbook install
       - name: list
-        run: ls ../ && pwd
+        run: ls -R /home/runner && pwd
       - name: build
         run: node -v && gitbook build
 
