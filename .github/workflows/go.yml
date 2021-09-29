@@ -21,7 +21,9 @@ jobs:
   build-doc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v2
+      - name: Set up Node
+        uses: actions/setup-node@v2
         with:
           node-version: 12.18.2
       - name: install gitbook
