@@ -36,14 +36,8 @@ jobs:
         run: node -v && gitbook build book
       - name: index
         run: ls
-  publish-doc:
-    runs-on: ubuntu-latest
-    needs: build-doc
-    steps:
-      - name: pwd
-        run: ls && pwd
-      - name: git
-        run: git -verison
+      - name: install git
+        run: sudo apt-get install git -y
 
         #    - name: Test
 #      run: go test -v ./...
