@@ -56,7 +56,8 @@
         "prismjs/themes/prism-solarizedlight.css"
       ],
       "lang": {
-        "flow": "typescript"
+        "flow": "typescript",
+        "objc": "objectivec"
       }
     }
   },
