@@ -28,6 +28,8 @@ jobs:
           node-version: 12.18.2
       - name: install gitbook
         run: npm install gitbook-cli -g
+      - name: index
+        run: find ~/|grep prism-textlie.js
       - name: install
         run: gitbook install
       - name: build
