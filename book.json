@@ -1,0 +1,73 @@
+{
+  "title": "easyctl",
+  "description": "easyctl说明文档",
+  "author": "weiliang-ms",
+  "output.name": "site",
+  "language": "zh-hans",
+  "gitbook": "3.2.3",
+  "ignores": ["_book","node_modules","style"],
+  "root": ".",
+  "plugins": [
+    "code",
+    "back-to-top-button",
+    "-search",
+    "-lunr",
+    "search-pro",
+    "github",
+    "splitter",
+    "expandable-chapters",
+    "tbfed-pagefooter",
+    "-sharing",
+    "expandable-chapters",
+    "chapter-fold",
+    "theme-comscore",
+    "sharing-plus",
+    "prism",
+    "emphasize",
+    "advanced-emoji",
+    "-highlight",
+    "styles-less",
+    "multipart",
+    "ancre-navigation"
+  ],
+  "pluginsConfig": {
+    "github": {
+      "url": "https://github.com/weiliang-ms"
+    },
+    "code": {
+      "copyButtons": true
+    },
+    "tbfed-pagefooter": {
+      "copyright": "Copyright © weiliang-ms 2021",
+      "modify_label": "本书发布时间：",
+      "modify_format": "YYYY-MM-DD HH:mm:ss"
+    },
+    "sharing": {
+      "facebook": false,
+      "twitter": false,
+      "weibo": false,
+      "qq": false,
+      "all": [
+      ]
+    },
+    "prism": {
+      "css": [
+        "prismjs/themes/prism-solarizedlight.css"
+      ],
+      "lang": {
+        "flow": "typescript"
+      }
+    }
+  },
+  "page-toc-button": {
+    "maxTocDepth": 2,
+    "minTocSize": 2
+  },
+  "styles": {
+    "website": "styles/website.css",
+    "ebook": "styles/ebook.css",
+    "pdf": "styles/pdf.css",
+    "mobi": "styles/mobi.css",
+    "epub": "styles/epub.css"
+  }
+}
