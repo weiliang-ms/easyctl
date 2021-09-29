@@ -51,6 +51,10 @@
       "all": [
       ]
     },
+    "prism": {
+      "css": [
+        "prismjs/themes/prism-solarizedlight.css"
+      ],
       "lang": {
         "flow": "typescript"
       }
