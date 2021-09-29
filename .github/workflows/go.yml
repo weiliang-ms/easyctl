@@ -52,7 +52,7 @@ jobs:
           git init
           git config user.name "weiliang-ms"
           git config user.email "xzx.weiliang@gmail.com"
-          cp -r ../_book docs
+          cp -r ../book/_book docs
           git add docs
           git commit -m "Update docs"
           git push --force "https://$ACCESS_TOKEN@github.com/weiliang-ms/easyctl" master:docs
