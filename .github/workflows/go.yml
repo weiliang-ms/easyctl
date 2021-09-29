@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/setup-node@v2
         with:
-          node-version: 12
+          node-version: 12.18.2
       - name: install gitbook
         run: npm install gitbook-cli -g
       - name: install
