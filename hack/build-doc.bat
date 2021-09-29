@@ -1,3 +1,3 @@
 @echo off
-cd ..
-gitbook build book
+cd ../book
+gitbook build

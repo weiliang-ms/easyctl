@@ -34,6 +34,8 @@ jobs:
         run: book sm --disableTitleFormatting book
       - name: build
         run: gitbook build book ./docs
+      - name: cat
+        run: cat docs/index.html
       - name: install git
         run: sudo apt-get install git -y
       - name: publish
@@ -42,7 +44,6 @@ jobs:
         run: |
           mkdir -p deploy-doc-dir
           cd deploy-doc-dir
-          ls
           git init
           git config user.name "weiliang-ms"
           git config user.email "xzx.weiliang@gmail.com"
