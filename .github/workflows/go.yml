@@ -40,6 +40,8 @@ jobs:
         working-directory: book
       - name: cat
         run: cat book/_book/index.html
+      - name: ls
+        run: ls -R book
       - name: install git
         run: sudo apt-get install git -y
       - name: publish
