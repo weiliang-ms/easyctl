@@ -33,9 +33,7 @@ jobs:
       - name: generate-toc
         run: book sm --disableTitleFormatting book
       - name: build
-        run: gitbook build book
-      - name: index
-        run: ls book/_book && cat book/_book/index.html
+        run: cd book && gitbook build
       - name: install git
         run: sudo apt-get install git -y
       - name: publish
