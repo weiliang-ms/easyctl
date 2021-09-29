@@ -38,10 +38,6 @@ jobs:
       - name: build
         run: gitbook build
         working-directory: book
-      - name: cat
-        run: cat book/_book/index.html
-      - name: ls
-        run: ls -R book
       - name: install git
         run: sudo apt-get install git -y
       - name: publish
@@ -59,6 +55,3 @@ jobs:
           git add docs
           git commit -m "Update docs"
           git push --force "https://$ACCESS_TOKEN@github.com/weiliang-ms/easyctl" master:docs
-
-        #    - name: Test
-#      run: go test -v ./...
