@@ -28,10 +28,13 @@ jobs:
           node-version: 12.18.2
       - name: install gitbook
         run: npm install gitbook-cli gitbook-summary -g
+        working-directory: book
       - name: install
         run: gitbook install
+        working-directory: book
       - name: generate-toc
-        run: book sm --disableTitleFormatting book
+        run: book sm --disableTitleFormatting
+        working-directory: book
       - name: build
         run: gitbook build
         working-directory: book
