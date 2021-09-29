@@ -27,13 +27,13 @@ jobs:
         with:
           node-version: 12.18.2
       - name: install gitbook
-        run: npm install gitbook-cli -g
-      - name: index
-        run: find ~/|grep prism-textlie.js
+        run: npm install gitbook-cli gitbook-summary -g
       - name: install
         run: gitbook install
+      - name: generate-toc
+        run: book sm --disableTitleFormatting book
       - name: build
-        run: node -v && gitbook build
+        run: node -v && gitbook build book
 
 #    - name: Test
 #      run: go test -v ./...
