@@ -16,8 +16,7 @@ jobs:
       with:
         go-version: 1.16
     - name: Build
-    - run: go build -v ./...
-    - run: tar zcvf easyctl.tgz easyctl
+      run: go build -v ./... && tar zcvf easyctl.tgz easyctl
     - name: Create Release # 创建Release，可以在仓库看到一个个版本
       env:
         GITHUB_TOKEN: ${{ secrets.EASYCTL_PUBLISH_TOKEN }}
