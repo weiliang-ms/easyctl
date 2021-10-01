@@ -7,49 +7,28 @@ on:
     branches: [ master ]
 
 jobs:
-  once:
-    name: Create GitHub release
+  releases-matrix:
+    name: Release Go Binary
     runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - name: Create a release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: true
-          prerelease: true
-
-  build:
-    needs: once
-    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        # build and publish in parallel: linux/386, linux/amd64, windows/386, windows/amd64, darwin/amd64
+        goos: [linux, windows, darwin]
+        goarch: ["386", amd64]
+        exclude:
+          - goarch: "386"
+#            goos: darwin
     steps:
-    - uses: actions/checkout@v1
-      with:
-        submodules: true
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.16
-        buildDirectory: "${{ github.workspace }}/${{ matrix.os }}"
-#      run: go build -o easyctl
-    - name: Upload Release Asset
-      id: upload-release-asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.once.outputs.upload_url }}
-        asset_path: ${{ github.workspace }}/${{ matrix.os }}/easyctl
-        asset_name: easyctl-${{ matrix.os }}
-        asset_content_type: application/octet-stream
+      - uses: actions/checkout@v2
+      - uses: wangyoucao577/go-release-action@v1.20
+        with:
+          github_token: ${{ secrets.EASYCTL_PUBLISH_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          goversion: "1.16"
+          project_path: "easyctl"
+          binary_name: "easyctl"
+          extra_files: LICENSE README.md
 
   build-doc:
     runs-on: ubuntu-latest
