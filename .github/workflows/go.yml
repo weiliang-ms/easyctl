@@ -7,79 +7,51 @@ on:
     branches: [ master ]
 
 jobs:
-  build-easyctl-linux-amd:
+  once:
+    name: Create GitHub release
     runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-    - uses: actions/checkout@v2
+      - name: Create a release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: true
+          prerelease: true
+
+  build:
+    needs: once
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
         go-version: 1.16
     - name: Build linux-adm64
-      env:
-        CGO_ENABLED: 0
-        GOARCH: amd64
-        GOOS: linux
-      run: go build -o easyctl && tar zcvf easyctl-linux-adm64.tgz easyctl
-#    - name: Create Release # 创建Release，可以在仓库看到一个个版本
-#      env:
-#        GITHUB_TOKEN: ${{ secrets.EASYCTL_PUBLISH_TOKEN }}
-#      id: create_release
-#      uses: actions/create-release@master
-#      with:
-#        tag_name: ${{ github.ref }} # (tag)标签名称
-#        release_name: Release ${{ github.ref }}
-#        draft: false # 是否是草稿
-#        prerelease: false # 是否是预发布
-    - run: |
-        upload_url=$(curl -sL https://api.github.com/repos/actions/checkout/releases/latest | jq -r '.upload_url')
-        echo UPLOAD_URL=$upload_url >> $GITHUB_ENV
-      shell: bash
-    - name: Upload Release Asset
-      id: upload-release-asset-linux-amd64
-      uses: actions/upload-release-asset@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.EASYCTL_PUBLISH_TOKEN }}
+      run: go build -o easyctl
       with:
-        upload_url: ${{ env.UPLOAD_URL }} # 上传地址，通过创建Release获取到的
-        asset_path: ./easyctl-linux-adm64.tgz # 要上传文件
-        asset_name: easyctl-linux-adm64.tgz # 上传后的文件名
-        asset_content_type: application/x-tgz
-
-#  build-easyctl-macos:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v2
-#      - name: Set up Go
-#        uses: actions/setup-go@v2
-#        with:
-#          go-version: 1.16
-#      - name: Build darwin
-#        env:
-#          CGO_ENABLED: 0
-#          GOARCH: darwin
-#          GOOS: linux
-#        run: go build -o easyctl && tar zcvf easyctl-darwin-adm64.tgz easyctl
-#      - name: Create Release # 创建Release，可以在仓库看到一个个版本
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.EASYCTL_PUBLISH_TOKEN }}
-#        id: create_release
-#        uses: actions/create-release@master
-#        with:
-#          tag_name: ${{ github.ref }} # (tag)标签名称
-#          release_name: Release ${{ github.ref }}
-#          draft: false # 是否是草稿
-#          prerelease: false # 是否是预发布
-#      - name: Upload Release Asset
-#        id: upload-release-asset-darwin-adm64
-#        uses: actions/upload-release-asset@master
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.EASYCTL_PUBLISH_TOKEN }}
-#        with:
-#          upload_url: ${{ steps.create_release.outputs.upload_url }} # 上传地址，通过创建Release获取到的
-#          asset_path: ./easyctl-darwin-adm64.tgz # 要上传文件
-#          asset_name: easyctl-darwin-adm64.tgz # 上传后的文件名
-#          asset_content_type: application/x-tgz
+        buildDirectory: "${{ github.workspace }}/${{ matrix.os }}"
+    - name: Upload Release Asset
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.once.outputs.upload_url }}
+        asset_path: ${{ github.workspace }}/${{ matrix.os }}/easyctl
+        asset_name: easyctl-${{ matrix.os }}
+        asset_content_type: application/octet-stream
 
   build-doc:
     runs-on: ubuntu-latest
