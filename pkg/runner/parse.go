@@ -18,7 +18,7 @@ func (serverListInternal ServerListInternal) ServerListFilter() []ServerInternal
 	for _, v := range serverListInternal.Servers {
 		re := v.ServerFilter(serverListInternal.Excludes)
 		if len(re) == 1 {
-			servers = append(servers, re[1])
+			servers = append(servers, re[0])
 		} else {
 			for _, s := range re {
 				servers = append(servers, s)
@@ -130,10 +130,10 @@ func (server ServerInternal) ServerFilter(excludes []string) []ServerInternal {
 
 		for i := beginIndex; i <= endIndex; i++ {
 			server := ServerInternal{
-				Host:          fmt.Sprintf("%s%d", baseAddress, i),
-				Port:          server.Port,
-				Username:      server.Username,
-				Password:      server.Password,
+				Host:           fmt.Sprintf("%s%d", baseAddress, i),
+				Port:           server.Port,
+				Username:       server.Username,
+				Password:       server.Password,
 				PrivateKeyPath: server.PrivateKeyPath,
 			}
 

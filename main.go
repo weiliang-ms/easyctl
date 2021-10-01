@@ -12,6 +12,7 @@ import (
 	"github.com/weiliang-ms/easyctl/cmd/install"
 	"github.com/weiliang-ms/easyctl/cmd/secure"
 	"github.com/weiliang-ms/easyctl/cmd/set"
+	"github.com/weiliang-ms/easyctl/cmd/track"
 	"github.com/weiliang-ms/easyctl/cmd/upgrade"
 	"github.com/weiliang-ms/easyctl/pkg/logs"
 	"math/rand"
@@ -52,6 +53,7 @@ func init() {
 		//cmd.InitTmplCmd,
 		export.RootCmd,
 		secure.RootCmd,
+		track.RootCmd,
 		versionCmd,
 		completionCmd,
 	}

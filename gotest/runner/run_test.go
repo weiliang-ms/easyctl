@@ -16,7 +16,7 @@ func TestRun(t *testing.T) {
 	}
 
 	executor, err := runner.ParseExecutor(b)
-	executor.Script = "date"
+	executor.Script = "date;ps -ef|grep java"
 	if err != nil {
 		panic(err)
 	}
