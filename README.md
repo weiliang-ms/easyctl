@@ -1,3 +1,9 @@
+![GitHub Workflow Status (event)](https://img.shields.io/github/workflow/status/weiliang-ms/easyctl/Go?style=flat-square)
+![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/weiliang-ms/easyctl?filename=go.mod&style=flat-square)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/w/weiliang-ms/easyctl?style=flat-square)
+![GitHub all releases](https://img.shields.io/github/downloads/weiliang-ms/easyctl/total?style=flat-square)
+![GitHub](https://img.shields.io/github/license/weiliang-ms/easyctl?style=flat-square)
+
 # easyctl 
 
 `easyctl`是一款基于`golang`轻量级运维工具集，详情使用请移步[使用文档](https://weiliang-ms.github.io/easyctl/)
