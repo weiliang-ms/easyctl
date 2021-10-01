@@ -26,19 +26,25 @@ go build -ldflags "-w -s" -o /usr/local/bin/easyctl
 - `v1.0.0-beta`: `bug`修复、文档站点、集成`github workflow`
 - `v1.0.0-release`: 正式版本
 
-> `v1`已实现功能
+> `v1`功能列表
 
+- `add`
 - `deny`
-  - 防火墙
-  - `ping`
-  - `selinux`
+  - [x] [防火墙](https://weiliang-ms.github.io/easyctl/%E7%A6%81%E7%94%A8%E6%8C%87%E4%BB%A4%E9%9B%86/03%E4%B8%BB%E6%9C%BA%E7%A6%81%E7%94%A8%E9%98%B2%E7%81%AB%E5%A2%99.html)
+  - [x] [ping](https://weiliang-ms.github.io/easyctl/%E7%A6%81%E7%94%A8%E6%8C%87%E4%BB%A4%E9%9B%86/01%E4%B8%BB%E6%9C%BA%E7%A6%81Ping.html)
+  - [x] [selinux](https://weiliang-ms.github.io/easyctl/%E7%A6%81%E7%94%A8%E6%8C%87%E4%BB%A4%E9%9B%86/02%E4%B8%BB%E6%9C%BA%E7%A6%81%E7%94%A8selinux.html)
+- `export`
+  - [x] [从harbor批量下载chart](https://weiliang-ms.github.io/easyctl/%E5%AF%BC%E5%87%BA%E6%8C%87%E4%BB%A4%E9%9B%86/01%E4%BB%8Eharbor%E5%BA%93%E4%B8%AD%E5%AF%BC%E5%87%BAchart.html)
+  - [x] [从harbor导出镜像tag列表](https://weiliang-ms.github.io/easyctl/%E5%AF%BC%E5%87%BA%E6%8C%87%E4%BB%A4%E9%9B%86/02%E4%BB%8Eharbor%E5%BA%93%E4%B8%AD%E5%AF%BC%E5%87%BA%E9%95%9C%E5%83%8Ftag%E5%88%97%E8%A1%A8.html) 
 - `set`
-  - 时区
-  - `dns`
-  - 主机互信
-  - 主机`host`解析
-  - 文件描述符数
-  - 修改`root`口令
+  - [x] [时区](https://weiliang-ms.github.io/easyctl/%E8%AE%BE%E7%BD%AE%E6%8C%87%E4%BB%A4%E9%9B%86/05%E5%A4%9A%E4%B8%BB%E6%9C%BA%E8%AE%BE%E7%BD%AE%E6%97%B6%E5%8C%BA.html)
+  - [x] [dns](https://weiliang-ms.github.io/easyctl/%E8%AE%BE%E7%BD%AE%E6%8C%87%E4%BB%A4%E9%9B%86/06%E5%A4%9A%E4%B8%BB%E6%9C%BA%E9%85%8D%E7%BD%AEdns.html)
+  - [x] [主机互信](https://weiliang-ms.github.io/easyctl/%E8%AE%BE%E7%BD%AE%E6%8C%87%E4%BB%A4%E9%9B%86/03%E5%A4%9A%E4%B8%BB%E6%9C%BA%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95.html)
+  - [x] [主机host解析](https://weiliang-ms.github.io/easyctl/%E8%AE%BE%E7%BD%AE%E6%8C%87%E4%BB%A4%E9%9B%86/01%E5%A4%9A%E4%B8%BB%E6%9C%BAhost%E8%A7%A3%E6%9E%90.html)
+  - [x] [文件描述符数](https://weiliang-ms.github.io/easyctl/%E8%AE%BE%E7%BD%AE%E6%8C%87%E4%BB%A4%E9%9B%86/04%E5%A4%9A%E4%B8%BB%E6%9C%BA%E8%AE%BE%E7%BD%AE%E6%96%87%E4%BB%B6%E6%8F%8F%E8%BF%B0%E7%AC%A6.html)
+  - [x] [修改root口令](https://weiliang-ms.github.io/easyctl/%E8%AE%BE%E7%BD%AE%E6%8C%87%E4%BB%A4%E9%9B%86/02%E5%A4%9A%E4%B8%BB%E6%9C%BA%E4%BF%AE%E6%94%B9root%E5%8F%A3%E4%BB%A4.html)
+- `track`
+  - [x] [日志tail](https://weiliang-ms.github.io/easyctl/%E8%BF%BD%E8%B8%AA%E6%8C%87%E4%BB%A4%E9%9B%86/01%E5%A4%9A%E4%B8%BB%E6%9C%BA%E6%97%A5%E5%BF%97%E5%AE%9E%E6%97%B6%E8%BF%BD%E8%B8%AA.html)
 
 > `v2`功能预览
 
