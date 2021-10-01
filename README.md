@@ -22,7 +22,25 @@ go build -ldflags "-w -s" -o /usr/local/bin/easyctl
 
 ### 下载release版本
 
-[release](https://github.com/weiliang-ms/easyctl/releases)
+> [latest release](https://github.com/weiliang-ms/easyctl/releases/tag/latest)
+
+- [Mac OS](https://github.com/weiliang-ms/easyctl/releases/download/latest/easyctl-latest-darwin-amd64.tar.gz)
+```shell
+sudo tar zxvf easyctl-latest-darwin-amd64.tar.gz
+sudo cp easyctl /usr/local/bin
+```
+
+- [linux-amd64](https://github.com/weiliang-ms/easyctl/releases/download/latest/easyctl-latest-linux-amd64.tar.gz)
+```shell
+sudo tar zxvf easyctl-latest-linux-amd64.tar.gz
+sudo cp easyctl /usr/local/bin
+```
+
+- [Windows](https://github.com/weiliang-ms/easyctl/releases/download/latest/easyctl-latest-windows-amd64.zip)
+
+> 下载[tag版本](https://github.com/weiliang-ms/easyctl/tags)
+
+
 
 ## 迭代计划
 
