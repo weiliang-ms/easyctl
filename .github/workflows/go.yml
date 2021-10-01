@@ -39,7 +39,6 @@ jobs:
       with:
         go-version: 1.16
         buildDirectory: "${{ github.workspace }}/${{ matrix.os }}"
-    - name: Build linux-adm64
       run: go build -o easyctl
     - name: Upload Release Asset
       id: upload-release-asset
