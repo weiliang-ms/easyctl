@@ -20,6 +20,7 @@ jobs:
 #            goos: darwin
     steps:
       - uses: actions/checkout@v2
+      - run: sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
       - name: get date
         id: current_time
         run: echo "::set-output name=date::$(date +%Y-%m-%d-%H:%M:%S)"
