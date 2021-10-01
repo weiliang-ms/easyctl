@@ -30,6 +30,7 @@ jobs:
           goversion: "1.16"
           project_path: "."
           binary_name: "easyctl"
+          release_tag: "latest"
           overwrite: true
           extra_files: LICENSE README.md
 
