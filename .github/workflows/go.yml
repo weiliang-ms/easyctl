@@ -21,23 +21,27 @@ jobs:
         GOARCH: amd64
         GOOS: linux
       run: go build -o easyctl && tar zcvf easyctl-linux-adm64.tgz easyctl
-    - name: Create Release # 创建Release，可以在仓库看到一个个版本
-      env:
-        GITHUB_TOKEN: ${{ secrets.EASYCTL_PUBLISH_TOKEN }}
-      id: create_release
-      uses: actions/create-release@master
-      with:
-        tag_name: ${{ github.ref }} # (tag)标签名称
-        release_name: Release ${{ github.ref }}
-        draft: false # 是否是草稿
-        prerelease: false # 是否是预发布
+#    - name: Create Release # 创建Release，可以在仓库看到一个个版本
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.EASYCTL_PUBLISH_TOKEN }}
+#      id: create_release
+#      uses: actions/create-release@master
+#      with:
+#        tag_name: ${{ github.ref }} # (tag)标签名称
+#        release_name: Release ${{ github.ref }}
+#        draft: false # 是否是草稿
+#        prerelease: false # 是否是预发布
+    - run: |
+        upload_url=$(curl -sL https://api.github.com/repos/actions/checkout/releases/latest | jq -r '.upload_url')
+        echo UPLOAD_URL=$upload_url >> $GITHUB_ENV
+      shell: bash
     - name: Upload Release Asset
       id: upload-release-asset-linux-amd64
       uses: actions/upload-release-asset@master
       env:
         GITHUB_TOKEN: ${{ secrets.EASYCTL_PUBLISH_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} # 上传地址，通过创建Release获取到的
+        upload_url: ${{ env.UPLOAD_URL }} # 上传地址，通过创建Release获取到的
         asset_path: ./easyctl-linux-adm64.tgz # 要上传文件
         asset_name: easyctl-linux-adm64.tgz # 上传后的文件名
         asset_content_type: application/x-tgz
