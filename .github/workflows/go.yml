@@ -25,9 +25,12 @@ jobs:
           github_token: ${{ secrets.EASYCTL_PUBLISH_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
+          build_flags: "-gcflags=-trimpath=$GOPATH -asmflags=-trimpath=$GOPATH"
+          ldflags: "-w -s"
           goversion: "1.16"
           project_path: "."
           binary_name: "easyctl"
+          overwrite: true
           extra_files: LICENSE README.md
 
   build-doc:
