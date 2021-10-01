@@ -29,6 +29,8 @@ jobs:
       - name: install gitbook
         run: npm install gitbook-cli gitbook-summary -g
         working-directory: book
+      - name: set timezone
+        run: sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
       - name: install
         run: gitbook install
         working-directory: book
