@@ -1,6 +1,7 @@
 package upgrade
 
 import (
+	// embed
 	_ "embed"
 	"github.com/spf13/cobra"
 )
