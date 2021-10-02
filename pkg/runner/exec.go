@@ -19,6 +19,7 @@ import (
 	"time"
 )
 
+// Run 执行
 func Run(b []byte, logger *logrus.Logger) error {
 
 	exec, err := ParseExecutor(b)
@@ -39,6 +40,7 @@ func Run(b []byte, logger *logrus.Logger) error {
 	return nil
 }
 
+// ParallelRun 并发执行
 func (executor ExecutorInternal) ParallelRun(logger *logrus.Logger) chan ShellResult {
 
 	klog.Infoln("开始并行执行命令...")
@@ -139,6 +141,7 @@ func runOnNode(s ServerInternal, cmd string, logger *logrus.Logger) ShellResult 
 		Cmd: strings.TrimPrefix(subCmd, "\n"), Status: util.Success}
 }
 
+// ReturnParalleRunResult 并发执行，并接收执行结果
 func ReturnParalleRunResult(servers []ServerInternal, cmd string) chan ShellResult {
 	wg := &sync.WaitGroup{}
 	ch := make(chan ShellResult, len(servers))
@@ -154,17 +157,18 @@ func ReturnParalleRunResult(servers []ServerInternal, cmd string) chan ShellResu
 	return ch
 }
 
+// ReturnRunResult 获取执行结果
 func (server ServerInternal) ReturnRunResult(cmd string) ShellResult {
 	log.Printf("<- %s开始执行命令...\n", server.Host)
 	session, err := server.sshConnect()
 	if err != nil {
-		return ShellResult{Err: errors.New(fmt.Sprintf("%s建立ssh会话失败 -> %s", server.Host, err.Error()))}
+		return ShellResult{Err: fmt.Errorf("%s建立ssh会话失败 -> %s", server.Host, err.Error())}
 	}
 
 	combo, err := session.CombinedOutput(cmd)
 	if err != nil {
 		//klog.Fatal("远程执行cmd 失败",err)
-		return ShellResult{Err: errors.New(fmt.Sprintf("%s执行失败, %s", server.Host, combo))}
+		return ShellResult{Err: fmt.Errorf("%s执行失败, %s", server.Host, combo)}
 	}
 	log.Printf("<- %s执行命令成功，返回结果 => %s...\n", server.Host, string(combo))
 	defer session.Close()
@@ -215,42 +219,6 @@ func (server ServerInternal) sshConnect() (*ssh.Session, error) {
 	}
 
 	return session, nil
-}
-
-func session(server ServerInternal) (*ssh.Session, error) {
-
-	server = server.completeDefault()
-
-	//创建sshp登陆配置
-	config := &ssh.ClientConfig{
-		Timeout:         time.Second, //ssh 连接time out 时间一秒钟, 如果ssh验证错误 会在一秒内返回
-		User:            server.Username,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), //这个可以， 但是不够安全
-		//HostKeyCallback: hostKeyCallBackFunc(h.Host),
-	}
-	//if sshType == "password" {
-	//config.Auth = []ssh.AuthMethod{ssh.Password(server.Password)}
-	//} else {
-	//	config.Auth = []ssh.AuthMethod{publicKeyAuthFunc(sshKeyPath)}
-	//}
-
-	//dial 获取ssh client
-	addr := fmt.Sprintf("%s:%s", server.Host, server.Port)
-	sshClient, err := ssh.Dial("tcp", addr, config)
-
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%s创建ssh client 失败, %s", server.Host, err.Error()))
-	}
-	defer sshClient.Close()
-
-	//创建ssh-session
-	session, err := sshClient.NewSession()
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%s创建ssh session 失败, %s", server.Host, err.Error()))
-	}
-
-	return session, nil
-
 }
 
 func publicKeyAuthFunc(kPath string) ssh.AuthMethod {

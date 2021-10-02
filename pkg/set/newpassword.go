@@ -22,6 +22,7 @@ type PasswordConfig struct {
 	Password string `yaml:"newRootPassword"`
 }
 
+//NewPassword 修改用户口令
 func NewPassword(config []byte, logger *logrus.Logger) error {
 	script, err := NewPasswordScript(config, NewPasswordTmpl)
 	if err != nil {
@@ -30,6 +31,7 @@ func NewPassword(config []byte, logger *logrus.Logger) error {
 	return Config(config, logger, script)
 }
 
+// NewPasswordScript 获取修改用户口令脚本
 func NewPasswordScript(b []byte, tmpl *template.Template) (string, error) {
 
 	p, err := ParseNewPasswordConfig(b)
@@ -46,6 +48,7 @@ func NewPasswordScript(b []byte, tmpl *template.Template) (string, error) {
 	})
 }
 
+// ParseNewPasswordConfig 解析用户口令配置文件内容
 func ParseNewPasswordConfig(b []byte) (PasswordConfig, error) {
 	config := PasswordConfig{}
 	if err := yaml.Unmarshal(b, &config); err != nil {

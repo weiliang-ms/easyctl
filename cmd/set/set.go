@@ -41,6 +41,7 @@ type Entity struct {
 	DefaultConfig []byte
 }
 
+// Set 设置指令通用入口
 func Set(entity Entity) error {
 
 	if entity.DefaultConfig == nil {

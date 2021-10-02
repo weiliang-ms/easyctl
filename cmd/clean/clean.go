@@ -35,6 +35,7 @@ type Entity struct {
 	DefaultConfig []byte
 }
 
+// Clean 组装执行器
 func Clean(entity Entity) error {
 
 	if entity.DefaultConfig == nil {
