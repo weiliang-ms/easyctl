@@ -29,6 +29,7 @@ var (
 	Debug bool
 )
 
+// RootCmd 根命令
 var RootCmd = &cobra.Command{
 	Use:   "easyctl",
 	Short: "Easycf is a tool manage linux settings",

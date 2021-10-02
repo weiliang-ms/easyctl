@@ -3,13 +3,11 @@ package install
 import (
 	"fmt"
 	"github.com/lithammer/dedent"
-	"text/template"
-
-	//"github.com/sethvargo/go-password/password"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util"
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
+	"text/template"
 )
 
 var compileTmpl = template.Must(template.New("compileTmpl").Parse(dedent.Dedent(`
@@ -26,11 +24,13 @@ make -j $(nproc)
 make install
 `)))
 
+// RedisMeta redis元数据
 type RedisMeta struct {
 	Password string
 	Package  string
 }
 
+// RedisItem 序列化对象
 type RedisItem struct {
 	Redis struct {
 		Password string `yaml:"password"`
