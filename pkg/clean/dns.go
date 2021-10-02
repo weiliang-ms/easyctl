@@ -77,7 +77,6 @@ func ParseDnsConfig(b []byte) (DnsCleanerConfig, error) {
 	config := DnsCleanerConfig{}
 	if err := yaml.Unmarshal(b, &config); err != nil {
 		return DnsCleanerConfig{}, err
-	} else {
-		return config, nil
 	}
+	return config, nil
 }
