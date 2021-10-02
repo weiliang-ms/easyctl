@@ -29,6 +29,7 @@ var RootCmd = &cobra.Command{
 	Args:  cobra.ExactValidArgs(1),
 }
 
+// Entity track指令实体
 type Entity struct {
 	Cmd           *cobra.Command
 	Fnc           func(b []byte, logger *logrus.Logger) error
