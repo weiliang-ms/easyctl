@@ -1,5 +1,6 @@
 package log
 
+// Logger logger接口
 type Logger interface {
 	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
