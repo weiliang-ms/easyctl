@@ -1,8 +1,6 @@
 package set
 
 import (
-	_ "embed"
-	"errors"
 	"fmt"
 	"github.com/lithammer/dedent"
 	"github.com/sirupsen/logrus"
@@ -18,6 +16,7 @@ set -e
 echo "{{ .NewPassword }}" | passwd --stdin root
 `)))
 
+// PasswordConfig 更新密码对象属性
 type PasswordConfig struct {
 	Password string `yaml:"newRootPassword"`
 }
@@ -40,7 +39,7 @@ func NewPasswordScript(b []byte, tmpl *template.Template) (string, error) {
 	}
 
 	if p.Password == "" || len(p.Password) < 6 {
-		return "", errors.New(fmt.Sprintf("密码长度：%d 不符合标准", len(p.Password)))
+		return "", fmt.Errorf("密码长度：%d 不符合标准", len(p.Password))
 	}
 
 	return util.Render(tmpl, map[string]interface{}{
@@ -53,7 +52,7 @@ func ParseNewPasswordConfig(b []byte) (PasswordConfig, error) {
 	config := PasswordConfig{}
 	if err := yaml.Unmarshal(b, &config); err != nil {
 		return PasswordConfig{}, err
-	} else {
-		return config, nil
 	}
+
+	return config, nil
 }
