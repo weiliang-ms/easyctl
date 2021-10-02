@@ -1,6 +1,7 @@
 package track
 
 import (
+	// embed
 	_ "embed"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/track"
