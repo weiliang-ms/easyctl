@@ -1,5 +1,6 @@
 package slice
 
+// StringSliceRemove 字符串切片过滤字符串数组中的元素
 func StringSliceRemove(sup []string, cut []string) []string {
 	var re []string
 	for _, v := range sup {

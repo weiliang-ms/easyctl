@@ -1,7 +1,6 @@
 package runner
 
 import (
-	_ "embed"
 	"errors"
 	"fmt"
 	"github.com/mitchellh/go-homedir"

@@ -36,6 +36,7 @@ type Entity struct {
 	DefaultConfig []byte
 }
 
+// Exec track执行实体
 func Exec(entity Entity) error {
 
 	if entity.DefaultConfig == nil {
