@@ -33,10 +33,9 @@ func ParseServerList(b []byte) ([]ServerInternal, error) {
 	serverList := ServerListExternal{}
 	if err := yaml.Unmarshal(b, &serverList); err != nil {
 		return []ServerInternal{}, err
-	} else {
-		serverListInternal := serverListDeepCopy(serverList)
-		return serverListInternal.ServerListFilter(), nil
 	}
+	serverListInternal := serverListDeepCopy(serverList)
+	return serverListInternal.ServerListFilter(), nil
 }
 
 // ParseExecutor 执行器反序列化

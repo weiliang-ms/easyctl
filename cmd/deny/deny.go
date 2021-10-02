@@ -18,6 +18,7 @@ var (
 //go:embed asset/config.yaml
 var config []byte
 
+// Entity 实体
 type Entity struct {
 	Cmd *cobra.Command
 	Fnc func(b []byte, logger *logrus.Logger) error

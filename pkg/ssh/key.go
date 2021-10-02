@@ -26,6 +26,7 @@ func EncodePrivateKey(private *rsa.PrivateKey) []byte {
 	})
 }
 
+// EncodePublicKey 编码公钥
 func EncodePublicKey(public *rsa.PublicKey) ([]byte, error) {
 	publicBytes, err := x509.MarshalPKIXPublicKey(public)
 	if err != nil {
