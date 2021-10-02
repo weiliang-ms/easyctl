@@ -19,6 +19,7 @@ echo nameserver {{ . }} >> /etc/resolv.conf
 {{- end }}
 `)))
 
+// DnsConfig 添加dns对象属性
 type DnsConfig struct {
 	DnsList []string `yaml:"dns"`
 }

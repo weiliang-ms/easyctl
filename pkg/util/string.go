@@ -16,6 +16,7 @@ func AppendStringFromSlice(slice []string, appendStr string) (s string) {
 	return strings.TrimSuffix(s, appendStr)
 }
 
+// SubSlash 分割slash
 func SubSlash(s string) []string {
 	var slash string
 	if runtime.GOOS == "windows" {
@@ -27,6 +28,7 @@ func SubSlash(s string) []string {
 	return strings.Split(s, slash)
 }
 
+// SubFileName 截取文件名称
 func SubFileName(s string) string {
 
 	f, err := os.Stat(s)

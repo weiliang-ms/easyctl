@@ -3,7 +3,6 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/cmd/add"
 	"github.com/weiliang-ms/easyctl/cmd/clean"
@@ -21,9 +20,12 @@ import (
 )
 
 var (
-	GitTag    = "2000.01.01.release"
+	// GitTag git branch
+	GitTag = "2000.01.01.release"
+	// BuildTime 构建时间
 	BuildTime = "2000-01-01T00:00:00+0800"
-	Debug     bool
+	// Debug 是否开启debug
+	Debug bool
 )
 
 var RootCmd = &cobra.Command{
@@ -37,8 +39,6 @@ var RootCmd = &cobra.Command{
 		// Do Stuff Here
 	},
 }
-
-var Logger logrus.Logger
 
 func init() {
 
