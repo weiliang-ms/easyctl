@@ -40,8 +40,6 @@ sudo cp easyctl /usr/local/bin
 
 > 下载[tag版本](https://github.com/weiliang-ms/easyctl/tags)
 
-
-
 ## 迭代计划
 
 > 里程碑
