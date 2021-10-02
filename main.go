@@ -62,6 +62,15 @@ func init() {
 		RootCmd.AddCommand(cmd)
 	}
 
+	//header := &doc.GenManHeader{
+	//	Title: "MINE",
+	//	Section: "3",
+	//}
+	//err := doc.GenManTree(RootCmd, header, "/tmp")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+
 }
 
 func main() {
