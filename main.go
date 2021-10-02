@@ -1,6 +1,7 @@
 package main
 
 import (
+	// embed
 	_ "embed"
 	"fmt"
 	"github.com/spf13/cobra"

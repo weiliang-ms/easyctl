@@ -1,6 +1,7 @@
 package exec
 
 import (
+	// embed
 	_ "embed"
 	"fmt"
 	"github.com/sirupsen/logrus"

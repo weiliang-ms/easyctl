@@ -1,6 +1,7 @@
 package ulimit
 
 import (
+	// embed
 	_ "embed"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/set"
