@@ -55,20 +55,3 @@ func (server Server) sshConnect() (*ssh.Session, error) {
 
 	return session, nil
 }
-
-//func publicKeyAuthFunc(kPath string) ssh.AuthMethod {
-//
-//	if err != nil {
-//		log.Fatal("find key's home dir failed", err)
-//	}
-//	key, err := ioutil.ReadFile(keyPath)
-//	if err != nil {
-//		log.Fatal("ssh key file read failed", err)
-//	}
-//	// Create the Signer for this private key.
-//	signer, err := ssh.ParsePrivateKey(key)
-//	if err != nil {
-//		log.Fatal("ssh key signer failed", err)
-//	}
-//	return ssh.PublicKeys(signer)
-//}

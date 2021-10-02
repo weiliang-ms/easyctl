@@ -6,18 +6,18 @@ import (
 )
 
 type ServerExternal struct {
-	Host          string `yaml:"host"`
-	Port          string `yaml:"port"`
-	Username      string `yaml:"username"`
-	Password      string `yaml:"password"`
+	Host           string `yaml:"host"`
+	Port           string `yaml:"port"`
+	Username       string `yaml:"username"`
+	Password       string `yaml:"password"`
 	PrivateKeyPath string `yaml:"privateKeyPath"`
 }
 
 type ServerInternal struct {
-	Host          string
-	Port          string
-	Username      string
-	Password      string
+	Host           string
+	Port           string
+	Username       string
+	Password       string
 	PrivateKeyPath string
 }
 

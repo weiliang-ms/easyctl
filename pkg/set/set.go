@@ -14,6 +14,7 @@ type ParseConfig interface {
 	Parse(b []byte, debug bool) (error, interface{})
 }
 
+// Config set指令执行入口
 func Config(b []byte, logger *logrus.Logger, cmd string) error {
 
 	results, err := GetResult(b, logger, cmd)

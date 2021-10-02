@@ -10,6 +10,7 @@ import (
 	"sort"
 )
 
+// Config clean指令入口
 func Config(b []byte, logger *logrus.Logger, cmd string) error {
 
 	results, err := GetResult(b, logger, cmd)
@@ -34,6 +35,7 @@ func Config(b []byte, logger *logrus.Logger, cmd string) error {
 	return nil
 }
 
+// GetResult 远程执行，获取结果
 func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResult, error) {
 
 	servers, err := runner.ParseServerList(b)

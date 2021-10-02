@@ -38,6 +38,7 @@ type NewUserConfig struct {
 	} `yaml:"new-user"`
 }
 
+// User 添加user指令入口
 func User(b []byte, logger *logrus.Logger) error {
 	config, err := ParseNewUserConfig(b, logger)
 	if err != nil {
@@ -53,6 +54,7 @@ func User(b []byte, logger *logrus.Logger) error {
 	return Run(b, logger, script)
 }
 
+// ParseNewUserConfig 解析新用户属性
 func ParseNewUserConfig(b []byte, logger *logrus.Logger) (*NewUserConfig, error) {
 	config := NewUserConfig{}
 	if err := yaml.Unmarshal(b, &config); err != nil {
@@ -63,6 +65,7 @@ func ParseNewUserConfig(b []byte, logger *logrus.Logger) (*NewUserConfig, error)
 	}
 }
 
+// IsValid 判断用户属性是否合法
 func (config *NewUserConfig) IsValid() error {
 	if config.NewUser.UserDir == "" {
 		config.NewUser.Name = fmt.Sprintf("/home/%s", config.NewUser.Name)
