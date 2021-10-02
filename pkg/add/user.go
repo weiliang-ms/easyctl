@@ -60,10 +60,9 @@ func ParseNewUserConfig(b []byte, logger *logrus.Logger) (*NewUserConfig, error)
 	config := NewUserConfig{}
 	if err := yaml.Unmarshal(b, &config); err != nil {
 		return &NewUserConfig{}, err
-	} else {
-		logger.Debugf("new user结构体: %v", config)
-		return &config, nil
 	}
+	logger.Debugf("new user结构体: %v", config)
+	return &config, nil
 }
 
 // IsValid 判断用户属性是否合法

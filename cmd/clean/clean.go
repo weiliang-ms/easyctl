@@ -30,6 +30,7 @@ func init() {
 	RootCmd.AddCommand(cleanDnsCmd)
 }
 
+// Entity 实体
 type Entity struct {
 	Cmd           *cobra.Command
 	Fnc           func(b []byte, logger *logrus.Logger) error

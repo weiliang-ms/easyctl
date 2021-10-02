@@ -75,10 +75,9 @@ func ParseHelmRepoConfig(b []byte, logger *logrus.Logger) (ChartRepoConfig, erro
 	config := ChartRepoConfig{}
 	if err := yaml.Unmarshal(b, &config); err != nil {
 		return ChartRepoConfig{}, err
-	} else {
-		logger.Debugf("chart导出器结构体: %v", config)
-		return config, nil
 	}
+	logger.Debugf("chart导出器结构体: %v", config)
+	return config, nil
 }
 
 // ChartList 获取chart列表
@@ -107,8 +106,7 @@ func (executor ChartExecutor) ChartList() ([]ChartItem, error) {
 	return items, nil
 }
 
-// Save
-// 保存chart列表
+// Save 保存chart列表
 func (executor ChartExecutor) Save(list []ChartItem) {
 
 	executor.Logger.Info("导出chart...")
