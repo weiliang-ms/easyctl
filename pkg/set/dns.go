@@ -23,6 +23,7 @@ type DnsConfig struct {
 	DnsList []string `yaml:"dns"`
 }
 
+// Dns 设置Dns
 func Dns(b []byte, logger *logrus.Logger) error {
 	script, err := AddDnsScript(b, setDnsShellTmpl)
 	if err != nil {
@@ -31,6 +32,7 @@ func Dns(b []byte, logger *logrus.Logger) error {
 	return Config(b, logger, script)
 }
 
+// AddDnsScript 获取添加dns脚本
 func AddDnsScript(b []byte, tmpl *template.Template) (string, error) {
 
 	p, err := ParseDnsConfig(b)
@@ -48,6 +50,7 @@ func AddDnsScript(b []byte, tmpl *template.Template) (string, error) {
 	})
 }
 
+// ParseDnsConfig 解析dns配置
 func ParseDnsConfig(b []byte) (DnsConfig, error) {
 	config := DnsConfig{}
 	if err := yaml.Unmarshal(b, &config); err != nil {
@@ -57,6 +60,7 @@ func ParseDnsConfig(b []byte) (DnsConfig, error) {
 	}
 }
 
+// IsValid 判断Dns合法性
 func IsValid(dnsList []string) (bool, error) {
 	for _, v := range dnsList {
 		if ok := net.ParseIP(v); ok == nil {

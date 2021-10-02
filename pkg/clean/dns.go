@@ -55,17 +55,17 @@ func PruneDnsScript(b []byte, tmpl *template.Template) (string, error) {
 		return "", err
 	}
 
-	var cleanList , preserveList []string
+	var cleanList, preserveList []string
 	// AddressList非空
 	if len(config.CleanDns.AddressList) != 0 {
 		cleanList = slice.StringSliceRemove(config.CleanDns.AddressList, config.CleanDns.Excludes)
-	}else {
+	} else {
 		preserveList = config.CleanDns.Excludes
 	}
 	return util.Render(tmpl, map[string]interface{}{
 		"DnsServerList": cleanList,
-		"ALL": len(cleanList)==0,
-		"PreserveList": preserveList,
+		"ALL":           len(cleanList) == 0,
+		"PreserveList":  preserveList,
 	})
 }
 

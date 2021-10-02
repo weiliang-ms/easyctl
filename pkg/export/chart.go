@@ -42,8 +42,8 @@ type ChartItem struct {
 	Deprecated    bool      `json:"deprecated"`
 }
 
+// Chart 批量下载chart
 func Chart(b []byte, logger *logrus.Logger) error {
-	// todo: 生成样例文件
 	logger.Info("解析chart仓库配置...")
 	config, err := ParseHelmRepoConfig(b, logger)
 	if err != nil {
@@ -67,6 +67,7 @@ func Chart(b []byte, logger *logrus.Logger) error {
 	return nil
 }
 
+// ParseHelmRepoConfig 解析helm仓库配置
 func ParseHelmRepoConfig(b []byte, logger *logrus.Logger) (ChartRepoConfig, error) {
 	config := ChartRepoConfig{}
 	if err := yaml.Unmarshal(b, &config); err != nil {
@@ -150,6 +151,7 @@ func (executor ChartExecutor) doGET(url string) (*http.Response, error) {
 	return resp, err
 }
 
+// SaveChart 持久化chart文件
 func (executor ChartExecutor) SaveChart(dst string, src io.Reader) {
 
 	executor.Logger.Debugf("创建文件句柄: %s", dst)

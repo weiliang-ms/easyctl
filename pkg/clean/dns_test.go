@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	pruneAll = `echo "" > /etc/resolv.conf`
+	pruneAll       = `echo "" > /etc/resolv.conf`
 	pruneAllConfig = `
 clean-dns:
   address-list:        # 地址列表，为空表示清除所有
@@ -52,24 +52,24 @@ done < /etc/resolv.conf`
 
 func TestPruneDnsScript(t *testing.T) {
 	// 1.均为空
-	config , err := PruneDnsScript([]byte(pruneAllConfig), pruneDnsShellTmpl)
+	config, err := PruneDnsScript([]byte(pruneAllConfig), pruneDnsShellTmpl)
 	// 删除空白行
 	re := regexp.MustCompile(`(?m)^\s*$[\r\n]*|[\r\n]+\s+\z`)
 	assert.Nil(t, err)
 	assert.Equal(t, pruneAll, strings.ReplaceAll(re.ReplaceAllString(config, ""), "\t", ""))
 
 	// 2.exludes为空, address-list不为空
-	configSlice , err := PruneDnsScript([]byte(pruneSliceConfig), pruneDnsShellTmpl)
+	configSlice, err := PruneDnsScript([]byte(pruneSliceConfig), pruneDnsShellTmpl)
 	assert.Nil(t, err)
 	assert.Equal(t, pruneSlice, re.ReplaceAllString(configSlice, ""))
 
 	// 3.exludes不为空, address-list为空
-	expect , err := PruneDnsScript([]byte(pruneAllExpectSliceConfig), pruneDnsShellTmpl)
+	expect, err := PruneDnsScript([]byte(pruneAllExpectSliceConfig), pruneDnsShellTmpl)
 	assert.Nil(t, err)
 	assert.Equal(t, pruneAllExpectSlice, strings.ReplaceAll(re.ReplaceAllString(expect, ""), "\t", ""))
 
 	// 4.均不为空
-	filter , err := PruneDnsScript([]byte(pruneFilterSliceConfig), pruneDnsShellTmpl)
+	filter, err := PruneDnsScript([]byte(pruneFilterSliceConfig), pruneDnsShellTmpl)
 	assert.Nil(t, err)
 	assert.Equal(t, pruneFilterSlice, strings.ReplaceAll(re.ReplaceAllString(filter, ""), "\t", ""))
 }

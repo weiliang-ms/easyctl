@@ -29,6 +29,7 @@ EOF
 chmod 600 ~/.ssh -R
 `)))
 
+// PasswordLess 设置主机互信
 func PasswordLess(config []byte, logger *logrus.Logger) error {
 	script, err := MakeKeyPairScript(PasswordLessTmpl)
 	if err != nil {
@@ -37,6 +38,7 @@ func PasswordLess(config []byte, logger *logrus.Logger) error {
 	return Config(config, logger, script)
 }
 
+// MakeKeyPairScript 生成密钥对
 func MakeKeyPairScript(tmpl *template.Template) (string, error) {
 
 	prv, pub, err := ssh.MakeSSHKeyPair()

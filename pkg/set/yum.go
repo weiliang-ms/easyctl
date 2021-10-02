@@ -77,6 +77,7 @@ EOF
 type YUM struct {
 }
 
+// Config 配置yum源
 func (yum YUM) Config(b []byte, debug bool) error {
 	return nil
 }

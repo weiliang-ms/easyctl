@@ -10,6 +10,7 @@ import (
 	"sort"
 )
 
+// Run add指令执行入口
 func Run(b []byte, logger *logrus.Logger, cmd string) error {
 
 	results, err := GetResult(b, logger, cmd)
@@ -34,6 +35,7 @@ func Run(b []byte, logger *logrus.Logger, cmd string) error {
 	return nil
 }
 
+// GetResult 远程执行获取结果
 func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResult, error) {
 
 	servers, err := runner.ParseServerList(b)
