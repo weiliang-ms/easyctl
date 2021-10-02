@@ -51,6 +51,8 @@ sudo cp easyctl /usr/local/bin
 > `v1`功能列表
 
 - `add`
+- `clean`
+  - [x] [清理主机dns配置]()
 - `deny`
   - [x] [防火墙](https://weiliang-ms.github.io/easyctl/%E7%A6%81%E7%94%A8%E6%8C%87%E4%BB%A4%E9%9B%86/03%E4%B8%BB%E6%9C%BA%E7%A6%81%E7%94%A8%E9%98%B2%E7%81%AB%E5%A2%99.html)
   - [x] [ping](https://weiliang-ms.github.io/easyctl/%E7%A6%81%E7%94%A8%E6%8C%87%E4%BB%A4%E9%9B%86/01%E4%B8%BB%E6%9C%BA%E7%A6%81Ping.html)
