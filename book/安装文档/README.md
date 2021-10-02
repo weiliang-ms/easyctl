@@ -1,6 +1,6 @@
-### 安装easyctl
+## 安装easyctl
 
-1. 编译安装最新版
+### 编译安装最新版
 
 ```shell
 git clone https://github.com/weiliang-ms/easyctl.git
@@ -8,11 +8,22 @@ cd easyctl
 go build -ldflags "-w -s" -o /usr/local/bin/easyctl
 ```
 
-2. 下载编译好的文件(建议最新版本)
+### 下载latest release版本
 
-[easyctl release](https://github.com/weiliang-ms/easyctl/releases)
+- [Mac OS](https://github.com/weiliang-ms/easyctl/releases/download/latest/easyctl-latest-darwin-amd64.tar.gz)
+```shell
+sudo tar zxvf easyctl-latest-darwin-amd64.tar.gz
+sudo cp easyctl /usr/local/bin
+```
 
+- [linux-amd64](https://github.com/weiliang-ms/easyctl/releases/download/latest/easyctl-latest-linux-amd64.tar.gz)
+```shell
+sudo tar zxvf easyctl-latest-linux-amd64.tar.gz
+sudo cp easyctl /usr/local/bin
 ```
-chmod +x easyctl
-mv easyctl /usr/local/bin
-```
+
+- [Windows](https://github.com/weiliang-ms/easyctl/releases/download/latest/easyctl-latest-windows-amd64.zip)
+
+### 下载tag版本
+
+- [tag列表](https://github.com/weiliang-ms/easyctl/tags)
