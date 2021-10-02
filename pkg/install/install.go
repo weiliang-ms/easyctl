@@ -1,7 +1,6 @@
 package install
 
 import (
-	"fmt"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"k8s.io/klog"
 )
@@ -59,9 +58,9 @@ func ParseServerList(b []byte, debug bool) ([]runner.ServerInternal, error) {
 		return []runner.ServerInternal{}, err
 	}
 
-	if debug {
-		fmt.Printf("%+v", servers)
-	}
+	//if debug {
+	//	fmt.Printf("%+v", servers)
+	//}
 
 	return servers, nil
 }
