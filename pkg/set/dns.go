@@ -1,7 +1,6 @@
 package set
 
 import (
-	"errors"
 	"fmt"
 	"github.com/lithammer/dedent"
 	"github.com/sirupsen/logrus"
@@ -56,16 +55,15 @@ func ParseDnsConfig(b []byte) (DnsConfig, error) {
 	config := DnsConfig{}
 	if err := yaml.Unmarshal(b, &config); err != nil {
 		return DnsConfig{}, err
-	} else {
-		return config, nil
 	}
+	return config, nil
 }
 
 // IsValid 判断Dns合法性
 func IsValid(dnsList []string) (bool, error) {
 	for _, v := range dnsList {
 		if ok := net.ParseIP(v); ok == nil {
-			return false, errors.New(fmt.Sprintf("%s地址非法", v))
+			return false, fmt.Errorf("%s地址非法", v)
 		}
 	}
 	// todo: 可达性检测
