@@ -5,6 +5,7 @@ import (
 	"k8s.io/klog"
 )
 
+// Task 任务结构体
 type Task struct {
 	Servers []runner.ServerInternal
 	Cmd     string
@@ -12,11 +13,13 @@ type Task struct {
 	ErrChan chan error
 }
 
+// Executor 执行器结构体
 type Executor struct {
 	Servers []runner.ServerInternal
 	Meta    interface{}
 }
 
+// Interface install操作类型接口
 type Interface interface {
 	Combine(servers []runner.ServerInternal) Executor
 	Detect(executor Executor, debug bool) error
@@ -24,6 +27,7 @@ type Interface interface {
 	Compile(executor Executor, debug bool) error
 }
 
+// TaskFnc 任务方法
 type TaskFnc func(Task) error
 
 // Install 安装指令通用函数

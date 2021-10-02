@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// Selinux 关闭selinux
 func Selinux(config []byte, logger *logrus.Logger) error {
 	return Item(config, logger, closeSELinuxShell)
 }
