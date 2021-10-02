@@ -1,0 +1,48 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 12.18.2
+      - name: install gitbook
+        run: npm install gitbook-cli gitbook-summary -g
+        working-directory: book
+      - name: set timezone
+        run: sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+      - name: install
+        run: gitbook install
+        working-directory: book
+      - name: generate-toc
+        run: book sm --disableTitleFormatting
+        working-directory: book
+      - name: build
+        run: gitbook build
+        working-directory: book
+      - name: install git
+        run: sudo apt-get install git -y
+      - name: publish
+        env:
+          ACCESS_TOKEN: ${{ secrets.EASYCTL_PUBLISH_TOKEN }}
+        run: |
+          mkdir -p deploy-doc-dir
+          cd deploy-doc-dir
+          rm -rf *
+          git init
+          git config user.name "weiliang-ms"
+          git config user.email "xzx.weiliang@gmail.com"
+          ls -R ../book/_book
+          mv ../book/_book docs
+          git add docs
+          git commit -m "Update docs"
+          git push --force "https://$ACCESS_TOKEN@github.com/weiliang-ms/easyctl" master:docs
