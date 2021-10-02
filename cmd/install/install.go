@@ -4,14 +4,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	domain          string // harbor域名
-	ssl             bool
-	offline         bool
-	offlineFilePath string
-	serverListFile  string
-	ConfigFilePath  string
-)
+var offline bool
+var offlineFilePath string
+var serverListFile string
+
+// ConfigFilePath 配置文件
+var ConfigFilePath string
 
 func init() {
 	RootCmd.PersistentFlags().BoolVarP(&offline, "offline", "", false, "是否离线安装")
@@ -26,6 +24,7 @@ func init() {
 	RootCmd.AddCommand(harborCmd)
 }
 
+// RootCmd 安装根指令
 var RootCmd = &cobra.Command{
 	Use:   "install [OPTIONS] [flags]",
 	Short: "安装指令集",

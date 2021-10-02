@@ -2,7 +2,6 @@ package export
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util"
@@ -323,7 +322,7 @@ func (executor *HarborExecutor) ProjectsByName(projectName string) (ProjectInter
 		return result.Project[0].projectDeepCopy(), nil
 	}
 
-	return ProjectInternel{}, errors.New(fmt.Sprintf("harbor为未查询到%s project", projectName))
+	return ProjectInternel{}, fmt.Errorf("harbor为未查询到%s project", projectName)
 }
 
 // ProjectsByNames 按名称集合获取harbor内的项目

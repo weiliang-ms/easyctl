@@ -1,7 +1,6 @@
 package export
 
 import (
-	_ "embed"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

@@ -1,6 +1,7 @@
 package install
 
 import (
+	// embed
 	_ "embed"
 	"github.com/spf13/cobra"
 )

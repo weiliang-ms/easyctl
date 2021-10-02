@@ -1,7 +1,6 @@
 package set
 
 import (
-	_ "embed"
 	"github.com/sirupsen/logrus"
 )
 
