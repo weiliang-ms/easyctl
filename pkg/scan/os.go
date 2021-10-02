@@ -16,22 +16,16 @@ type system struct {
 	Platform string
 	CPUCores int
 	Time     string
-	OpenSSH  OpenSSH
+	//OpenSSH  OpenSSH
 }
 
-type OpenSSH struct {
-	Version         string `yaml:"version",json:"version"`
-	Port            int    `yaml:"port",json:"port"`
-	PermitRootLogin bool   `yaml:"PermitRootLogin",json:"PermitRootLogin"`
-}
+//type OpenSSH struct {
+//	Version         string `yaml:"version",json:"version"`
+//	Port            int    `yaml:"port",json:"port"`
+//	PermitRootLogin bool   `yaml:"PermitRootLogin",json:"PermitRootLogin"`
+//}
 
 const cpuInfo = "/proc/cpuinfo"
-
-func OSSecurity() {
-	//b, _ := asset.Asset("static/script/scan/scan_os.sh")
-	//re := runner.Shell(string(b))
-	//fmt.Println(re.StdOut)
-}
 
 func (sys system) kernel() system {
 
