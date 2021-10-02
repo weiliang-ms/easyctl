@@ -3,7 +3,7 @@ module github.com/weiliang-ms/easyctl
 go 1.16
 
 require (
-	github.com/containerd/containerd v1.5.2 // indirect
+	github.com/containerd/containerd v1.5.4 // indirect
 	github.com/docker/docker v20.10.7+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
