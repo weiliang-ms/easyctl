@@ -17,11 +17,13 @@ type ChartRepoConfig struct {
 	HelmRepo HelmRepo `yaml:"helm-Repository"`
 }
 
+// ChartExecutor 与helm仓库交互的执行器
 type ChartExecutor struct {
 	Config ChartRepoConfig
 	Logger *logrus.Logger
 }
 
+// HelmRepo helm仓库配置
 type HelmRepo struct {
 	Endpoint    string `yaml:"endpoint"`
 	Username    string `yaml:"username"`
@@ -31,6 +33,7 @@ type HelmRepo struct {
 	RepoName    string `yaml:"Repository-name"`
 }
 
+// ChartItem chart对象，用于反序列化
 type ChartItem struct {
 	Name          string    `json:"name"`
 	TotalVersions int       `json:"total_versions"`

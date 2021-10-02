@@ -23,6 +23,7 @@ import (
 // project -> 包含多个repo
 // Repository -> 包含多个tag
 
+// HarborExecutor 与harbor交互的执行器
 type HarborExecutor struct {
 	HarborConfig   HarborConfig
 	Logger         *logrus.Logger
@@ -31,6 +32,7 @@ type HarborExecutor struct {
 	TagsInProject  map[string][]string // 项目下镜像tag集合
 }
 
+// HarborConfigExternel 用于反序列化harbor-repo对象配置
 type HarborConfigExternel struct {
 	HarborRepo struct {
 		Schema      string   `yaml:"schema"`
@@ -44,6 +46,7 @@ type HarborConfigExternel struct {
 	} `yaml:"harbor-repo"`
 }
 
+// HarborConfig harbor-repo对象配置，用于内部使用
 type HarborConfig struct {
 	Schema      string
 	Address     string
@@ -55,11 +58,13 @@ type HarborConfig struct {
 	Excludes    []string
 }
 
+// ProjectInternel harbor project内部对象，包含部分必需属性
 type ProjectInternel struct {
 	Name      string
 	ProjectId int
 }
 
+// ProjectExternel harbor project外部对象，用于反序列化
 type ProjectExternel struct {
 	CreationTime       time.Time `json:"creation_time"`
 	CurrentUserRoleId  int       `json:"current_user_role_id"`
@@ -89,10 +94,12 @@ type ProjectExternel struct {
 	ChartCount int       `json:"chart_count,omitempty"`
 }
 
+// Repository harbor repo外部对象，用于反序列化
 type Repository struct {
 	Name string `json:"name"`
 }
 
+// SearchResult 用于反序列化 查询harbor结果的对象结果集
 type SearchResult struct {
 	Project    []ProjectExternel `json:"project"`
 	Repository []struct {
@@ -114,10 +121,7 @@ type SearchResult struct {
 	} `json:"chart"`
 }
 
-//type tags struct {
-//	Tags []tag `json:"tags"`
-//}
-
+// Artifact 用于反序列化制品属性
 type Artifact struct {
 	AdditionLinks struct {
 		BuildHistory struct {
@@ -151,6 +155,7 @@ type Artifact struct {
 	Type              string        `json:"type"`
 }
 
+// TagExternel 用于反序列化repo tag等
 type TagExternel struct {
 	ArtifactId   int       `json:"artifact_id"`
 	Id           int       `json:"id"`
@@ -194,6 +199,7 @@ func exec(fnc func() error) error {
 	return fnc()
 }
 
+// ParseHarborConfig 解析harbor配置
 func ParseHarborConfig(b []byte, logger *logrus.Logger) (*HarborExecutor, error) {
 
 	executor := &HarborExecutor{}
@@ -409,6 +415,7 @@ func (executor *HarborExecutor) GenerateImageList() error {
 	return nil
 }
 
+// ReposWithinProjects 获取多个项目内repo集合
 func (executor *HarborExecutor) ReposWithinProjects() error {
 	for _, v := range executor.ProjectSlice {
 		err := executor.ReposWithinProject(v.Name)
@@ -451,6 +458,7 @@ type result struct {
 	err         error
 }
 
+// TagsWithinProjects 获取项目下镜像tag列表
 func (executor *HarborExecutor) TagsWithinProjects() error {
 
 	executor.Logger.Info("检索tag列表...")
