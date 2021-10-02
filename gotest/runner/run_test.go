@@ -16,7 +16,7 @@ func TestRun(t *testing.T) {
 	}
 
 	executor, err := runner.ParseExecutor(b)
-	executor.Script = "date;ps -ef|grep java"
+	executor.Script = "cd /opt && unzip /opt/sentinel-1.8.1.zip"
 	if err != nil {
 		panic(err)
 	}

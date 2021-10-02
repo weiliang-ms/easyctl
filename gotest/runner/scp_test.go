@@ -7,32 +7,32 @@ import (
 )
 
 const (
-	scpSrc = "../../../asset/iperf3-3.1.7-2.el7.x86_64.rpm"
-	scpDst = "/tmp/iperf3-3.1.7-2.el7.x86_64.rpm"
+	scpSrc = "C:\\Users\\weiliang\\Desktop\\sentinel-1.8.1.zip"
+	scpDst = "/opt/sentinel-1.8.1.zip"
 )
 
-func TestScp(t *testing.T) {
-	b, readErr := os.ReadFile("../../../asset/config.yaml")
-	if readErr != nil {
-		panic(readErr)
-	}
-
-	servers, err := runner.ParseServerList(b)
-	if err != nil {
-		panic(err)
-	}
-
-	if len(servers) > 0 {
-		scpErr := servers[0].Scp(scpSrc, scpDst, 0666, true)
-		if scpErr != nil {
-			panic(scpErr)
-		}
-	}
-
-}
+//func TestScp(t *testing.T) {
+//	b, readErr := os.ReadFile("../../../asset/config.yaml")
+//	if readErr != nil {
+//		panic(readErr)
+//	}
+//
+//	servers, err := runner.ParseServerList(b)
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	if len(servers) > 0 {
+//		scpErr := servers[0].Scp(scpSrc, scpDst, 0666, true)
+//		if scpErr != nil {
+//			panic(scpErr)
+//		}
+//	}
+//
+//}
 
 func TestParallelScp(t *testing.T) {
-	b, readErr := os.ReadFile("../../../asset/config.yaml")
+	b, readErr := os.ReadFile("../../asset/config.yaml")
 	if readErr != nil {
 		panic(readErr)
 	}
