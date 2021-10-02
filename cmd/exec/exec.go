@@ -35,6 +35,7 @@ var RootCmd = &cobra.Command{
 	},
 }
 
+// Entity 实体
 type Entity struct {
 	Cmd           *cobra.Command
 	Fnc           func(b []byte, logger *logrus.Logger) error

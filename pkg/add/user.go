@@ -29,6 +29,7 @@ useradd {{ .User }} -g {{ .User }} -s /sbin/nologin -M
 
 `)))
 
+// NewUserConfig 新增用户属性
 type NewUserConfig struct {
 	NewUser struct {
 		Name     string `yaml:"name"`
