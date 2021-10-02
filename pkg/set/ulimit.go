@@ -19,6 +19,7 @@ cat >> /etc/security/limits.conf <<EOF
 EOF
 `
 
+// Ulimit 设置文件描述符
 func Ulimit(b []byte, logger *logrus.Logger) error {
 
 	return Config(b, logger, ulimitShell)

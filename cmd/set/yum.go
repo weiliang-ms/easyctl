@@ -26,12 +26,3 @@ var yumRepoCmd = &cobra.Command{
 		//setYumRepo()
 	},
 }
-
-//func setYumRepo() {
-//	ac := set.Actuator{
-//		ServerListFile: serverListFile,
-//		Value:          repoUrl,
-//		FilePath:       isoPath,
-//	}
-//	ac.SetYumRepo()
-//}

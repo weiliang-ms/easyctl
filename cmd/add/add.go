@@ -34,6 +34,7 @@ var RootCmd = &cobra.Command{
 	Args:  cobra.ExactValidArgs(1),
 }
 
+// Add 组装执行器
 func Add(entity Entity) error {
 
 	if configFile == "" {

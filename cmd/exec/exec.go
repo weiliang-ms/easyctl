@@ -40,6 +40,7 @@ type Entity struct {
 	DefaultConfig []byte
 }
 
+// Exec 组装执行器
 func Exec(entity Entity) error {
 
 	if entity.DefaultConfig == nil {

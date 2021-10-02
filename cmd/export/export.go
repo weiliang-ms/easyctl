@@ -35,6 +35,7 @@ type Entity struct {
 	DefaultConfig []byte
 }
 
+// Export 组装执行器
 func Export(entity Entity) error {
 
 	if configFile == "" {

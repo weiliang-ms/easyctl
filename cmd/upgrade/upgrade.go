@@ -17,7 +17,7 @@ func init() {
 	Cmd.AddCommand(upgradeOpenSSHCmd)
 }
 
-// upgrade 命令
+// Cmd upgrade 命令
 var Cmd = &cobra.Command{
 	Use:     "upgrade [OPTIONS] [flags]",
 	Short:   "更新指令集",

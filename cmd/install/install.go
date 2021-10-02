@@ -26,7 +26,6 @@ func init() {
 	RootCmd.AddCommand(harborCmd)
 }
 
-//
 var RootCmd = &cobra.Command{
 	Use:   "install [OPTIONS] [flags]",
 	Short: "安装指令集",

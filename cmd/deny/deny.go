@@ -38,6 +38,7 @@ func init() {
 	RootCmd.AddCommand(denyPingCmd)
 }
 
+// Deny 组装执行器
 func Deny(entity Entity) error {
 	if configFile == "" {
 		klog.Infof("检测到配置文件为空，生成配置文件样例 -> %s", util.ConfigFile)

@@ -1,7 +1,6 @@
 package install
 
 import (
-	"errors"
 	"fmt"
 	"github.com/lithammer/dedent"
 	"text/template"
@@ -39,6 +38,7 @@ type RedisItem struct {
 	} `yaml:"redis"`
 }
 
+// RedisCluster 部署redis集群
 func RedisCluster(b []byte, debug bool) error {
 	meta, err := parseItem(b, debug)
 	if err != nil {
@@ -66,10 +66,12 @@ func parseItem(b []byte, debug bool) (RedisMeta, error) {
 	return RedisMeta{Password: item.Redis.Password, Package: item.Redis.Package}, nil
 }
 
+// Combine 组装执行器
 func (meta *RedisMeta) Combine(servers []runner.ServerInternal) Executor {
 	return Executor{Servers: servers, Meta: meta}
 }
 
+// Detect 检测依赖
 func (meta *RedisMeta) Detect(executor Executor, debug bool) error {
 	klog.Infoln("检测依赖环境...")
 	check := "gcc -v"
@@ -80,13 +82,14 @@ func (meta *RedisMeta) Detect(executor Executor, debug bool) error {
 	// todo:  fix logger
 	for v := range exec.ParallelRun(nil) {
 		if v.Err != nil {
-			return errors.New(fmt.Sprintf("依赖检测失败 -> %s", v.Err))
+			return fmt.Errorf("依赖检测失败 -> %s", v.Err)
 		}
 	}
 
 	return nil
 }
 
+// HandPackage 分发安装包
 func (meta *RedisMeta) HandPackage(executor Executor, debug bool) error {
 
 	klog.Infoln("分发package...")
@@ -109,6 +112,7 @@ func (meta *RedisMeta) HandPackage(executor Executor, debug bool) error {
 	return nil
 }
 
+// Compile 编译
 func (meta *RedisMeta) Compile(executor Executor, debug bool) error {
 	compileCmd, err := util.Render(compileTmpl, util.Data{
 		"PackageName": util.SubFileName(meta.Package),

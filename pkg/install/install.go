@@ -26,6 +26,7 @@ type Interface interface {
 
 type TaskFnc func(Task) error
 
+// Install 安装指令通用函数
 func Install(i Interface, b []byte, debug bool) error {
 
 	server, err := ParseServerList(b, debug)
@@ -50,6 +51,7 @@ func Install(i Interface, b []byte, debug bool) error {
 	return nil
 }
 
+// ParseServerList 解析配置文件
 func ParseServerList(b []byte, debug bool) ([]runner.ServerInternal, error) {
 
 	klog.Infoln("解析主机列表...")

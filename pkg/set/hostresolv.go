@@ -29,6 +29,7 @@ EOF
 {{- end }}
 `)))
 
+// HostResolve 配置主机host解析
 func HostResolve(b []byte, logger *logrus.Logger) error {
 
 	results, err := GetResult(b, logger, "hostname")
@@ -37,7 +38,6 @@ func HostResolve(b []byte, logger *logrus.Logger) error {
 	}
 
 	// todo: IP地址排序
-
 	hosts := map[string]string{}
 	for _, v := range results {
 		if v.StdOut != "localhost" {

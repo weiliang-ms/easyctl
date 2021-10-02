@@ -89,6 +89,7 @@ func (server ServerInternal) Scp(srcPath string, dstPath string, mode os.FileMod
 	return nil
 }
 
+// ParallelScp 并发拷贝
 func ParallelScp(servers []ServerInternal, srcPath string, dstPath string, mode os.FileMode) chan error {
 	wg := &sync.WaitGroup{}
 	ch := make(chan error, len(servers))
