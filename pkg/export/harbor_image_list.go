@@ -459,7 +459,7 @@ func (executor *HarborExecutor) TagsWithinProjects() error {
 	ch := make(chan result, len(executor.ProjectSlice))
 	tags := make(map[string][]string)
 
-	for k, _ := range executor.ReposInProject {
+	for k := range executor.ReposInProject {
 		wg.Add(1)
 		go func(projectName string) {
 			re, err := executor.TagsWithinProject(projectName)

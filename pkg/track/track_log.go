@@ -6,6 +6,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// TailLogExecutor 追踪日志执行器
 type TailLogExecutor struct {
 	TailLog struct {
 		LogPath string `yaml:"log-path"`
@@ -14,6 +15,7 @@ type TailLogExecutor struct {
 	} `yaml:"tail-log"`
 }
 
+// TaiLog 多级追踪日志
 func TaiLog(config []byte, logger *logrus.Logger) error {
 
 	servers, err := runner.ParseServerList(config)
@@ -32,6 +34,7 @@ func TaiLog(config []byte, logger *logrus.Logger) error {
 	return nil
 }
 
+// Tail tail日志
 func (tail TailLogExecutor) Tail(servers []runner.ServerInternal, stopCh <-chan struct{}) {
 	for _, v := range servers {
 		go v.TailFile(tail.TailLog.LogPath, tail.TailLog.Offset, tail.TailLog.Whence, stopCh)
