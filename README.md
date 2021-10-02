@@ -1,4 +1,5 @@
 ![GitHub Workflow Status (event)](https://img.shields.io/github/workflow/status/weiliang-ms/easyctl/Go?style=flat-square)
+[![Go Report Card](https://goreportcard.com/badge/github.com/weiliang-ms/easyctl)](https://goreportcard.com/report/github.com/weiliang-ms/easyctl)
 ![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/weiliang-ms/easyctl?filename=go.mod&style=flat-square)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/weiliang-ms/easyctl?style=flat-square)
 ![GitHub all releases](https://img.shields.io/github/downloads/weiliang-ms/easyctl/total?style=flat-square)
