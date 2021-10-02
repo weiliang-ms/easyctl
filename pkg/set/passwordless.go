@@ -1,7 +1,6 @@
 package set
 
 import (
-	_ "embed"
 	"github.com/lithammer/dedent"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/ssh"

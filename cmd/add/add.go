@@ -14,6 +14,7 @@ var (
 	configFile string
 )
 
+// Entity 添加实体
 type Entity struct {
 	Cmd           *cobra.Command
 	Fnc           func(b []byte, logger *logrus.Logger) error

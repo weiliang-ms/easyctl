@@ -1,7 +1,6 @@
 package export
 
 import (
-	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -435,7 +434,7 @@ func (executor *HarborExecutor) ReposWithinProject(projectName string) error {
 	for {
 		re, err := executor.ListRepoByPage(i, projectName)
 		if err != nil {
-			return errors.New(fmt.Sprintf("获取项目：%s第%d页 repo列表失败 ->%s...", projectName, i, err))
+			return fmt.Errorf("获取项目：%s第%d页 repo列表失败 ->%s", projectName, i, err)
 		}
 		if len(re) == 0 {
 			executor.ReposInProject[projectName] = repos
