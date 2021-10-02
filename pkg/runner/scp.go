@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"errors"
 	"fmt"
 	"github.com/vbauerster/mpb/v6"
 	"github.com/vbauerster/mpb/v6/decor"
@@ -18,8 +17,8 @@ func (server ServerInternal) Scp(srcPath string, dstPath string, mode os.FileMod
 	// init sftp
 	sftp, connetErr := sftpConnect(server.Username, server.Password, server.Host, server.Port)
 	if connetErr != nil {
-		return errors.New(fmt.Sprintf("连接远程主机：%s失败 ->%s",
-			server.Host, connetErr.Error()))
+		return fmt.Errorf("连接远程主机：%s失败 ->%s",
+			server.Host, connetErr.Error())
 	}
 
 	defer sftp.Close()
@@ -27,15 +26,15 @@ func (server ServerInternal) Scp(srcPath string, dstPath string, mode os.FileMod
 	log.Printf("-> transfer %s to %s:%s\n", srcPath, server.Host, dstPath)
 	dstFile, createErr := sftp.Create(dstPath)
 	if createErr != nil {
-		return errors.New(fmt.Sprintf("创建远程主机：%s文件句柄: %s失败 ->%s",
-			server.Host, dstPath, createErr.Error()))
+		return fmt.Errorf("创建远程主机：%s文件句柄: %s失败 ->%s",
+			server.Host, dstPath, createErr.Error())
 	}
 	defer dstFile.Close()
 
 	modErr := sftp.Chmod(dstPath, mode)
 	if modErr != nil {
-		return errors.New(fmt.Sprintf("修改%s:%s文件句柄权限失败 ->%s",
-			server.Host, dstPath, createErr.Error()))
+		return fmt.Errorf("修改%s:%s文件句柄权限失败 ->%s",
+			server.Host, dstPath, createErr.Error())
 	}
 
 	f, _ := os.Open(srcPath)
@@ -69,8 +68,8 @@ func (server ServerInternal) Scp(srcPath string, dstPath string, mode os.FileMod
 		proxyReader := bar.ProxyReader(reader)
 		_, ioErr := io.Copy(dstFile, proxyReader)
 		if ioErr != nil {
-			return errors.New(fmt.Sprintf("传输%s:%s失败 ->%s",
-				server.Host, dstPath, createErr.Error()))
+			return fmt.Errorf("传输%s:%s失败 ->%s",
+				server.Host, dstPath, createErr.Error())
 		}
 
 		p.Wait()
@@ -80,8 +79,8 @@ func (server ServerInternal) Scp(srcPath string, dstPath string, mode os.FileMod
 		// create proxy reader
 		_, ioErr := io.Copy(dstFile, f)
 		if ioErr != nil {
-			return errors.New(fmt.Sprintf("传输%s:%s失败 ->%s",
-				server.Host, dstPath, createErr.Error()))
+			return fmt.Errorf("传输%s:%s失败 ->%s",
+				server.Host, dstPath, createErr.Error())
 		}
 	}
 
