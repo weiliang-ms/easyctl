@@ -6,12 +6,14 @@ import (
 )
 
 var (
+	// HaproxyScriptTmpl ha proxy
 	HaproxyScriptTmpl = template.Must(template.New("HaproxyScriptTmpl").Parse(
 		dedent.Dedent(`
 #!/bin/bash
 yum install -y haproxy
 `)))
 
+	// HaProxyConfigTmpl ha tmpl
 	HaProxyConfigTmpl = template.Must(template.New("HaProxyConfig").Parse(
 		dedent.Dedent(`
 global
