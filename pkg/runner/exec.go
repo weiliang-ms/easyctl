@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mitchellh/go-homedir"
+	"github.com/mitchellh/mapstructure"
 	"github.com/modood/table"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util"
@@ -13,6 +14,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -37,6 +39,32 @@ func Run(b []byte, logger *logrus.Logger) error {
 	table.OutputA(result)
 
 	return nil
+}
+
+// GetResult 获取执行结果
+func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]ShellResult, error) {
+
+	servers, err := ParseServerList(b)
+	if err != nil {
+		return []ShellResult{}, err
+	}
+
+	executor := ExecutorInternal{Servers: servers, Script: cmd}
+
+	ch := executor.ParallelRun(logger)
+
+	results := []ShellResult{}
+
+	for re := range ch {
+		var result ShellResult
+		_ = mapstructure.Decode(re, &result)
+		results = append(results, result)
+	}
+
+	// todo: ip地址排序
+	sort.Sort(ShellResultSlice(results))
+
+	return results, nil
 }
 
 // ParallelRun 并发执行

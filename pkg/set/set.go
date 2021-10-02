@@ -10,10 +10,6 @@ import (
 	"sort"
 )
 
-type ParseConfig interface {
-	Parse(b []byte, debug bool) (error, interface{})
-}
-
 // Config set指令执行入口
 func Config(b []byte, logger *logrus.Logger, cmd string) error {
 
@@ -39,6 +35,7 @@ func Config(b []byte, logger *logrus.Logger, cmd string) error {
 	return nil
 }
 
+// GetResult 获取执行结果
 func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResult, error) {
 
 	servers, err := runner.ParseServerList(b)
