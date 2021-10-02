@@ -74,6 +74,7 @@ EOF
 {{- end}}
 `)))
 
+// YUM 实体
 type YUM struct {
 }
 

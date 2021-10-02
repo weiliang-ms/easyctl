@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// ServerExternal server序列化对象
 type ServerExternal struct {
 	Host           string `yaml:"host"`
 	Port           string `yaml:"port"`
@@ -13,6 +14,7 @@ type ServerExternal struct {
 	PrivateKeyPath string `yaml:"privateKeyPath"`
 }
 
+// ServerInternal server内部对象
 type ServerInternal struct {
 	Host           string
 	Port           string
@@ -21,27 +23,32 @@ type ServerInternal struct {
 	PrivateKeyPath string
 }
 
+// ServerListExternal server列表序列化对象
 type ServerListExternal struct {
 	Servers  []ServerExternal `yaml:"server"`
 	Excludes []string         `yaml:"excludes"`
 }
 
+// ServerListInternal server列表内部对象
 type ServerListInternal struct {
 	Servers  []ServerInternal
 	Excludes []string
 }
 
+// ExecutorExternal 执行器序列化对象
 type ExecutorExternal struct {
 	Servers  []ServerExternal `yaml:"server"`
 	Excludes []string         `yaml:"excludes"`
 	Script   string           `yaml:"script"`
 }
 
+// ExecutorInternal 执行器内部对象
 type ExecutorInternal struct {
 	Servers []ServerInternal
 	Script  string
 }
 
+// ShellResult shell执行结果
 type ShellResult struct {
 	Host      string `table:"主机地址"`
 	Cmd       string `table:"执行语句"`
@@ -53,6 +60,7 @@ type ShellResult struct {
 	Err       error
 }
 
+// ShellResultSlice shell执行结果切片
 type ShellResultSlice []ShellResult
 
 func (re ShellResultSlice) Len() int { return len(re) }
