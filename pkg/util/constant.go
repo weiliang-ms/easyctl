@@ -1,17 +1,12 @@
 package util
 
 const (
-	Localhost        = "localhost"
-	Success          = "success"
-	Fail             = "fail"
-	AlreadyCloseCode = 3
-	ConfigFile       = "config.yaml"
-)
-
-type LogLevel int8
-
-const (
-	Debug LogLevel = iota
-	Info
-	Error
+	// Localhost localhost
+	Localhost = "localhost"
+	// Success 成功
+	Success = "success"
+	// Fail 失败
+	Fail = "fail"
+	// ConfigFile 通用配置文件
+	ConfigFile = "config.yaml"
 )

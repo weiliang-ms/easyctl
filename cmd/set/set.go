@@ -35,6 +35,7 @@ func init() {
 	RootCmd.AddCommand(newPasswordCmd)
 }
 
+// Entity Set实体
 type Entity struct {
 	Cmd           *cobra.Command
 	Fnc           func(b []byte, logger *logrus.Logger) error

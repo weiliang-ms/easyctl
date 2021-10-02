@@ -49,10 +49,6 @@ func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResul
 
 	results := []runner.ShellResult{}
 
-	//if v, err := runner.ReadWithSelect(ch); err == nil {
-	//	results=append(results, v)
-	//}
-
 	for re := range ch {
 		var result runner.ShellResult
 		_ = mapstructure.Decode(re, &result)

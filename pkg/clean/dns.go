@@ -33,6 +33,7 @@ sed -i "/{{ . }}/d" /etc/resolv.conf
 {{end}}
 `)))
 
+// DnsCleanerConfig 清理dns实体
 type DnsCleanerConfig struct {
 	CleanDns struct {
 		AddressList []string `yaml:"address-list"`
@@ -40,6 +41,7 @@ type DnsCleanerConfig struct {
 	} `yaml:"clean-dns"`
 }
 
+// Dns 清理dns
 func Dns(b []byte, logger *logrus.Logger) error {
 	script, err := PruneDnsScript(b, pruneDnsShellTmpl)
 	if err != nil {
@@ -48,6 +50,7 @@ func Dns(b []byte, logger *logrus.Logger) error {
 	return Config(b, logger, script)
 }
 
+// PruneDnsScript 清理dns脚本
 func PruneDnsScript(b []byte, tmpl *template.Template) (string, error) {
 
 	config, err := ParseDnsConfig(b)
@@ -69,6 +72,7 @@ func PruneDnsScript(b []byte, tmpl *template.Template) (string, error) {
 	})
 }
 
+// ParseDnsConfig 解析清理dns的配置文件内容
 func ParseDnsConfig(b []byte) (DnsCleanerConfig, error) {
 	config := DnsCleanerConfig{}
 	if err := yaml.Unmarshal(b, &config); err != nil {

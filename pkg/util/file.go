@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// DownloadFile 下载文件，带有进度条
 func DownloadFile(srcPath, destPath string) error {
 	out, err := os.Create(destPath)
 	if err != nil {

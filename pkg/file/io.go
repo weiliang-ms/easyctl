@@ -5,6 +5,7 @@ import (
 	"os"
 )
 
+// ReadAll 读取文件全部内容
 func ReadAll(filePath string) string {
 	f, err := os.Open(filePath)
 	defer f.Close()
