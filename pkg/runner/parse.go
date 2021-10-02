@@ -124,6 +124,17 @@ func (server ServerInternal) ServerFilter(excludes []string) []ServerInternal {
 		end := strings.Split(ipRange, ":")[1]
 		klog.Infof("解析到末尾IP为：%s...\n", fmt.Sprintf("%s%s", baseAddress, end))
 
+		// 区间首尾一直直接返回
+		if begin == end {
+			return append(serverList, ServerInternal{
+				Host:           begin,
+				Port:           server.Port,
+				Username:       server.Username,
+				Password:       server.Password,
+				PrivateKeyPath: server.PrivateKeyPath,
+			})
+		}
+
 		// string -> int
 		beginIndex, _ := strconv.Atoi(begin)
 		endIndex, _ := strconv.Atoi(end)

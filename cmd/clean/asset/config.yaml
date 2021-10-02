@@ -1,0 +1,8 @@
+server:
+  - host: 10.10.10.[1:40]
+    username: root
+    privateKeyPath: "" # ~/.ssh/id_rsa，为空默认走password登录；不为空默认走密钥登录
+    password: 123456
+    port: 22
+excludes:
+  - 192.168.235.132

@@ -36,10 +36,6 @@ var RootCmd = &cobra.Command{
 
 func Add(entity Entity) error {
 
-	if entity.DefaultConfig == nil {
-		entity.DefaultConfig = config
-	}
-
 	if configFile == "" {
 		logrus.Infof("检测到配置文件参数为空，生成配置文件样例 -> %s", util.ConfigFile)
 		_ = os.WriteFile(util.ConfigFile, entity.DefaultConfig, 0666)
@@ -65,4 +61,10 @@ func Add(entity Entity) error {
 	}
 
 	return entity.Fnc(b, logger)
+}
+
+func (entity *Entity) setDefault() {
+	if entity.DefaultConfig == nil {
+		entity.DefaultConfig = config
+	}
 }

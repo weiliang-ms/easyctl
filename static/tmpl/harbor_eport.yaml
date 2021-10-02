@@ -1,8 +1,0 @@
-harbor:
-  address: 192.168.1.2
-  domain: harbor.wl.io
-  user: admin
-  password: Harbor-12345
-  projects:
-    - kubesphere
-    - library

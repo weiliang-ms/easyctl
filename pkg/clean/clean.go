@@ -1,63 +1,64 @@
 package clean
 
-// 执行器执行结果
-type ActuatorExecRe struct {
-	Host     string `table:"主机IP"`
-	Action   string `table:"执行操作"`
-	Status   string `table:"执行状态"`
-	ErrorMsg string `table:"错误信息"`
+import (
+	"fmt"
+	"github.com/mitchellh/mapstructure"
+	"github.com/olekukonko/tablewriter"
+	"github.com/sirupsen/logrus"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
+	"os"
+	"sort"
+)
+
+func Config(b []byte, logger *logrus.Logger, cmd string) error {
+
+	results, err := GetResult(b, logger, cmd)
+	if err != nil {
+		return err
+	}
+	var data [][]string
+
+	for _, v := range results {
+		data = append(data, []string{v.Host, v.Cmd, fmt.Sprintf("%d", v.Code), v.Status, v.StdOut, v.StdErrMsg})
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"IP ADDRESS", "cmd", "exit code", "result", "output", "exception"})
+	table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
+	table.SetCenterSeparator("|")
+	//table.SetRowLine(true)
+	table.SetAlignment(tablewriter.ALIGN_CENTER)
+	table.AppendBulk(data) // Add Bulk Data
+	table.Render()
+
+	return nil
 }
 
-type Actuator struct {
-	ServerListFile string
-	Cmd            string
-	Value          string
-	//ServerList     runner.CommonServerList
-	Err      error
-	ExitCode int
-}
+func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResult, error) {
 
-//func (ac *Actuator) parseServerList() *Actuator {
-//	if ac.ServerListFile == "" {
-//		return &Actuator{
-//			ServerList: runner.CommonServerList{},
-//		}
-//	}
-//	serverList := runner.ParseCommonServerList(ac.ServerListFile)
-//	ac.ServerList = serverList
-//	return ac
-//}
-//
-//func (ac *Actuator) execute(action string, ignoreErrCode int) {
-//
-//	var result []ActuatorExecRe
-//	if len(ac.ServerList.Server) <= 0 {
-//		re := runner.Shell(ac.Cmd)
-//		ac.ExitCode = re.ExitCode
-//		result = append(result, packageRe(util.Localhost, action, re.StdErr, ignoreErrCode, re.ExitCode))
-//	} else {
-//		for _, v := range ac.ServerList.Server {
-//			re := v.RemoteShell(ac.Cmd)
-//			result = append(result, packageRe(v.Host, action, re.StdErrMsg, ignoreErrCode, re.Code))
-//		}
-//	}
-//
-//	table.OutputA(result)
-//}
-//
-//func packageRe(host, action, errMsg string, ignoreErrCode int, code int) ActuatorExecRe {
-//
-//	var status string
-//
-//	if code == 0 || code == ignoreErrCode {
-//		status = util.Success
-//	} else {
-//		status = util.Fail
-//	}
-//	return ActuatorExecRe{
-//		Host:     host,
-//		Action:   action,
-//		Status:   status,
-//		ErrorMsg: errMsg,
-//	}
-//}
+	servers, err := runner.ParseServerList(b)
+	if err != nil {
+		return []runner.ShellResult{}, err
+	}
+
+	executor := runner.ExecutorInternal{Servers: servers, Script: cmd}
+
+	ch := executor.ParallelRun(logger)
+
+	results := []runner.ShellResult{}
+
+	//if v, err := runner.ReadWithSelect(ch); err == nil {
+	//	results=append(results, v)
+	//}
+
+	for re := range ch {
+		var result runner.ShellResult
+		_ = mapstructure.Decode(re, &result)
+		results = append(results, result)
+	}
+
+	// todo: ip地址排序
+	sort.Sort(runner.ShellResultSlice(results))
+
+	return results, nil
+}
