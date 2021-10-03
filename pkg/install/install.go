@@ -1,72 +1,30 @@
 package install
 
-import (
-	"github.com/weiliang-ms/easyctl/pkg/runner"
-	"k8s.io/klog"
-)
-
-// Task 任务结构体
-type Task struct {
-	Servers []runner.ServerInternal
-	Cmd     string
-	Debug   bool
-	ErrChan chan error
-}
-
-// Executor 执行器结构体
-type Executor struct {
-	Servers []runner.ServerInternal
-	Meta    interface{}
-}
-
 // Interface install操作类型接口
 type Interface interface {
-	Combine(servers []runner.ServerInternal) Executor
-	Detect(executor Executor, debug bool) error
-	HandPackage(executor Executor, debug bool) error
-	Compile(executor Executor, debug bool) error
+	Detect() error
+	Prune() error
+	HandPackage() error
+	Compile() error
 }
 
-// TaskFnc 任务方法
-type TaskFnc func(Task) error
+type task func() error
 
 // Install 安装指令通用函数
-func Install(i Interface, b []byte, debug bool) error {
+func install(i Interface) error {
 
-	server, err := ParseServerList(b, debug)
-	if err != nil {
-		return err
-	}
-	executor := i.Combine(server)
-	if err != nil {
-		return err
+	jobs := []task{
+		i.Detect,
+		i.Prune,
+		i.HandPackage,
+		i.Compile,
 	}
 
-	if err := i.Detect(executor, debug); err != nil {
-		return err
-	}
-	if err := i.HandPackage(executor, debug); err != nil {
-		return err
-	}
-	if err := i.Compile(executor, debug); err != nil {
-		return err
+	for _, v := range jobs {
+		if err := v(); err != nil {
+			return err
+		}
 	}
 
 	return nil
-}
-
-// ParseServerList 解析配置文件
-func ParseServerList(b []byte, debug bool) ([]runner.ServerInternal, error) {
-
-	klog.Infoln("解析主机列表...")
-	servers, err := runner.ParseServerList(b)
-	if err != nil {
-		return []runner.ServerInternal{}, err
-	}
-
-	//if debug {
-	//	fmt.Printf("%+v", servers)
-	//}
-
-	return servers, nil
 }

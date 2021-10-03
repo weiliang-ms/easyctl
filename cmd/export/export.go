@@ -21,7 +21,6 @@ var RootCmd = &cobra.Command{
 }
 
 func init() {
-	// todo: 变更入参 --server-list -> --config or -c
 	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "配置文件")
 	RootCmd.AddCommand(imageCmd)
 	RootCmd.AddCommand(localImagesCmd)

@@ -83,7 +83,7 @@ func (yum YUM) Config(b []byte, debug bool) error {
 	return nil
 }
 func repoSetCmd(repoUrl string) string {
-	content, err := util.Render(baseRepoConfigTmpl, util.Data{
+	content, err := util.Render(baseRepoConfigTmpl, util.TmplRenderData{
 		"RepoUrl": repoUrl,
 	})
 	if err != nil {
@@ -94,7 +94,7 @@ func repoSetCmd(repoUrl string) string {
 }
 
 func localRepoSetCmd(isoPath string) string {
-	content, err := util.Render(localRepoConfigTmpl, util.Data{
+	content, err := util.Render(localRepoConfigTmpl, util.TmplRenderData{
 		"ISOPath": isoPath,
 	})
 	if err != nil {

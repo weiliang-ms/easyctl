@@ -2,18 +2,32 @@ package runner
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/vbauerster/mpb/v6"
 	"github.com/vbauerster/mpb/v6/decor"
 	"io"
-	"k8s.io/klog"
-	"log"
 	"os"
 	"sync"
 	"time"
 )
 
+// ScpItem 定义跨主机拷贝属性
+type ScpItem struct {
+	Servers        []ServerInternal
+	SrcPath        string
+	DstPath        string
+	Mode           os.FileMode
+	Logger         *logrus.Logger
+	ShowProcessBar bool
+}
+
 // Scp 远程写文件
-func (server ServerInternal) Scp(srcPath string, dstPath string, mode os.FileMode, showProcessBar bool) error {
+func (server ServerInternal) Scp(item ScpItem) error {
+
+	if _, err := os.Stat(item.SrcPath); err != nil {
+		return err
+	}
+
 	// init sftp
 	sftp, connetErr := sftpConnect(server.Username, server.Password, server.Host, server.Port)
 	if connetErr != nil {
@@ -23,26 +37,27 @@ func (server ServerInternal) Scp(srcPath string, dstPath string, mode os.FileMod
 
 	defer sftp.Close()
 
-	log.Printf("-> transfer %s to %s:%s\n", srcPath, server.Host, dstPath)
-	dstFile, createErr := sftp.Create(dstPath)
-	if createErr != nil {
-		return fmt.Errorf("创建远程主机：%s文件句柄: %s失败 ->%s",
-			server.Host, dstPath, createErr.Error())
-	}
+	item.Logger.Infof("-> transfer %s to %s:%s", item.SrcPath, server.Host, item.DstPath)
+	dstFile, createErr := sftp.Create(item.DstPath)
 	defer dstFile.Close()
 
-	modErr := sftp.Chmod(dstPath, mode)
-	if modErr != nil {
-		return fmt.Errorf("修改%s:%s文件句柄权限失败 ->%s",
-			server.Host, dstPath, createErr.Error())
+	if createErr != nil {
+		return fmt.Errorf("创建远程主机：%s文件句柄: %s失败 ->%s",
+			server.Host, item.DstPath, createErr.Error())
 	}
 
-	f, _ := os.Open(srcPath)
+	modErr := sftp.Chmod(item.DstPath, item.Mode)
+	if modErr != nil {
+		return fmt.Errorf("修改%s:%s文件句柄权限失败 ->%s",
+			server.Host, item.DstPath, createErr.Error())
+	}
+
+	f, _ := os.Open(item.SrcPath)
 	defer f.Close()
 
-	if showProcessBar {
+	if item.ShowProcessBar {
 		// 获取文件大小信息
-		ff, _ := os.Stat(srcPath)
+		ff, _ := os.Stat(item.SrcPath)
 		reader := io.LimitReader(f, ff.Size())
 
 		// 初始化进度条
@@ -69,7 +84,7 @@ func (server ServerInternal) Scp(srcPath string, dstPath string, mode os.FileMod
 		_, ioErr := io.Copy(dstFile, proxyReader)
 		if ioErr != nil {
 			return fmt.Errorf("传输%s:%s失败 ->%s",
-				server.Host, dstPath, createErr.Error())
+				server.Host, item.DstPath, createErr.Error())
 		}
 
 		p.Wait()
@@ -80,27 +95,29 @@ func (server ServerInternal) Scp(srcPath string, dstPath string, mode os.FileMod
 		_, ioErr := io.Copy(dstFile, f)
 		if ioErr != nil {
 			return fmt.Errorf("传输%s:%s失败 ->%s",
-				server.Host, dstPath, createErr.Error())
+				server.Host, item.DstPath, createErr.Error())
 		}
 	}
-
-	klog.Infof("<- %s:%s 传输完毕...", server.Host, dstPath)
+	item.Logger.Infof("<- %s:%s 传输完毕...", server.Host, item.DstPath)
 	return nil
 }
 
 // ParallelScp 并发拷贝
-func ParallelScp(servers []ServerInternal, srcPath string, dstPath string, mode os.FileMode) chan error {
-	wg := &sync.WaitGroup{}
-	ch := make(chan error, len(servers))
-	for _, s := range servers {
+func ParallelScp(item ScpItem) chan error {
+	wg := sync.WaitGroup{}
+	ch := make(chan error, len(item.Servers))
+	wg.Add(len(item.Servers))
+
+	for _, s := range item.Servers {
 		go func(server ServerInternal) {
-			wg.Add(1)
-			err := server.Scp(srcPath, dstPath, mode, true)
-			ch <- err
+			item.ShowProcessBar = item.Logger.Level == logrus.DebugLevel || item.ShowProcessBar
+			ch <- server.Scp(item)
 			defer wg.Done()
 		}(s)
 	}
 
 	wg.Wait()
+	//close(ch)
+
 	return ch
 }

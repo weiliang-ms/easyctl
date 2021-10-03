@@ -382,6 +382,8 @@ func (executor *HarborExecutor) GenerateImageList() error {
 	// 初始化image-list.txt
 	executor.Logger.Debugf("创建文件: %s", allProjectImagesListPath)
 	allProjectImagesList, err := os.Create(allProjectImagesListPath)
+	defer allProjectImagesList.Close()
+
 	if err != nil {
 		return nil
 	}
@@ -408,6 +410,7 @@ func (executor *HarborExecutor) GenerateImageList() error {
 			_, _ = imageList.WriteString(t)
 			_, _ = imageList.WriteString("\n")
 		}
+		imageList.Close()
 	}
 
 	return nil

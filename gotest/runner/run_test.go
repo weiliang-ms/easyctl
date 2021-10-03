@@ -15,7 +15,7 @@ func TestRun(t *testing.T) {
 		panic(readErr)
 	}
 
-	executor, err := runner.ParseExecutor(b)
+	executor, err := runner.ParseExecutor(b, logrus.New())
 	executor.Script = "cd /opt && unzip /opt/sentinel-1.8.1.zip"
 	if err != nil {
 		panic(err)
@@ -23,8 +23,9 @@ func TestRun(t *testing.T) {
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
+	executor.Logger = logger
 
-	results := executor.ParallelRun(logger)
+	results := executor.ParallelRun()
 
 	var data [][]string
 

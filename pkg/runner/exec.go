@@ -14,6 +14,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/exec"
 	"sort"
 	"strings"
 	"sync"
@@ -23,12 +24,13 @@ import (
 // Run 执行
 func Run(b []byte, logger *logrus.Logger) error {
 
-	exec, err := ParseExecutor(b)
+	exec, err := ParseExecutor(b, logger)
 	if err != nil {
 		return err
 	}
 
-	ch := exec.ParallelRun(logger)
+	exec.Logger = logger
+	ch := exec.ParallelRun()
 
 	result := []ShellResult{}
 
@@ -41,17 +43,38 @@ func Run(b []byte, logger *logrus.Logger) error {
 	return nil
 }
 
+// LocalRun 本地执行
+func LocalRun(shell string, logger *logrus.Logger) error {
+
+	logger.Debugf("执行指令: %s", shell)
+	cmd := exec.Command(shell)
+	b, err := cmd.CombinedOutput()
+	if err != nil {
+		return err
+	}
+	logger.Debug(string(b))
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // GetResult 获取执行结果
 func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]ShellResult, error) {
 
-	servers, err := ParseServerList(b)
+	servers, err := ParseServerList(b, logger)
 	if err != nil {
 		return []ShellResult{}, err
 	}
 
-	executor := ExecutorInternal{Servers: servers, Script: cmd}
+	executor := ExecutorInternal{
+		Servers: servers,
+		Script:  cmd,
+		Logger:  logger,
+	}
 
-	ch := executor.ParallelRun(logger)
+	ch := executor.ParallelRun()
 
 	results := []ShellResult{}
 
@@ -68,9 +91,9 @@ func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]ShellResult, erro
 }
 
 // ParallelRun 并发执行
-func (executor ExecutorInternal) ParallelRun(logger *logrus.Logger) chan ShellResult {
+func (executor ExecutorInternal) ParallelRun() chan ShellResult {
 
-	klog.Infoln("开始并行执行命令...")
+	executor.Logger.Infoln("开始并行执行命令...")
 	wg := sync.WaitGroup{}
 	ch := make(chan ShellResult, len(executor.Servers))
 
@@ -86,7 +109,7 @@ func (executor ExecutorInternal) ParallelRun(logger *logrus.Logger) chan ShellRe
 	for _, v := range executor.Servers {
 		wg.Add(1)
 		go func(s ServerInternal) {
-			ch <- runOnNode(s, script, logger)
+			ch <- runOnNode(s, script, executor.Logger)
 			defer wg.Done()
 		}(v)
 	}
@@ -117,11 +140,12 @@ func ReadErrorChanWithSelect(ch chan ShellResult) (value ShellResult, err error)
 }
 
 func runOnNode(s ServerInternal, cmd string, logger *logrus.Logger) ShellResult {
-	//session , err := session(s)
 	var shell string
 
 	if logger.Level == logrus.DebugLevel {
 		shell = cmd
+	} else {
+		shell = "shell content"
 	}
 
 	// 截取cmd output 长度
@@ -132,7 +156,7 @@ func runOnNode(s ServerInternal, cmd string, logger *logrus.Logger) ShellResult 
 		subCmd = cmd
 	}
 
-	logger.Infof("[%s] 开始执行指令 -> %s\n", s.Host, shell)
+	logger.Infof("[%s] 开始执行指令 -> %s", s.Host, shell)
 	session, err := s.sshConnect()
 
 	if err != nil {
@@ -144,15 +168,17 @@ func runOnNode(s ServerInternal, cmd string, logger *logrus.Logger) ShellResult 
 
 	out, err := session.Output(cmd)
 	if err != nil {
-		return ShellResult{Host: s.Host, Err: errors.New(err.(*ssh.ExitError).String()),
-			Cmd: cmd, Status: util.Fail, Code: err.(*ssh.ExitError).ExitStatus(), StdErrMsg: err.(*ssh.ExitError).String()}
+		return ShellResult{
+			Host:      s.Host,
+			Err:       errors.New(err.(*ssh.ExitError).String()),
+			Cmd:       cmd,
+			Status:    util.Fail,
+			Code:      err.(*ssh.ExitError).ExitStatus(),
+			StdErrMsg: err.(*ssh.ExitError).String()}
 	}
 
-	logger.Infof("<- %s执行命令成功...\n", s.Host)
-
-	if logger.Level == logrus.DebugLevel {
-		fmt.Printf("%s -> %s\n", s.Host, string(out))
-	}
+	logger.Infof("<- %s执行命令成功...", s.Host)
+	logger.Debugf("%s -> 返回值: %s", s.Host, string(out))
 
 	defer session.Close()
 

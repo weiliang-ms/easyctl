@@ -50,7 +50,7 @@ func HostResolve(b []byte, logger *logrus.Logger) error {
 		addresses = append(addresses, strings.TrimSuffix(fmt.Sprintf("%s %s", v, k), "\n"))
 	}
 
-	shell, err := util.Render(setHostsShellTmpl, util.Data{
+	shell, err := util.Render(setHostsShellTmpl, util.TmplRenderData{
 		"HostResolveList": addresses,
 	})
 
