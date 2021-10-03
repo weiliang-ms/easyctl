@@ -27,13 +27,19 @@ var RootCmd = &cobra.Command{
 
 func init() {
 	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "配置文件")
-	RootCmd.AddCommand(passwordLessCmd)
-	RootCmd.AddCommand(ulimitCmd)
-	RootCmd.AddCommand(dnsCmd)
-	RootCmd.AddCommand(hostResolveCmd)
-	RootCmd.AddCommand(timeZoneCmd)
-	RootCmd.AddCommand(yumRepoCmd)
-	RootCmd.AddCommand(newPasswordCmd)
+	subCommands := []*cobra.Command{
+		dnsCmd,
+		hostResolveCmd,
+		passwordLessCmd,
+		newPasswordCmd,
+		timeZoneCmd,
+		ulimitCmd,
+		yumRepoCmd,
+	}
+
+	for _, v := range subCommands {
+		RootCmd.AddCommand(v)
+	}
 }
 
 // Entity Set实体

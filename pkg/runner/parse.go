@@ -2,44 +2,66 @@ package runner
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util"
 	"gopkg.in/yaml.v2"
-	"k8s.io/klog"
-	"log"
 	"net"
 	"strconv"
 	"strings"
 )
 
+type serverFilter struct {
+	Servers []ServerInternal
+}
+
 // ServerListFilter 解析、过滤server主机列表
 // 解析ip地址区间类型，排除excludes数组内的主机
-func (serverListInternal ServerListInternal) ServerListFilter() []ServerInternal {
-	servers := []ServerInternal{}
+func (serverListInternal ServerListInternal) serverListFilter(logger *logrus.Logger) ([]ServerInternal, error) {
+	var servers []ServerInternal
+	serverMap := make(map[string]ServerInternal)
+
+	filter := &serverFilter{}
 	for _, v := range serverListInternal.Servers {
-		re := v.ServerFilter(serverListInternal.Excludes)
-		if len(re) == 1 {
-			servers = append(servers, re[0])
-		} else {
-			for _, s := range re {
-				servers = append(servers, s)
-			}
+		if err := v.parseIPRangeServer(filter, logger); err != nil {
+			return nil, err
 		}
 	}
-	return servers
+
+	for _, v := range filter.Servers {
+		if !contain(v, serverListInternal.Excludes) {
+			serverMap[v.Host] = v
+		}
+	}
+
+	for _, v := range serverMap {
+		servers = append(servers, v)
+	}
+
+	return servers, nil
+}
+
+// server是否存在于excludes servers列表内
+func contain(server ServerInternal, excludeServers []string) bool {
+	return util.SliceContain(excludeServers, server.Host)
 }
 
 // ParseServerList ServerList反序列化
-func ParseServerList(b []byte) ([]ServerInternal, error) {
+func ParseServerList(b []byte, logger *logrus.Logger) ([]ServerInternal, error) {
 	serverList := ServerListExternal{}
 	if err := yaml.Unmarshal(b, &serverList); err != nil {
 		return []ServerInternal{}, err
 	}
 	serverListInternal := serverListDeepCopy(serverList)
-	return serverListInternal.ServerListFilter(), nil
+	return serverListInternal.serverListFilter(logger)
 }
 
 // ParseExecutor 执行器反序列化
-func ParseExecutor(b []byte) (ExecutorInternal, error) {
+func ParseExecutor(b []byte, logger *logrus.Logger) (ExecutorInternal, error) {
+
+	if logger == nil {
+		logger = logrus.New()
+	}
+
 	executor := ExecutorExternal{}
 	err := yaml.Unmarshal(b, &executor)
 	if err != nil {
@@ -48,14 +70,15 @@ func ParseExecutor(b []byte) (ExecutorInternal, error) {
 	// 类型转换
 	executorInternal := executorDeepCopy(executor)
 
-	// 解析ip地址段
-	servers := []ServerInternal{}
+	// 解析地址段
+	filter := &serverFilter{}
 	for _, v := range executorInternal.Servers {
-		for _, s := range v.ServerFilter(executor.Excludes) {
-			servers = append(servers, s)
+		if err := v.parseIPRangeServer(filter, logger); err != nil {
+			return ExecutorInternal{}, err
 		}
 	}
-	executorInternal.Servers = servers
+
+	executorInternal.Servers = filter.Servers
 	return executorInternal, nil
 }
 
@@ -72,6 +95,7 @@ func executorDeepCopy(executorExternal ExecutorExternal) ExecutorInternal {
 	return ExecutorInternal{
 		serversDeepCopy(executorExternal.Servers),
 		executorExternal.Script,
+		logrus.New(),
 	}
 }
 
@@ -96,37 +120,37 @@ func serverDeepCopy(serverExternal ServerExternal) ServerInternal {
 }
 
 // ServerFilter 解析ip地址区间类型，排除excludes数组内的主机
-func (server ServerInternal) ServerFilter(excludes []string) []ServerInternal {
-	serverList := []ServerInternal{}
+func (server ServerInternal) parseIPRangeServer(filter *serverFilter, logger *logrus.Logger) error {
 
+	// TODO 正则
 	contain := strings.Contains(server.Host, "[") && strings.Contains(server.Host, "]") && strings.Contains(server.Host, ":")
 
 	if address := net.ParseIP(server.Host); address == nil && !contain {
-		log.Fatalln("server地址信息非法，无法解析请检查...")
+		return fmt.Errorf("server地址: %s 非法，无法解析请检查", server.Host)
 	}
 
 	if strings.Contains(server.Host, "[") {
-		log.Println("检测到配置文件中含有IP段，开始解析组装...")
+		logger.Println("检测到配置文件中含有IP段，开始解析组装...")
 		//192.168.235.
 		baseAddress := strings.Split(server.Host, "[")[0]
-		klog.Infof("解析到IP子网网段为：%s...\n", baseAddress)
+		logger.Infof("解析到IP子网网段为：%s...", baseAddress)
 
 		// 1:3] -> 1:3
 		ipRange := strings.Split(strings.Split(server.Host, "[")[1], "]")[0]
-		klog.Infof("解析到IP区间为：%s...\n", ipRange)
+		logger.Infof("解析到IP区间为：%s...", ipRange)
 
 		// 1:3 -> 1
 		begin := strings.Split(ipRange, ":")[0]
-		klog.Infof("解析到起始IP为：%s...\n", fmt.Sprintf("%s%s", baseAddress, begin))
+		logger.Infof("解析到起始IP为：%s...", fmt.Sprintf("%s%s", baseAddress, begin))
 
 		// 1:3 -> 3
 		end := strings.Split(ipRange, ":")[1]
-		klog.Infof("解析到末尾IP为：%s...\n", fmt.Sprintf("%s%s", baseAddress, end))
+		logger.Infof("解析到末尾IP为：%s...", fmt.Sprintf("%s%s", baseAddress, end))
 
 		// 区间首尾一致直接返回
 		if begin == end {
-			return append(serverList, ServerInternal{
-				Host:           begin,
+			filter.Servers = append(filter.Servers, ServerInternal{
+				Host:           fmt.Sprintf("%s%s", baseAddress, begin),
 				Port:           server.Port,
 				Username:       server.Username,
 				Password:       server.Password,
@@ -146,14 +170,11 @@ func (server ServerInternal) ServerFilter(excludes []string) []ServerInternal {
 				Password:       server.Password,
 				PrivateKeyPath: server.PrivateKeyPath,
 			}
-
-			if !util.SliceContain(excludes, server.Host) {
-				serverList = append(serverList, server)
-			}
+			filter.Servers = append(filter.Servers, server)
 		}
 	} else {
-		serverList = append(serverList, server)
+		filter.Servers = append(filter.Servers, server)
 	}
 
-	return serverList
+	return nil
 }

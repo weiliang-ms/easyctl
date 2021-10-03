@@ -73,3 +73,49 @@ func TestPruneDnsScript(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, pruneFilterSlice, strings.ReplaceAll(re.ReplaceAllString(filter, ""), "\t", ""))
 }
+
+func TestParseDnsConfig(t *testing.T) {
+	const nilDnsConfig = `
+clean-dns:
+  address-list:
+  excludes:
+`
+	const nilExcludeDnsConfig = `
+clean-dns:
+  address-list:
+    - 114.114.114.114
+    - 8.8.8.8
+  excludes:
+`
+	const commonConfig = `
+clean-dns:
+  address-list:
+    - 8.8.8.8
+  excludes:
+    - 114.114.114.114
+`
+	const badConfig = `
+clean-dns:
+  address-list: 8.8.8.8
+  excludes:
+    - 114.114.114.114
+`
+	var expectConfig, actureConfig DnsCleanerConfig
+	actureConfig, err := ParseDnsConfig([]byte(nilDnsConfig))
+	assert.Nil(t, err)
+	assert.Equal(t, DnsCleanerConfig{}, actureConfig)
+
+	actureConfig, err = ParseDnsConfig([]byte(nilExcludeDnsConfig))
+	assert.Nil(t, err)
+	expectConfig.CleanDns.AddressList = []string{"114.114.114.114", "8.8.8.8"}
+	assert.Equal(t, expectConfig, actureConfig)
+
+	actureConfig, err = ParseDnsConfig([]byte(commonConfig))
+	assert.Nil(t, err)
+	expectConfig.CleanDns.AddressList = []string{"8.8.8.8"}
+	expectConfig.CleanDns.Excludes = []string{"114.114.114.114"}
+	assert.Equal(t, expectConfig, actureConfig)
+
+	actureConfig, err = ParseDnsConfig([]byte(badConfig))
+	assert.NotNil(t, err)
+}

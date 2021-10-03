@@ -43,9 +43,9 @@ func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResul
 		return []runner.ShellResult{}, err
 	}
 
-	executor := runner.ExecutorInternal{Servers: servers, Script: cmd}
+	executor := runner.ExecutorInternal{Servers: servers, Script: cmd, Logger: logger}
 
-	ch := executor.ParallelRun(logger)
+	ch := executor.ParallelRun()
 
 	results := []runner.ShellResult{}
 

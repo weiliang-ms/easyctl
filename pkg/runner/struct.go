@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 )
@@ -40,12 +41,14 @@ type ExecutorExternal struct {
 	Servers  []ServerExternal `yaml:"server"`
 	Excludes []string         `yaml:"excludes"`
 	Script   string           `yaml:"script"`
+	logrus.Logger
 }
 
 // ExecutorInternal 执行器内部对象
 type ExecutorInternal struct {
 	Servers []ServerInternal
 	Script  string
+	Logger  *logrus.Logger
 }
 
 // ShellResult shell执行结果
@@ -70,6 +73,28 @@ func (re ShellResultSlice) Swap(i, j int) { re[i], re[j] = re[j], re[i] }
 func (re ShellResultSlice) Less(i, j int) bool {
 	address1 := strings.Split(re[i].Host, ".")
 	address2 := strings.Split(re[j].Host, ".")
+
+	for k := 0; k < 4; k++ {
+		if address1[k] != address2[k] {
+			num1, _ := strconv.Atoi(address1[k])
+			num2, _ := strconv.Atoi(address2[k])
+			return num1 < num2
+		}
+	}
+
+	return true
+}
+
+// InternelServersSlice 带有排序的server列表
+type InternelServersSlice []ServerInternal
+
+func (servers InternelServersSlice) Len() int { return len(servers) }
+
+func (servers InternelServersSlice) Swap(i, j int) { servers[i], servers[j] = servers[j], servers[i] }
+
+func (servers InternelServersSlice) Less(i, j int) bool {
+	address1 := strings.Split(servers[i].Host, ".")
+	address2 := strings.Split(servers[j].Host, ".")
 
 	for k := 0; k < 4; k++ {
 		if address1[k] != address2[k] {

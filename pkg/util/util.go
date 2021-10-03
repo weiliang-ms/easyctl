@@ -6,8 +6,8 @@ import (
 	"text/template"
 )
 
-// Data 渲染模板的数据集
-type Data map[string]interface{}
+// TmplRenderData 渲染模板的数据集
+type TmplRenderData map[string]interface{}
 
 // Render text template with given `variables` Render-context
 func Render(tmpl *template.Template, variables map[string]interface{}) (string, error) {

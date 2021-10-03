@@ -77,7 +77,7 @@ func (config *NewUserConfig) IsValid() error {
 }
 
 func (config NewUserConfig) addUserScript() (string, error) {
-	return util.Render(addUserTmpl, util.Data{
+	return util.Render(addUserTmpl, util.TmplRenderData{
 		"NoLogin":  config.NewUser.Nologin,
 		"User":     config.NewUser.Name,
 		"Password": config.NewUser.Password,
