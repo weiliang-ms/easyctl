@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util"
+	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
 	"gopkg.in/yaml.v2"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -13,6 +15,15 @@ import (
 type serverFilter struct {
 	Servers []ServerInternal
 }
+
+// ip地址range
+type addressInterval struct {
+	BeginIndex int
+	EndIndex   int
+	Cidr       string
+}
+
+var validSplitChar = []string{"..", "-", ":"}
 
 // ServerListFilter 解析、过滤server主机列表
 // 解析ip地址区间类型，排除excludes数组内的主机
@@ -30,6 +41,8 @@ func (serverListInternal ServerListInternal) serverListFilter(logger *logrus.Log
 	for _, v := range filter.Servers {
 		if !contain(v, serverListInternal.Excludes) {
 			serverMap[v.Host] = v
+		}else {
+			logger.Infof("排除ip: %s", v.Host)
 		}
 	}
 
@@ -52,6 +65,8 @@ func ParseServerList(b []byte, logger *logrus.Logger) ([]ServerInternal, error) 
 		return []ServerInternal{}, err
 	}
 	serverListInternal := serverListDeepCopy(serverList)
+
+	defer logger.Info("解析server列表完毕!")
 	return serverListInternal.serverListFilter(logger)
 }
 
@@ -101,7 +116,7 @@ func executorDeepCopy(executorExternal ExecutorExternal) ExecutorInternal {
 
 // todo:深拷贝
 func serversDeepCopy(external []ServerExternal) []ServerInternal {
-	internal := []ServerInternal{}
+	var internal []ServerInternal
 	for _, v := range external {
 		internal = append(internal, serverDeepCopy(v))
 	}
@@ -122,59 +137,84 @@ func serverDeepCopy(serverExternal ServerExternal) ServerInternal {
 // ServerFilter 解析ip地址区间类型，排除excludes数组内的主机
 func (server ServerInternal) parseIPRangeServer(filter *serverFilter, logger *logrus.Logger) error {
 
-	// TODO 正则
-	contain := strings.Contains(server.Host, "[") && strings.Contains(server.Host, "]") && strings.Contains(server.Host, ":")
-
-	if address := net.ParseIP(server.Host); address == nil && !contain {
-		return fmt.Errorf("server地址: %s 非法，无法解析请检查", server.Host)
+	if ok := net.ParseIP(server.Host); ok != nil {
+		filter.Servers=append(filter.Servers, server)
+		return nil
 	}
 
-	if strings.Contains(server.Host, "[") {
-		logger.Println("检测到配置文件中含有IP段，开始解析组装...")
-		//192.168.235.
-		baseAddress := strings.Split(server.Host, "[")[0]
-		logger.Infof("解析到IP子网网段为：%s...", baseAddress)
-
-		// 1:3] -> 1:3
-		ipRange := strings.Split(strings.Split(server.Host, "[")[1], "]")[0]
-		logger.Infof("解析到IP区间为：%s...", ipRange)
-
-		// 1:3 -> 1
-		begin := strings.Split(ipRange, ":")[0]
-		logger.Infof("解析到起始IP为：%s...", fmt.Sprintf("%s%s", baseAddress, begin))
-
-		// 1:3 -> 3
-		end := strings.Split(ipRange, ":")[1]
-		logger.Infof("解析到末尾IP为：%s...", fmt.Sprintf("%s%s", baseAddress, end))
-
-		// 区间首尾一致直接返回
-		if begin == end {
-			filter.Servers = append(filter.Servers, ServerInternal{
-				Host:           fmt.Sprintf("%s%s", baseAddress, begin),
-				Port:           server.Port,
-				Username:       server.Username,
-				Password:       server.Password,
-				PrivateKeyPath: server.PrivateKeyPath,
-			})
-		}
-
-		// string -> int
-		beginIndex, _ := strconv.Atoi(begin)
-		endIndex, _ := strconv.Atoi(end)
-
-		for i := beginIndex; i <= endIndex; i++ {
-			server := ServerInternal{
-				Host:           fmt.Sprintf("%s%d", baseAddress, i),
-				Port:           server.Port,
-				Username:       server.Username,
-				Password:       server.Password,
-				PrivateKeyPath: server.PrivateKeyPath,
-			}
-			filter.Servers = append(filter.Servers, server)
-		}
-	} else {
-		filter.Servers = append(filter.Servers, server)
+	logger.Infoln("检测到配置文件中可能含有IP地址区间，开始解析组装...")
+	flysnowRegexp  := regexp.MustCompile("^((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})(\\.((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})){2}\\.")
+	cidr := flysnowRegexp.FindString(server.Host)
+	if cidr == "" {
+		return fmt.Errorf("%s 地址区间非法", server.Host)
 	}
 
+	logger.Infof("截取到IP地址区间: %s0/24", cidr)
+
+	rangeStr := strings.TrimPrefix(server.Host, cidr)
+	logger.Infof("区间为: %s", rangeStr)
+
+
+	logger.Infoln("开始组装地址区间类型server")
+	for _ , v:= range packageIPRange(server, getInterval(cidr, rangeStr, logger)) {
+		filter.Servers = append(filter.Servers, v)
+	}
+
+	logger.Infoln("地址区间类型server组装完毕！")
 	return nil
+}
+
+func packageIPRange(server ServerInternal, interval addressInterval) []ServerInternal {
+	var servers []ServerInternal
+	if interval.BeginIndex == 0 && interval.EndIndex == 0 {
+		return servers
+	}
+
+	if interval.BeginIndex > 255 || interval.EndIndex > 255 {
+		return servers
+	}
+
+	for i := interval.BeginIndex; i <= interval.EndIndex; i++ {
+		s := ServerInternal{
+			Host:           fmt.Sprintf("%s%d", interval.Cidr, i),
+			Port:           server.Port,
+			Username:       server.Username,
+			Password:       server.Password,
+			PrivateKeyPath: server.PrivateKeyPath,
+		}
+		servers = append(servers, s)
+	}
+	return servers
+}
+
+func getInterval(cidr, rangeStr string, logger *logrus.Logger) addressInterval {
+	interval:=addressInterval{Cidr: cidr}
+
+	// trim [1?2] -> 1?2
+	if strings.Contains(rangeStr, "[") {
+		rangeStr = strings.TrimPrefix(rangeStr, "[")
+	}
+	if strings.Contains(rangeStr, "]") {
+		rangeStr = strings.TrimSuffix(rangeStr, "]")
+	}
+
+	result , err := strings2.SplitIfContain(rangeStr, validSplitChar)
+	if err != nil {
+		logger.Printf(err.Error())
+		return interval
+	}
+
+	if len(result) != 2 {
+		logger.Printf(err.Error())
+		return interval
+	}
+
+	logger.Infof("解析到起始IP为：%s...", fmt.Sprintf("%s%s", cidr, result[0]))
+	logger.Infof("解析到末尾IP为：%s...", fmt.Sprintf("%s%s", cidr, result[1]))
+
+	interval.BeginIndex, _ = strconv.Atoi(result[0])
+	interval.EndIndex, _ = strconv.Atoi(result[1])
+	interval.Cidr = cidr
+
+	return interval
 }
