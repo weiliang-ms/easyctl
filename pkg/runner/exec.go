@@ -21,6 +21,14 @@ import (
 	"time"
 )
 
+// Item 执行run指令的对象
+type Item struct {
+	Server         ServerInternal
+	Cmd            string
+	Logger         *logrus.Logger
+	OutputRealTime bool
+}
+
 // Run 执行
 func Run(b []byte, logger *logrus.Logger) error {
 
@@ -32,7 +40,7 @@ func Run(b []byte, logger *logrus.Logger) error {
 	exec.Logger = logger
 	ch := exec.ParallelRun()
 
-	result := []ShellResult{}
+	var result []ShellResult
 
 	if v, err := ReadWithSelect(ch); err != nil {
 		result = append(result, v)
@@ -76,7 +84,7 @@ func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]ShellResult, erro
 
 	ch := executor.ParallelRun()
 
-	results := []ShellResult{}
+	var results []ShellResult
 
 	for re := range ch {
 		var result ShellResult
@@ -97,19 +105,19 @@ func (executor ExecutorInternal) ParallelRun() chan ShellResult {
 	wg := sync.WaitGroup{}
 	ch := make(chan ShellResult, len(executor.Servers))
 
-	var script string
+	// todo: 屏蔽rm -rf
+	// 判断入参为文件还是shell
 
-	if _, err := os.Stat(executor.Script); err != nil {
-		script = executor.Script
-	} else {
+	if _, err := os.Stat(executor.Script); err == nil {
 		b, _ := os.ReadFile(executor.Script)
-		script = string(b)
+		executor.Script = string(b)
 	}
 
 	for _, v := range executor.Servers {
 		wg.Add(1)
 		go func(s ServerInternal) {
-			ch <- runOnNode(s, script, executor.Logger)
+			executor.RunOnServer = s
+			ch <- executor.runOnNode()
 			defer wg.Done()
 		}(v)
 	}
@@ -129,69 +137,74 @@ func ReadWithSelect(ch chan ShellResult) (value ShellResult, err error) {
 	}
 }
 
-// ReadErrorChanWithSelect select结构实现通道读
-func ReadErrorChanWithSelect(ch chan ShellResult) (value ShellResult, err error) {
-	select {
-	case value = <-ch:
-		return value, nil
-	default:
-		return ShellResult{}, errors.New("channel has no data")
-	}
-}
-
-func runOnNode(s ServerInternal, cmd string, logger *logrus.Logger) ShellResult {
+func (executor ExecutorInternal) runOnNode() ShellResult {
 	var shell string
 
-	if logger.Level == logrus.DebugLevel {
-		shell = cmd
+	if executor.Logger.Level == logrus.DebugLevel {
+		shell = executor.Script
 	} else {
 		shell = "shell content"
 	}
 
 	// 截取cmd output 长度
 	var subCmd string
-	if len(cmd) > 10 {
+	if len(executor.Script) > 10 {
 		subCmd = "******"
 	} else {
-		subCmd = cmd
+		subCmd = executor.Script
 	}
 
-	logger.Infof("[%s] 开始执行指令 -> %s", s.Host, shell)
-	session, err := s.sshConnect()
-
-	if err != nil {
-		// todo: code
-		errMsg := fmt.Sprintf("ssh会话建立失败->%s", err.(*net.OpError).Error())
-		return ShellResult{Host: s.Host, Err: errors.New(errMsg),
-			Cmd: cmd, Status: util.Fail, Code: -1, StdErrMsg: errMsg}
-	}
-
-	out, err := session.Output(cmd)
-	if err != nil {
-		return ShellResult{
-			Host:      s.Host,
-			Err:       errors.New(err.(*ssh.ExitError).String()),
-			Cmd:       cmd,
-			Status:    util.Fail,
-			Code:      err.(*ssh.ExitError).ExitStatus(),
-			StdErrMsg: err.(*ssh.ExitError).String()}
-	}
-
-	logger.Infof("<- %s执行命令成功...", s.Host)
-	logger.Debugf("%s -> 返回值: %s", s.Host, string(out))
-
+	executor.Logger.Infof("[%s] 开始执行指令 -> %s", executor.RunOnServer.Host, shell)
+	session, err := executor.RunOnServer.sshConnect()
 	defer session.Close()
 
-	var subOut string
-
-	if len(string(out)) > 20 {
-		subOut = string(out)[:20]
-	} else {
-		subOut = string(out)
+	if err != nil {
+		errMsg := fmt.Sprintf("ssh会话建立失败->%s", err.(*net.OpError).Error())
+		return ShellResult{Host: executor.RunOnServer.Host, Err: errors.New(errMsg),
+			Cmd: executor.Script, Status: util.Fail, Code: -1, StdErrMsg: errMsg}
 	}
 
-	return ShellResult{Host: s.Host, StdOut: subOut,
-		Cmd: strings.TrimPrefix(subCmd, "\n"), Status: util.Success}
+	if executor.OutPutRealTime == true {
+		session.Stdout = os.Stdout
+		err := session.Run(executor.Script)
+		if err != nil {
+			return ShellResult{
+				Host:      executor.RunOnServer.Host,
+				Err:       errors.New(err.(*ssh.ExitError).String()),
+				Cmd:       executor.Script,
+				Status:    util.Fail,
+				Code:      err.(*ssh.ExitError).ExitStatus(),
+				StdErrMsg: err.(*ssh.ExitError).String()}
+		}
+
+	} else {
+		out, err := session.Output(executor.Script)
+		if err != nil {
+			return ShellResult{
+				Host:      executor.RunOnServer.Host,
+				Err:       errors.New(err.(*ssh.ExitError).String()),
+				Cmd:       executor.Script,
+				Status:    util.Fail,
+				Code:      err.(*ssh.ExitError).ExitStatus(),
+				StdErrMsg: err.(*ssh.ExitError).String()}
+		}
+
+		executor.Logger.Infof("<- %s执行命令成功...", executor.RunOnServer.Host)
+		executor.Logger.Debugf("%s -> 返回值: %s", executor.RunOnServer.Host, string(out))
+
+		var subOut string
+
+		if len(string(out)) > 20 {
+			subOut = string(out)[:20]
+		} else {
+			subOut = string(out)
+		}
+
+		return ShellResult{Host: executor.RunOnServer.Host, StdOut: subOut,
+			Cmd: strings.TrimPrefix(subCmd, "\n"), Status: util.Success}
+	}
+
+	return ShellResult{}
 }
 
 // ReturnParalleRunResult 并发执行，并接收执行结果

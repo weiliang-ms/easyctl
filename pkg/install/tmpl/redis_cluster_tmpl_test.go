@@ -1,6 +1,7 @@
 package tmpl
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/weiliang-ms/easyctl/pkg/util"
 	"testing"
@@ -23,9 +24,18 @@ tar zxvf redis-5.0.12.tar.gz
 packageName=$(echo redis-5.0.12.tar.gz|sed 's#.tar.gz##g')
 echo $packageName
 cd $packageName
-sed -i "s#\$(PREFIX)/bin#%s#g" src/Makefile
 make -j $(nproc)
 make install
 `
 	assert.Equal(t, expect, content)
+}
+
+func TestRedisClusterConfigTmpl(t *testing.T) {
+	content, err := util.Render(RedisClusterConfigTmpl, util.TmplRenderData{
+		"Ports":    []int{26379, 26380, 26381},
+		"Password": "redis",
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, content)
+	fmt.Println(content)
 }

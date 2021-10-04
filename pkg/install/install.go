@@ -6,6 +6,9 @@ type Interface interface {
 	Prune() error
 	HandPackage() error
 	Compile() error
+	SetUpRuntime() error
+	Config() error
+	Boot() error
 }
 
 type task func() error
@@ -18,6 +21,9 @@ func install(i Interface) error {
 		i.Prune,
 		i.HandPackage,
 		i.Compile,
+		i.SetUpRuntime,
+		i.Config,
+		i.Boot,
 	}
 
 	for _, v := range jobs {

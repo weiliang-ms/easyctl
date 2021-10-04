@@ -23,9 +23,14 @@ type ScpItem struct {
 
 // Scp 远程写文件
 func (server ServerInternal) Scp(item ScpItem) error {
+	statF, err := os.Stat(item.SrcPath)
 
-	if _, err := os.Stat(item.SrcPath); err != nil {
+	if err != nil {
 		return err
+	}
+
+	if statF.Size() == 0 {
+		return fmt.Errorf("源文件: %s 大小为0", statF.Name())
 	}
 
 	// init sftp
@@ -58,6 +63,7 @@ func (server ServerInternal) Scp(item ScpItem) error {
 	if item.ShowProcessBar {
 		// 获取文件大小信息
 		ff, _ := os.Stat(item.SrcPath)
+		item.Logger.Infof("文件大小为：%d", ff.Size())
 		reader := io.LimitReader(f, ff.Size())
 
 		// 初始化进度条
@@ -104,8 +110,9 @@ func (server ServerInternal) Scp(item ScpItem) error {
 
 // ParallelScp 并发拷贝
 func ParallelScp(item ScpItem) chan error {
-	wg := sync.WaitGroup{}
+
 	ch := make(chan error, len(item.Servers))
+	wg := sync.WaitGroup{}
 	wg.Add(len(item.Servers))
 
 	for _, s := range item.Servers {
@@ -115,9 +122,7 @@ func ParallelScp(item ScpItem) chan error {
 			defer wg.Done()
 		}(s)
 	}
-
 	wg.Wait()
-	//close(ch)
-
+	close(ch)
 	return ch
 }
