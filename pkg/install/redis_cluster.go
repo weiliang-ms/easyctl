@@ -38,12 +38,28 @@ const (
 	sixNodesThreeShards
 )
 
+var defaultPorts = []int{26379, 26380, 26381, 26382, 26383, 26384}
+
+// todo: io实现
 const pruneRedisShell = `
-rm -f /etc/redis-* || true
+userdel -r redis || true
+rm -rf /etc/redis || true
 rm -rf /tmp/redis* || true
+rm -rf /usr/local/bin/redis-* || true
 rm -rf /var/lib/redis || true
 rm -rf /var/log/redis || true
 rm -f /var/run/redis* || true
+`
+
+// todo: io实现
+const setUpRedisRuntimeShell = `
+useradd redis -s /sbin/nologin -M || true
+mkdir -p /var/lib/redis
+mkdir -p /var/log/redis
+mkdir -p /etc/redis
+chown redis:redis /var/lib/redis
+chown redis:redis /var/log/redis
+chown redis:redis /etc/redis
 `
 
 // RedisCluster 部署redis集群
@@ -113,9 +129,10 @@ func (config *redisClusterConfig) Prune() error {
 	}
 
 	exec := runner.ExecutorInternal{
-		Servers: config.Servers,
-		Script:  pruneRedisShell,
-		Logger:  config.Logger,
+		Servers:        config.Servers,
+		Script:         pruneRedisShell,
+		Logger:         config.Logger,
+		OutPutRealTime: true,
 	}
 
 	ch := exec.ParallelRun()
@@ -159,6 +176,7 @@ func (config *redisClusterConfig) HandPackage() error {
 // Compile 编译
 func (config *redisClusterConfig) Compile() error {
 
+	config.Logger.Infoln("开始编译redis")
 	compileCmd, err := util.Render(tmpl.RedisCompileTmpl, util.TmplRenderData{
 		"PackageName": util.SubFileName(config.Package),
 	})
@@ -167,10 +185,70 @@ func (config *redisClusterConfig) Compile() error {
 		return fmt.Errorf("生成编译指令模板失败, %s", err)
 	}
 
+	defer config.Logger.Info("redis编译完毕")
+
+	return config.run(compileCmd)
+}
+
+// SetUpRuntime redis运行时配置
+func (config *redisClusterConfig) SetUpRuntime() error {
+	config.Logger.Info("配置redis运行时环境")
+	return config.run(setUpRedisRuntimeShell)
+}
+
+func (config *redisClusterConfig) Config() error {
+	config.Logger.Info("生成配置文件")
+	// local
+	var ports []int
+	if config.CluterType == threeNodesThreeShards {
+		ports = defaultPorts[:2]
+	}
+
+	// todo: 考虑io替代shell
+	generateConfigShell, err := util.Render(tmpl.RedisClusterConfigTmpl, util.TmplRenderData{
+		"Ports":    ports,
+		"Password": config.Password,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return config.run(generateConfigShell)
+}
+
+func (config *redisClusterConfig) Boot() error {
+
+	config.Logger.Info("启动redis")
+	// local
+	var ports []int
+	if config.CluterType == threeNodesThreeShards {
+		ports = defaultPorts[:2]
+		config.Logger.Debugf("ports: %v", ports)
+	}
+
+	// todo: 考虑io替代shell
+	bootRedisShell, err := util.Render(tmpl.RedisBootTmpl, util.TmplRenderData{
+		"Ports": ports,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return config.run(bootRedisShell)
+}
+
+func (config *redisClusterConfig) run(script string) error {
+	if config.CluterType == local {
+		return runner.LocalRun(script, config.Logger)
+	}
+
 	exec := runner.ExecutorInternal{
-		Servers: config.Servers,
-		Script:  compileCmd,
-		Logger:  config.Logger,
+		Servers:        config.Servers,
+		Script:         script,
+		Logger:         config.Logger,
+		OutPutRealTime: true,
 	}
 
 	ch := exec.ParallelRun()

@@ -1,26 +1,38 @@
 package runner
 
 import (
-	"github.com/sirupsen/logrus"
+	"fmt"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
-func TestParallelScp(t *testing.T) {
-	b, err := ioutil.ReadFile("../../asset/install/redis.yaml")
-	assert.Nil(t, err)
+func TestScpErrorPathFile(t *testing.T) {
+	item := ScpItem{SrcPath: "1.tt"}
+	server := ServerInternal{}
+	err := server.Scp(item)
+	assert.EqualError(t, err, "CreateFile 1.tt: The system cannot find the file specified.")
+}
 
-	servers, err := ParseServerList(b, logrus.New())
-	assert.Nil(t, err)
+func TestScpNilFile(t *testing.T) {
+	f, _ := os.Create("1.txt")
+	item := ScpItem{SrcPath: "1.txt"}
+	server := ServerInternal{}
+	err := server.Scp(item)
+	assert.EqualError(t, err, "源文件: 1.txt 大小为0")
+	_ = f.Close()
+	_ = os.Remove("1.txt")
+}
 
-	item := ScpItem{
-		Servers:        servers,
-		SrcPath:        "../../asset/install/redis-5.0.13.tar.gz",
-		DstPath:        "/tmp/redis-5.0.13.tar.gz",
-		Mode:           0644,
-		Logger:         logrus.New(),
-		ShowProcessBar: true,
-	}
-	ParallelScp(item)
+func TestConnectErr(t *testing.T) {
+	f, _ := os.Create("1.txt")
+	_, _ = f.Write([]byte("123"))
+	item := ScpItem{SrcPath: "1.txt"}
+	server := ServerInternal{}
+	err := server.Scp(item)
+	fmt.Println(err)
+
+	assert.EqualError(t, err, "连接远程主机：失败 ->dial tcp :0: connectex: The requested address is not valid in its context.")
+	_ = f.Close()
+	_ = os.Remove("1.txt")
 }

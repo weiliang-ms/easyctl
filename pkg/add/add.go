@@ -47,7 +47,7 @@ func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResul
 
 	ch := executor.ParallelRun()
 
-	results := []runner.ShellResult{}
+	var results []runner.ShellResult
 
 	for re := range ch {
 		var result runner.ShellResult

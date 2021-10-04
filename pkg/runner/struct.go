@@ -46,9 +46,11 @@ type ExecutorExternal struct {
 
 // ExecutorInternal 执行器内部对象
 type ExecutorInternal struct {
-	Servers []ServerInternal
-	Script  string
-	Logger  *logrus.Logger
+	Servers        []ServerInternal
+	Script         string
+	Logger         *logrus.Logger
+	OutPutRealTime bool
+	RunOnServer    ServerInternal
 }
 
 // ShellResult shell执行结果

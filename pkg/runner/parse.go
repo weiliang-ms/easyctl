@@ -41,7 +41,7 @@ func (serverListInternal ServerListInternal) serverListFilter(logger *logrus.Log
 	for _, v := range filter.Servers {
 		if !contain(v, serverListInternal.Excludes) {
 			serverMap[v.Host] = v
-		}else {
+		} else {
 			logger.Infof("排除ip: %s", v.Host)
 		}
 	}
@@ -111,6 +111,8 @@ func executorDeepCopy(executorExternal ExecutorExternal) ExecutorInternal {
 		serversDeepCopy(executorExternal.Servers),
 		executorExternal.Script,
 		logrus.New(),
+		false,
+		ServerInternal{},
 	}
 }
 
@@ -138,12 +140,12 @@ func serverDeepCopy(serverExternal ServerExternal) ServerInternal {
 func (server ServerInternal) parseIPRangeServer(filter *serverFilter, logger *logrus.Logger) error {
 
 	if ok := net.ParseIP(server.Host); ok != nil {
-		filter.Servers=append(filter.Servers, server)
+		filter.Servers = append(filter.Servers, server)
 		return nil
 	}
 
 	logger.Infoln("检测到配置文件中可能含有IP地址区间，开始解析组装...")
-	flysnowRegexp  := regexp.MustCompile("^((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})(\\.((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})){2}\\.")
+	flysnowRegexp := regexp.MustCompile("^((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})(\\.((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})){2}\\.")
 	cidr := flysnowRegexp.FindString(server.Host)
 	if cidr == "" {
 		return fmt.Errorf("%s 地址区间非法", server.Host)
@@ -154,9 +156,8 @@ func (server ServerInternal) parseIPRangeServer(filter *serverFilter, logger *lo
 	rangeStr := strings.TrimPrefix(server.Host, cidr)
 	logger.Infof("区间为: %s", rangeStr)
 
-
 	logger.Infoln("开始组装地址区间类型server")
-	for _ , v:= range packageIPRange(server, getInterval(cidr, rangeStr, logger)) {
+	for _, v := range packageIPRange(server, getInterval(cidr, rangeStr, logger)) {
 		filter.Servers = append(filter.Servers, v)
 	}
 
@@ -188,7 +189,7 @@ func packageIPRange(server ServerInternal, interval addressInterval) []ServerInt
 }
 
 func getInterval(cidr, rangeStr string, logger *logrus.Logger) addressInterval {
-	interval:=addressInterval{Cidr: cidr}
+	interval := addressInterval{Cidr: cidr}
 
 	// trim [1?2] -> 1?2
 	if strings.Contains(rangeStr, "[") {
@@ -198,7 +199,7 @@ func getInterval(cidr, rangeStr string, logger *logrus.Logger) addressInterval {
 		rangeStr = strings.TrimSuffix(rangeStr, "]")
 	}
 
-	result , err := strings2.SplitIfContain(rangeStr, validSplitChar)
+	result, err := strings2.SplitIfContain(rangeStr, validSplitChar)
 	if err != nil {
 		logger.Printf(err.Error())
 		return interval
