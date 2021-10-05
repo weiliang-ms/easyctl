@@ -14,7 +14,6 @@ import (
 	"github.com/weiliang-ms/easyctl/cmd/set"
 	"github.com/weiliang-ms/easyctl/cmd/track"
 	"github.com/weiliang-ms/easyctl/cmd/upgrade"
-	"github.com/weiliang-ms/easyctl/pkg/logs"
 	"math/rand"
 	"os"
 	"time"
@@ -78,8 +77,6 @@ func init() {
 func main() {
 
 	rand.Seed(time.Now().UnixNano())
-
-	logs.InitLogs()
 
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
