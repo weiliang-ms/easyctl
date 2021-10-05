@@ -122,10 +122,13 @@ func (executor ExecutorInternal) ParallelRun() chan ShellResult {
 		executor.Script = string(b)
 	}
 
+	lock := sync.Mutex{}
 	for _, v := range executor.Servers {
 		wg.Add(1)
 		go func(s ServerInternal) {
+			lock.Lock()
 			executor.RunOnServer = s
+			lock.Unlock()
 			ch <- executor.runOnNode()
 			defer wg.Done()
 		}(v)
