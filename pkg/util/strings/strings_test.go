@@ -24,7 +24,7 @@ func TestSubSlash(t *testing.T) {
 	case "windows":
 		assert.Equal(t, []string{"d:", "ddd", "1.txt"}, SubSlash("d:\\ddd\\1.txt"))
 	case "linux":
-		assert.Equal(t, []string{"root", "ddd", "1.txt"}, SubSlash("/root/ddd/1.txt"))
+		assert.Equal(t, []string{"", "root", "ddd", "1.txt"}, SubSlash("/root/ddd/1.txt"))
 	}
 }
 
