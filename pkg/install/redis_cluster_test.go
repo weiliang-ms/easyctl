@@ -67,7 +67,26 @@ redis-cluster:
 	ccc.ConfigContent = []byte(ddd)
 	err = ccc.Parse()
 	assert.Errorf(t, err, "Expected nil, but got: &yaml.TypeError{Errors:[]string{\"line 11: cannot unmarshal !!str `0` into install.RedisClusterType")
-	fmt.Println(ccc.ConfigItem)
+
+	// test yaml.Unmarshal RedisClusterConfig err
+	aaa := `
+server:
+ - host: 10.10.10.[1:3]
+   username: root
+   password: 123456
+   port: 22
+@#@!#@#@#
+excludes:
+ - 192.168.235.132
+redis-cluster:
+ password: "ddd"
+ cluster-type: 0 # [0] 本地伪集群 ; [1] 三节点3分片2副本 ; [2] 6节点3分片2副本
+ package: /root/redis-5.0.13.tar.gz
+`
+	bbb := redisClusterConfig{}
+	bbb.ConfigContent = []byte(aaa)
+	err = bbb.Parse()
+	assert.Errorf(t, err, "yaml: line 7: found character that cannot start any token")
 }
 
 func TestDetect(t *testing.T) {
