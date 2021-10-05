@@ -125,7 +125,7 @@ func (executor ExecutorInternal) ParallelRun() chan ShellResult {
 	for _, v := range executor.Servers {
 		wg.Add(1)
 		go func(s ServerInternal) {
-			executor.RunOnServer = s
+			executor.RunOnServer = &s
 			ch <- executor.runOnNode()
 			defer wg.Done()
 		}(v)
