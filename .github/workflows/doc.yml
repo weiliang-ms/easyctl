@@ -10,9 +10,9 @@ jobs:
   go-test:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@master
       - run: go get -t -v ./...
       - run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
-      - uses: actions/checkout@master
       - uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
