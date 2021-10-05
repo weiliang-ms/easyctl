@@ -122,6 +122,7 @@ func TestDetect(t *testing.T) {
 		})
 	}
 	config.Servers = servers
+	config.IgnoreErr = true
 	config.CluterType = threeNodesThreeShards
 	err = config.Detect()
 	assert.EqualError(t, err, "10.10.10.1 依赖检测失败 -> runtime error: invalid memory address or nil pointer dereference")

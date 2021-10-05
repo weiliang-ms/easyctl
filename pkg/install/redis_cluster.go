@@ -31,6 +31,7 @@ type redisClusterConfig struct {
 	ConfigContent []byte
 	ConfigItem    RedisClusterConfig
 	Executor      runner.ExecutorInternal
+	IgnoreErr     bool // UnitTest
 }
 
 // RedisClusterType redis cluster部署模式
@@ -156,6 +157,9 @@ func (config *redisClusterConfig) Prune() error {
 
 	ch := exec.ParallelRun()
 	for v := range ch {
+		if config.IgnoreErr {
+			break
+		}
 		if v.Err != nil {
 			return fmt.Errorf("[%s] 执行清理指令失败 %s", v.Host, v.Err)
 		}
