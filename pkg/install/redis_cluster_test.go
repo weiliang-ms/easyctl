@@ -115,7 +115,7 @@ func TestDetect(t *testing.T) {
 	var servers []runner.ServerInternal
 	for i := 1; i < 4; i++ {
 		servers = append(servers, runner.ServerInternal{
-			Host:     fmt.Sprintf("10.10.10.%d", i),
+			Host:     "10.10.10.1",
 			Port:     "22",
 			Username: "root",
 			Password: "123456",
@@ -124,7 +124,7 @@ func TestDetect(t *testing.T) {
 	config.Servers = servers
 	config.CluterType = threeNodesThreeShards
 	err = config.Detect()
-	assert.NotNil(t, err)
+	assert.EqualError(t, err, "10.10.10.1 依赖检测失败 -> runtime error: invalid memory address or nil pointer dereference")
 
 	f.Close()
 	os.Remove("1.tar.gz")
