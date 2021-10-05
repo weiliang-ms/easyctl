@@ -43,8 +43,6 @@ github.com/docker/go-connections/sockets
 github.com/docker/go-connections/tlsconfig
 # github.com/docker/go-units v0.4.0
 github.com/docker/go-units
-# github.com/go-logr/logr v0.2.0
-github.com/go-logr/logr
 # github.com/gogo/protobuf v1.3.2
 github.com/gogo/protobuf/proto
 # github.com/golang/protobuf v1.5.2
@@ -57,8 +55,6 @@ github.com/golang/protobuf/ptypes/timestamp
 ## explicit
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
-# github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
-## explicit
 # github.com/kr/fs v0.1.0
 github.com/kr/fs
 # github.com/lithammer/dedent v1.1.0
@@ -104,13 +100,10 @@ github.com/sirupsen/logrus
 ## explicit
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
-## explicit
 github.com/spf13/pflag
 # github.com/stretchr/testify v1.7.0
 ## explicit
 github.com/stretchr/testify/assert
-# github.com/tmc/scp v0.0.0-20170824174625-f7b48647feef
-## explicit
 # github.com/vbauerster/mpb/v6 v6.0.3
 ## explicit
 github.com/vbauerster/mpb/v6
@@ -178,14 +171,6 @@ google.golang.org/protobuf/types/known/timestamppb
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 gopkg.in/yaml.v3
-# k8s.io/apimachinery v0.20.6
-## explicit
-k8s.io/apimachinery/pkg/util/clock
-k8s.io/apimachinery/pkg/util/runtime
-k8s.io/apimachinery/pkg/util/wait
 # k8s.io/klog v1.0.0
 ## explicit
 k8s.io/klog
-# k8s.io/klog/v2 v2.4.0
-## explicit
-k8s.io/klog/v2
