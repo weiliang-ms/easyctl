@@ -7,6 +7,10 @@ on:
     branches: [ master ]
 
 jobs:
+  go-test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash <(curl -s https://codecov.io/bash)
   build-doc:
     runs-on: ubuntu-latest
     steps:
