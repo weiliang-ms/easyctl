@@ -68,7 +68,8 @@ chown redis:redis /etc/redis
 `
 
 // RedisCluster 部署redis集群
-func RedisCluster(b []byte, logger *logrus.Logger) error {
+func RedisCluster(b []byte, logger *logrus.Logger) (err error) {
+	defer errors.IgnoreErrorFromCaller(3, "testing.tRunner", &err)
 	config := &redisClusterConfig{
 		Logger:        logger,
 		ConfigContent: b,
