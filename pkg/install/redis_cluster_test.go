@@ -198,7 +198,7 @@ func TestHandPackage(t *testing.T) {
 	config.Servers = servers
 	config.CluterType = threeNodesThreeShards
 	err := config.HandPackage()
-	assert.EqualError(t, err, "Stat : The system cannot find the path specified.")
+	assert.NotNil(t, err)
 
 	// ignore err return nil
 	config.IgnoreErr = true
