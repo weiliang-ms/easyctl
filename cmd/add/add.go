@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/pkg/util"
+	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"os"
 )
 
@@ -40,8 +40,8 @@ var RootCmd = &cobra.Command{
 func Add(entity Entity) error {
 
 	if configFile == "" {
-		logrus.Infof("检测到配置文件参数为空，生成配置文件样例 -> %s", util.ConfigFile)
-		_ = os.WriteFile(util.ConfigFile, entity.DefaultConfig, 0666)
+		logrus.Infof("检测到配置文件参数为空，生成配置文件样例 -> %s", constant.ConfigFile)
+		_ = os.WriteFile(constant.ConfigFile, entity.DefaultConfig, 0666)
 		os.Exit(0)
 	}
 

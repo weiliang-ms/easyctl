@@ -9,7 +9,10 @@
 
 `easyctl`是一款基于`golang`轻量级运维工具集，详情使用请移步[使用文档](https://weiliang-ms.github.io/easyctl/)
 
-** 适用平台：** `CentOS7`
+兼容性：
+
+- [x] 全部功能兼容`CentOS7`
+- [ ] 部分功能兼容`CentOS6`
 
 ## 安装使用
 

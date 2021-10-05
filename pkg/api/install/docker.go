@@ -160,7 +160,7 @@ package install
 //
 //	// 安装
 //	log.Println("开始本机安装docker-ce...")
-//	content, _ := util.Render(dockerInstallTmpl, util.Data{
+//	content, _ := tmplutil.Render(dockerInstallTmpl, util.Data{
 //		"PackagePath": i.OfflineFilePath,
 //		"DataDir":     i.DataDir,
 //	})

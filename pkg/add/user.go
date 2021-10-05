@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/lithammer/dedent"
 	"github.com/sirupsen/logrus"
-	"github.com/weiliang-ms/easyctl/pkg/util"
+	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
 	"text/template"
 )
@@ -77,7 +77,7 @@ func (config *NewUserConfig) IsValid() error {
 }
 
 func (config NewUserConfig) addUserScript() (string, error) {
-	return util.Render(addUserTmpl, util.TmplRenderData{
+	return tmplutil.Render(addUserTmpl, tmplutil.TmplRenderData{
 		"NoLogin":  config.NewUser.Nologin,
 		"User":     config.NewUser.Name,
 		"Password": config.NewUser.Password,

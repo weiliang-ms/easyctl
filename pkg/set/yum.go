@@ -2,7 +2,7 @@ package set
 
 import (
 	"github.com/lithammer/dedent"
-	"github.com/weiliang-ms/easyctl/pkg/util"
+	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"log"
 	"text/template"
 )
@@ -83,7 +83,7 @@ func (yum YUM) Config(b []byte, debug bool) error {
 	return nil
 }
 func repoSetCmd(repoUrl string) string {
-	content, err := util.Render(baseRepoConfigTmpl, util.TmplRenderData{
+	content, err := tmplutil.Render(baseRepoConfigTmpl, tmplutil.TmplRenderData{
 		"RepoUrl": repoUrl,
 	})
 	if err != nil {
@@ -94,7 +94,7 @@ func repoSetCmd(repoUrl string) string {
 }
 
 func localRepoSetCmd(isoPath string) string {
-	content, err := util.Render(localRepoConfigTmpl, util.TmplRenderData{
+	content, err := tmplutil.Render(localRepoConfigTmpl, tmplutil.TmplRenderData{
 		"ISOPath": isoPath,
 	})
 	if err != nil {

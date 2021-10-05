@@ -78,7 +78,7 @@ fi
 //}
 //
 //func (ac *Actuator) compileOpenSSHCmd() *Actuator {
-//	content, _ := util.Render(sshUpgradeShellTmpl, util.Data{
+//	content, _ := tmplutil.Render(sshUpgradeShellTmpl, util.Data{
 //		"FilePath":    ac.FilePath,
 //		"OpensslPath": ac.OpensslDir,
 //	})

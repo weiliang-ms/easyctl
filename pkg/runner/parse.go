@@ -3,7 +3,7 @@ package runner
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"github.com/weiliang-ms/easyctl/pkg/util"
+	"github.com/weiliang-ms/easyctl/pkg/util/slice"
 	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
 	"gopkg.in/yaml.v2"
 	"net"
@@ -55,7 +55,7 @@ func (serverListInternal ServerListInternal) serverListFilter(logger *logrus.Log
 
 // server是否存在于excludes servers列表内
 func contain(server ServerInternal, excludeServers []string) bool {
-	return util.SliceContain(excludeServers, server.Host)
+	return slice.StringSliceContain(excludeServers, server.Host)
 }
 
 // ParseServerList ServerList反序列化

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/lithammer/dedent"
 	"github.com/sirupsen/logrus"
-	"github.com/weiliang-ms/easyctl/pkg/util"
+	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"strconv"
 	"strings"
 	"text/template"
@@ -50,7 +50,7 @@ func HostResolve(b []byte, logger *logrus.Logger) error {
 		addresses = append(addresses, strings.TrimSuffix(fmt.Sprintf("%s %s", v, k), "\n"))
 	}
 
-	shell, err := util.Render(setHostsShellTmpl, util.TmplRenderData{
+	shell, err := tmplutil.Render(setHostsShellTmpl, tmplutil.TmplRenderData{
 		"HostResolveList": addresses,
 	})
 

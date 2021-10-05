@@ -70,7 +70,7 @@ package install
 //
 //// 预安装阶段：下载文件、解析server列表、检测依赖
 //func (h *HaproxyMeta) installHA() *HaproxyMeta {
-//	script, err := util.Render(HaproxyScriptTmpl, util.Data{
+//	script, err := tmplutil.Render(HaproxyScriptTmpl, util.Data{
 //		"FilePath": subFilename(h.Haproxy.FilePath),
 //	})
 //
@@ -103,7 +103,7 @@ package install
 //		slice = append(slice, listen+server)
 //	}
 //
-//	config, err := util.Render(HaProxyConfigTmpl, util.Data{
+//	config, err := tmplutil.Render(HaProxyConfigTmpl, util.Data{
 //		"Balance": slice,
 //	})
 //	if err != nil {

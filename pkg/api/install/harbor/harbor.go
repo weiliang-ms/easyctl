@@ -330,7 +330,7 @@ package harbor
 //
 //// 调整配置
 //func (hm *harborMgr) config() {
-//	content, _ := util.Render(HarborConfigTmpl, util.Data{
+//	content, _ := tmplutil.Render(HarborConfigTmpl, util.Data{
 //		"data_dir":       hm.Harbor.DataDir,
 //		"admin_password": hm.Harbor.Password,
 //		"http_port":      hm.Harbor.HttpPort,
@@ -392,14 +392,14 @@ package harbor
 //	log.Println("预安装harbor...")
 //	if len(hm.Harbor.Server) > 0 {
 //		for _, v := range hm.Harbor.Server {
-//			content, _ := util.Render(HarborPrepareTmpl, util.Data{
+//			content, _ := tmplutil.Render(HarborPrepareTmpl, util.Data{
 //				"domain":  hm.Harbor.Domain,
 //				"address": hm.anotherAddress(v.Host),
 //			})
 //			v.RemoteShell(content)
 //		}
 //	} else {
-//		content, _ := util.Render(HarborPrepareTmpl, util.Data{
+//		content, _ := tmplutil.Render(HarborPrepareTmpl, util.Data{
 //			"domain":  hm.Harbor.Domain,
 //			"address": hm.Harbor.ResolvAddress,
 //		})
@@ -420,7 +420,7 @@ package harbor
 //
 //// harbor安装
 //func (hm *harborMgr) install() {
-//	content, _ := util.Render(HarborInstallTmpl, util.Data{
+//	content, _ := tmplutil.Render(HarborInstallTmpl, util.Data{
 //		"http_port": hm.Harbor.HttpPort,
 //	})
 //	log.Println("安装harbor...")
@@ -602,7 +602,7 @@ package harbor
 //}
 //
 //func (hm harborMgr) reloadDockerDaemon() *harborMgr {
-//	content, _ := util.Render(DockerConfigTempl, util.Data{
+//	content, _ := tmplutil.Render(DockerConfigTempl, util.Data{
 //		"InsecureRegistries": hm.Harbor.Domain,
 //	})
 //

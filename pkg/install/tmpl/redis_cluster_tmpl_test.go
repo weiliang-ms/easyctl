@@ -3,12 +3,12 @@ package tmpl
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"github.com/weiliang-ms/easyctl/pkg/util"
+	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"testing"
 )
 
 func TestRedisCompileTmpl(t *testing.T) {
-	content, err := util.Render(RedisCompileTmpl, util.TmplRenderData{
+	content, err := tmplutil.Render(RedisCompileTmpl, tmplutil.TmplRenderData{
 		"PackageName": "redis-5.0.12.tar.gz",
 	})
 	assert.Nil(t, err)
@@ -31,7 +31,7 @@ make install
 }
 
 func TestRedisClusterConfigTmpl(t *testing.T) {
-	content, err := util.Render(RedisClusterConfigTmpl, util.TmplRenderData{
+	content, err := tmplutil.Render(RedisClusterConfigTmpl, tmplutil.TmplRenderData{
 		"Ports":    []int{26379, 26380, 26381},
 		"Password": "redis",
 	})
