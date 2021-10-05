@@ -93,7 +93,7 @@ func (config *redisClusterConfig) Parse() error {
 
 	servers, err := runner.ParseServerList(config.ConfigContent, config.Logger)
 	if err != nil {
-		return fmt.Errorf("[redis-cluster] 反序列化主机列表失败 -> %v", err)
+		return fmt.Errorf("[redis-cluster] 反序列化主机列表失败 -> %s", err)
 	}
 
 	config.Servers = servers

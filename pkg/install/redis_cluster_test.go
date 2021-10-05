@@ -71,11 +71,10 @@ redis-cluster:
 	// test yaml.Unmarshal RedisClusterConfig err
 	aaa := `
 server:
- - host: 10.10.10.[1:3]
+   host: 10.10.10.[1:3]
    username: root
    password: 123456
    port: 22
-@#@!#@#@#
 excludes:
  - 192.168.235.132
 redis-cluster:
@@ -86,7 +85,7 @@ redis-cluster:
 	bbb := redisClusterConfig{}
 	bbb.ConfigContent = []byte(aaa)
 	err = bbb.Parse()
-	assert.Errorf(t, err, "yaml: line 7: found character that cannot start any token")
+	assert.Errorf(t, err, "[redis-cluster] 反序列化主机列表失败 -> yaml: unmarshal errors:\n  line 3: cannot unmarshal !!map into []runner.ServerExternal")
 }
 
 func TestDetect(t *testing.T) {
