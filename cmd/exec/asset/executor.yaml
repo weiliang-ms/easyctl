@@ -7,10 +7,10 @@ server:
   #    username: root
   #    password: neusoft
   #    port: 22
-  - host: 10.79.166.[1:45]
+  - host: 10.10.10.[1:3]
     username: root
-    privateKeyPath: D:\github\easyctl\asset\id_rsa
-    #    password: ""
+    privateKeyPath: ~/.ssh/id_rsa
+    password: ""
     port: 22
 excludes:
   - 192.168.235.132

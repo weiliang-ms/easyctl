@@ -1,9 +1,9 @@
-#!/usr/bin/env bash
-
 #!/bin/sh
 
+# shellcheck disable=SC2006
+# shellcheck disable=SC2002
 orphanedPods=`cat /var/log/messages|grep 'orphaned pod'|awk -F '"' '{print $2}'|uniq`;
-orphanedPodsNum=`echo $orphanedPods|awk -F ' ' '{print NF}'`;
+orphanedPodsNum=`echo "$orphanedPods"|awk -F ' ' '{print NF}'`;
 echo -e "orphanedPods: $orphanedPodsNum \n$orphanedPods";
 
 for i in $orphanedPods
