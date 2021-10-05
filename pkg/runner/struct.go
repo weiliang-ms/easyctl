@@ -4,7 +4,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 // ServerExternal server序列化对象
@@ -51,8 +50,7 @@ type ExecutorInternal struct {
 	Script         string
 	Logger         *logrus.Logger
 	OutPutRealTime bool
-	RunOnServer    ServerInternal
-	*sync.Mutex
+	RunOnServer    *ServerInternal // 保证并发下原子性
 }
 
 // ShellResult shell执行结果
