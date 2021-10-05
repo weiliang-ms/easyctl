@@ -7,8 +7,6 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/errors"
 	"os"
-	"os/exec"
-	"runtime"
 	"sort"
 	"testing"
 )
@@ -110,18 +108,9 @@ func TestDetect(t *testing.T) {
 
 	// test local gcc exist
 	config.CluterType = local
-	cmd := exec.Command("gcc -v")
-
-	switch runtime.GOOS {
-	case "windows":
-		assert.Errorf(t, cmd.Run(), "exec: \"gcc -v\": executable file not found in %PATH%")
-	case "linux":
-		if cmd.Run() != nil {
-			exec.Command("apt remove -y gcc").Run()
-			assert.Errorf(t, cmd.Run(), "exec: \"gcc -v\": executable file not found in %PATH%")
-			exec.Command("apt install -y gcc").Run()
-		}
-	}
+	err = config.Detect()
+	assert.Equal(t, runner.ExecutorInternal{Script: "gcc -v", Logger: config.Logger}, config.Executor)
 
 	f.Close()
+	os.Remove("1.tar.gz")
 }

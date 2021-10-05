@@ -29,6 +29,14 @@ type Item struct {
 	OutputRealTime bool
 }
 
+type WindowsErr struct {
+	Errors string
+}
+
+func (e *WindowsErr) Error() string {
+	return e.Errors
+}
+
 // Run 执行
 func Run(b []byte, logger *logrus.Logger) error {
 
@@ -53,6 +61,10 @@ func Run(b []byte, logger *logrus.Logger) error {
 
 // LocalRun 本地执行
 func LocalRun(shell string, logger *logrus.Logger) error {
+
+	//if runtime.GOOS == "windows" {
+	//	 return &WindowsErr{Errors: "windows doesn't has this."}
+	//}
 
 	logger.Debugf("执行指令: %s", shell)
 	cmd := exec.Command(shell)
