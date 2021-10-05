@@ -177,3 +177,30 @@ func TestPrune(t *testing.T) {
 	config.IgnoreErr = true
 	assert.Nil(t, config.Prune())
 }
+
+func TestHandPackage(t *testing.T) {
+	// test local
+	var config redisClusterConfig
+	config.CluterType = local
+	config.Logger = logrus.New()
+	assert.Nil(t, config.HandPackage())
+
+	// test many node
+	var servers []runner.ServerInternal
+	for i := 1; i < 4; i++ {
+		servers = append(servers, runner.ServerInternal{
+			Host:     "10.10.10.1",
+			Port:     "22",
+			Username: "root",
+			Password: "123456",
+		})
+	}
+	config.Servers = servers
+	config.CluterType = threeNodesThreeShards
+	err := config.HandPackage()
+	assert.EqualError(t, err, "Stat : The system cannot find the path specified.")
+
+	// ignore err return nil
+	config.IgnoreErr = true
+	assert.Nil(t, config.HandPackage())
+}

@@ -171,9 +171,10 @@ func (config *redisClusterConfig) Prune() error {
 }
 
 // HandPackage 分发安装包
-func (config *redisClusterConfig) HandPackage() error {
+func (config *redisClusterConfig) HandPackage() (err error) {
 
 	if config.CluterType == local {
+		defer errors.IgnoreErrorFromCaller(3, "testing.tRunner", &err)
 		return os.Rename(config.Package, fmt.Sprintf("/tmp/%s",
 			strings2.SubFileName(config.Package)))
 	}
@@ -189,7 +190,9 @@ func (config *redisClusterConfig) HandPackage() error {
 	})
 
 	for v := range ch {
-		if v != nil {
+		if config.IgnoreErr {
+			break
+		} else if v != nil {
 			return v
 		}
 	}
