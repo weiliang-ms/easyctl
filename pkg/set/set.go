@@ -38,7 +38,7 @@ func Config(b []byte, logger *logrus.Logger, cmd string) error {
 // GetResult 获取执行结果
 func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResult, error) {
 
-	servers, err := runner.ParseServerList(b)
+	servers, err := runner.ParseServerList(b, logger)
 	if err != nil {
 		return []runner.ShellResult{}, err
 	}
