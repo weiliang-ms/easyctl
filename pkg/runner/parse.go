@@ -112,7 +112,7 @@ func executorDeepCopy(executorExternal ExecutorExternal) ExecutorInternal {
 		executorExternal.Script,
 		logrus.New(),
 		false,
-		ServerInternal{},
+		&ServerInternal{},
 	}
 }
 
