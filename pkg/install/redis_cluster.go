@@ -15,7 +15,7 @@ import (
 // RedisClusterConfig redis安装配置反序列化对象
 type RedisClusterConfig struct {
 	RedisCluster struct {
-		Paasword    string           `yaml:"paasword"`
+		Password    string           `yaml:"password"`
 		ClusterType RedisClusterType `yaml:"cluster-type"`
 		Package     string           `yaml:"package"`
 	} `yaml:"redis-cluster"`
@@ -23,11 +23,13 @@ type RedisClusterConfig struct {
 
 // 内部对象
 type redisClusterConfig struct {
-	Servers    []runner.ServerInternal
-	Password   string
-	CluterType RedisClusterType
-	Package    string
-	Logger     *logrus.Logger
+	Servers       []runner.ServerInternal
+	Password      string
+	CluterType    RedisClusterType
+	Package       string
+	Logger        *logrus.Logger
+	ConfigContent []byte
+	ConfigItem    RedisClusterConfig
 }
 
 // RedisClusterType redis cluster部署模式
@@ -65,24 +67,34 @@ chown redis:redis /etc/redis
 
 // RedisCluster 部署redis集群
 func RedisCluster(b []byte, logger *logrus.Logger) error {
-	var config RedisClusterConfig
+	config := &redisClusterConfig{
+		Logger:        logger,
+		ConfigContent: b,
+	}
+	return install(config)
+}
 
-	logger.Info("解析redis cluster安装配置")
-	if err := yaml.Unmarshal(b, &config); err != nil {
+func (config *redisClusterConfig) Parse() error {
+
+	config.Logger.Info("解析redis cluster安装配置")
+	config.ConfigItem = RedisClusterConfig{}
+	if err := yaml.Unmarshal(config.ConfigContent, &config.ConfigItem); err != nil {
 		return err
 	}
 
 	// 深拷贝属性
-	redisCluster := config.deepCopy()
-	redisCluster.Logger = logger
-	servers, err := runner.ParseServerList(b, logger)
+	config.Package = config.ConfigItem.RedisCluster.Package
+	config.CluterType = config.ConfigItem.RedisCluster.ClusterType
+	config.Password = config.ConfigItem.RedisCluster.Password
 
+	servers, err := runner.ParseServerList(config.ConfigContent, config.Logger)
 	if err != nil {
 		return fmt.Errorf("[redis-cluster] 反序列化主机列表失败 -> %v", err)
 	}
-	redisCluster.Servers = servers
 
-	return install(redisCluster)
+	config.Servers = servers
+
+	return nil
 }
 
 // Detect 调用运行时检测依赖
@@ -265,12 +277,4 @@ func (config *redisClusterConfig) run(script string) error {
 	}
 
 	return nil
-}
-
-func (config RedisClusterConfig) deepCopy() *redisClusterConfig {
-	return &redisClusterConfig{
-		Password:   config.RedisCluster.Paasword,
-		CluterType: config.RedisCluster.ClusterType,
-		Package:    config.RedisCluster.Package,
-	}
 }

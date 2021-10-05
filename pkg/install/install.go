@@ -2,6 +2,7 @@ package install
 
 // Interface install操作类型接口
 type Interface interface {
+	Parse() error
 	Detect() error
 	Prune() error
 	HandPackage() error
@@ -18,6 +19,7 @@ type task func() error
 func install(i Interface) error {
 
 	jobs := []task{
+		i.Parse,
 		i.Detect,
 		i.Prune,
 		i.HandPackage,
