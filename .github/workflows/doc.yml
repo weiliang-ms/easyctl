@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: go get -t -v ./...
-      - run: go test -race -coverprofile=coverage.txt -covermode=atomic
+      - run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
       - uses: actions/checkout@master
       - uses: codecov/codecov-action@v2
         with:
