@@ -34,4 +34,7 @@ echo password`
 
 	assert.Nil(t, err)
 	assert.Equal(t, expect, strings2.TrimPrefixAndSuffix(content, "\n"))
+
+	_ , err = Render(&template.Template{}, TmplRenderData{})
+	assert.NotNil(t, err)
 }
