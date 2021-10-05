@@ -122,14 +122,10 @@ func (executor ExecutorInternal) ParallelRun() chan ShellResult {
 		executor.Script = string(b)
 	}
 
-	lock := sync.Mutex{}
 	for _, v := range executor.Servers {
 		wg.Add(1)
 		go func(s ServerInternal) {
-			lock.Lock()
-			executor.RunOnServer = s
-			lock.Unlock()
-			ch <- executor.runOnNode()
+			ch <- executor.runOnNode(s)
 			defer wg.Done()
 		}(v)
 	}
@@ -149,7 +145,7 @@ func ReadWithSelect(ch chan ShellResult) (value ShellResult, err error) {
 	}
 }
 
-func (executor ExecutorInternal) runOnNode() (re ShellResult) {
+func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResult) {
 	var shell string
 	defer handleErr(&re.Err)
 
@@ -167,14 +163,14 @@ func (executor ExecutorInternal) runOnNode() (re ShellResult) {
 		subCmd = executor.Script
 	}
 
-	executor.Logger.Infof("[%s] 开始执行指令 -> %s", executor.RunOnServer.Host, shell)
-	session, err := executor.RunOnServer.sshConnect()
+	executor.Logger.Infof("[%s] 开始执行指令 -> %s", server.Host, shell)
+	session, err := server.sshConnect()
 	defer session.Close()
 
 	if err != nil {
 		errMsg := fmt.Sprintf("ssh会话建立失败->%s", err.(*net.OpError).Error())
 		return ShellResult{
-			Host:      executor.RunOnServer.Host,
+			Host:      server.Host,
 			Err:       err,
 			Cmd:       executor.Script,
 			Status:    constant.Fail,
@@ -188,7 +184,7 @@ func (executor ExecutorInternal) runOnNode() (re ShellResult) {
 		err := session.Run(executor.Script)
 		if err != nil {
 			return ShellResult{
-				Host:      executor.RunOnServer.Host,
+				Host:      server.Host,
 				Err:       errors.New(err.(*ssh.ExitError).String()),
 				Cmd:       executor.Script,
 				Status:    constant.Fail,
@@ -200,7 +196,7 @@ func (executor ExecutorInternal) runOnNode() (re ShellResult) {
 		out, err := session.Output(executor.Script)
 		if err != nil {
 			return ShellResult{
-				Host:      executor.RunOnServer.Host,
+				Host:      server.Host,
 				Err:       errors.New(err.(*ssh.ExitError).String()),
 				Cmd:       executor.Script,
 				Status:    constant.Fail,
@@ -208,8 +204,8 @@ func (executor ExecutorInternal) runOnNode() (re ShellResult) {
 				StdErrMsg: err.(*ssh.ExitError).String()}
 		}
 
-		executor.Logger.Infof("<- %s执行命令成功...", executor.RunOnServer.Host)
-		executor.Logger.Debugf("%s -> 返回值: %s", executor.RunOnServer.Host, string(out))
+		executor.Logger.Infof("<- %s执行命令成功...", server.Host)
+		executor.Logger.Debugf("%s -> 返回值: %s", server.Host, string(out))
 
 		var subOut string
 
@@ -219,7 +215,7 @@ func (executor ExecutorInternal) runOnNode() (re ShellResult) {
 			subOut = string(out)
 		}
 
-		return ShellResult{Host: executor.RunOnServer.Host, StdOut: subOut,
+		return ShellResult{Host: server.Host, StdOut: subOut,
 			Cmd: strings.TrimPrefix(subCmd, "\n"), Status: constant.Success}
 	}
 
