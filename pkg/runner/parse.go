@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 type serverFilter struct {
@@ -113,8 +112,6 @@ func executorDeepCopy(executorExternal ExecutorExternal) ExecutorInternal {
 		executorExternal.Script,
 		logrus.New(),
 		false,
-		ServerInternal{},
-		sync.Mutex{},
 	}
 }
 
