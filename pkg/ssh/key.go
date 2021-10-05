@@ -26,18 +26,6 @@ func EncodePrivateKey(private *rsa.PrivateKey) []byte {
 	})
 }
 
-// EncodePublicKey 编码公钥
-func EncodePublicKey(public *rsa.PublicKey) ([]byte, error) {
-	publicBytes, err := x509.MarshalPKIXPublicKey(public)
-	if err != nil {
-		return nil, err
-	}
-	return pem.EncodeToMemory(&pem.Block{
-		Bytes: publicBytes,
-		Type:  "PUBLIC KEY",
-	}), nil
-}
-
 // EncodeSSHKey 编码ssh key
 func EncodeSSHKey(public *rsa.PublicKey) ([]byte, error) {
 	publicKey, err := ssh.NewPublicKey(public)

@@ -115,9 +115,10 @@ func ParallelScp(item ScpItem) chan error {
 	wg := sync.WaitGroup{}
 	wg.Add(len(item.Servers))
 
+	item.ShowProcessBar = item.Logger.Level == logrus.DebugLevel || item.ShowProcessBar
+
 	for _, s := range item.Servers {
 		go func(server ServerInternal) {
-			item.ShowProcessBar = item.Logger.Level == logrus.DebugLevel || item.ShowProcessBar
 			ch <- server.Scp(item)
 			defer wg.Done()
 		}(s)
