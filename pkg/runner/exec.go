@@ -337,6 +337,7 @@ func (server ServerInternal) completeDefault() ServerInternal {
 }
 
 func handleErr(err *error) {
+
 	if v := recover(); v != nil {
 		if e, ok := v.(runtime.Error); ok {
 			*err = e
