@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"runtime"
 	"testing"
 )
 
@@ -11,7 +12,13 @@ func TestScpErrorPathFile(t *testing.T) {
 	item := ScpItem{SrcPath: "1.tt"}
 	server := ServerInternal{}
 	err := server.Scp(item)
-	assert.EqualError(t, err, "CreateFile 1.tt: The system cannot find the file specified.")
+	switch runtime.GOOS {
+	case "windows":
+		assert.EqualError(t, err, "CreateFile 1.tt: The system cannot find the file specified.")
+	case "linux":
+		assert.EqualError(t, err, "CreateFile 1.tt: The system cannot find the file specified.")
+
+	}
 }
 
 func TestScpNilFile(t *testing.T) {
