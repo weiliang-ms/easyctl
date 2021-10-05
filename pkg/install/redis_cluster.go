@@ -30,6 +30,7 @@ type redisClusterConfig struct {
 	Logger        *logrus.Logger
 	ConfigContent []byte
 	ConfigItem    RedisClusterConfig
+	Executor      runner.ExecutorInternal
 }
 
 // RedisClusterType redis cluster部署模式
@@ -102,7 +103,7 @@ func (config *redisClusterConfig) Parse() error {
 }
 
 // Detect 调用运行时检测依赖
-func (config *redisClusterConfig) Detect() error {
+func (config *redisClusterConfig) Detect() (err error) {
 	const check = "gcc -v"
 
 	if _, err := os.Stat(config.Package); err != nil {
@@ -118,7 +119,8 @@ func (config *redisClusterConfig) Detect() error {
 	}
 
 	config.Logger.Infoln("检测依赖环境...")
-	exec := runner.ExecutorInternal{
+
+	config.Executor = runner.ExecutorInternal{
 		Servers: config.Servers,
 		Script:  check,
 		Logger:  config.Logger,
@@ -128,7 +130,7 @@ func (config *redisClusterConfig) Detect() error {
 		return runner.LocalRun(check, config.Logger)
 	}
 
-	for v := range exec.ParallelRun() {
+	for v := range config.Executor.ParallelRun() {
 		if v.Err != nil {
 			return fmt.Errorf("%s 依赖检测失败 -> %s", v.Host, v.Err)
 		}
@@ -281,4 +283,14 @@ func (config *redisClusterConfig) run(script string) error {
 	}
 
 	return nil
+}
+
+func handleErr(err *error) {
+	if v := recover(); v != nil {
+		if _, ok := v.(runner.WindowsErr); ok {
+			*err = nil
+		} else {
+			panic(v)
+		}
+	}
 }
