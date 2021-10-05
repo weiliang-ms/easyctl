@@ -239,6 +239,11 @@ func (config *redisClusterConfig) Boot() error {
 	return config.run(bootRedisShell)
 }
 
+func (config *redisClusterConfig) CloseFirewall() error {
+
+	return nil
+}
+
 func (config *redisClusterConfig) run(script string) error {
 	if config.CluterType == local {
 		return runner.LocalRun(script, config.Logger)

@@ -18,7 +18,7 @@ type TailLogExecutor struct {
 // TaiLog 多级追踪日志
 func TaiLog(config []byte, logger *logrus.Logger) error {
 
-	servers, err := runner.ParseServerList(config)
+	servers, err := runner.ParseServerList(config, logger)
 	stopCh := make(chan struct{})
 	if err != nil {
 		return err
