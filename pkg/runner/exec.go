@@ -15,6 +15,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -61,10 +62,6 @@ func Run(b []byte, logger *logrus.Logger) error {
 
 // LocalRun 本地执行
 func LocalRun(shell string, logger *logrus.Logger) error {
-
-	//if runtime.GOOS == "windows" {
-	//	 return &WindowsErr{Errors: "windows doesn't has this."}
-	//}
 
 	logger.Debugf("执行指令: %s", shell)
 	cmd := exec.Command(shell)
@@ -149,8 +146,9 @@ func ReadWithSelect(ch chan ShellResult) (value ShellResult, err error) {
 	}
 }
 
-func (executor ExecutorInternal) runOnNode() ShellResult {
+func (executor ExecutorInternal) runOnNode() (re ShellResult) {
 	var shell string
+	defer handleErr(&re.Err)
 
 	if executor.Logger.Level == logrus.DebugLevel {
 		shell = executor.Script
@@ -172,8 +170,14 @@ func (executor ExecutorInternal) runOnNode() ShellResult {
 
 	if err != nil {
 		errMsg := fmt.Sprintf("ssh会话建立失败->%s", err.(*net.OpError).Error())
-		return ShellResult{Host: executor.RunOnServer.Host, Err: errors.New(errMsg),
-			Cmd: executor.Script, Status: constant.Fail, Code: -1, StdErrMsg: errMsg}
+		return ShellResult{
+			Host:      executor.RunOnServer.Host,
+			Err:       err,
+			Cmd:       executor.Script,
+			Status:    constant.Fail,
+			Code:      -1,
+			StdErrMsg: errMsg,
+		}
 	}
 
 	if executor.OutPutRealTime == true {
@@ -330,4 +334,14 @@ func (server ServerInternal) completeDefault() ServerInternal {
 	}
 
 	return server
+}
+
+func handleErr(err *error) {
+	if v := recover(); v != nil {
+		if e, ok := v.(runtime.Error); ok {
+			*err = e
+		} else {
+			panic(v)
+		}
+	}
 }
