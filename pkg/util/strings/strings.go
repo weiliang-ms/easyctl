@@ -27,7 +27,9 @@ func SplitIfContain(str string, contains []string) ([]string, error) {
 func SubSlash(str string) []string {
 
 	var splitSlice []string
-	var result []string
+	if !strings.Contains(str, "\\") && !strings.Contains(str, "/"){
+		return []string{str}
+	}
 
 	if strings.Contains(str, "/") {
 		for _, v := range strings.Split(str, "/") {
@@ -35,23 +37,23 @@ func SubSlash(str string) []string {
 		}
 	}
 
-	if strings.Contains(str, "\\") {
-		for _, v := range strings.Split(str, "\\") {
-			splitSlice = append(splitSlice, v)
-		}
-	}
-	for _, v := range splitSlice {
+	ifContinue := false
+
+	for _ , v := range splitSlice {
 		if strings.Contains(v, "\\") {
-			for _, s := range strings.Split(str, "\\") {
-				splitSlice = append(splitSlice, s)
-			}
-			return splitSlice
-		} else {
-			result = append(result, v)
+			ifContinue=true
 		}
 	}
 
-	return result
+	if !ifContinue {
+		return splitSlice
+	}
+
+	for _, v := range strings.Split(str, "\\") {
+		splitSlice = append(splitSlice, v)
+	}
+
+	return splitSlice
 }
 
 // TrimPrefixAndSuffix = TrimPrefix & TrimSuffix

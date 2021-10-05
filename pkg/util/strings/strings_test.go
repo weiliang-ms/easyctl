@@ -2,7 +2,6 @@ package strings
 
 import (
 	"github.com/stretchr/testify/assert"
-	"runtime"
 	"testing"
 )
 
@@ -19,13 +18,11 @@ func TestSplitIfContain(t *testing.T) {
 }
 
 func TestSubSlash(t *testing.T) {
-
-	switch runtime.GOOS {
-	case "windows":
-		assert.Equal(t, []string{"d:", "ddd", "1.txt"}, SubSlash("d:\\ddd\\1.txt"))
-	case "linux":
-		assert.Equal(t, []string{"", "root", "ddd", "1.txt"}, SubSlash("/root/ddd/1.txt"))
-	}
+	assert.Equal(t, []string{"d:", "ddd", "1.txt"}, SubSlash("d:\\ddd\\1.txt"))
+	assert.Equal(t, []string{"", "root", "ddd", "1.txt"}, SubSlash("/root/ddd/1.txt"))
+	assert.Equal(t, []string{".", "1.txt"}, SubSlash("./1.txt"))
+	assert.Equal(t, []string{"redis.tar"}, SubSlash("./ddd\\redis.tar"))
+	assert.Equal(t, []string{"redis.tar"}, SubSlash("redis.tar"))
 }
 
 func TestTrimPrefixAndSuffix(t *testing.T) {
