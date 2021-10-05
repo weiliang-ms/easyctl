@@ -57,14 +57,15 @@ type ExecutorInternal struct {
 
 // ShellResult shell执行结果
 type ShellResult struct {
-	Host      string `table:"主机地址"`
-	Cmd       string `table:"执行语句"`
-	Code      int    `table:"退出码"`
-	Status    string `table:"执行状态"`
-	StdOut    string `table:"执行结果"`
-	Output    string `table:"标准输出"`
-	StdErrMsg string
-	Err       error
+	Host       string `table:"主机地址"`
+	Cmd        string `table:"执行语句"`
+	Code       int    `table:"退出码"`
+	Status     string `table:"执行状态"`
+	StdOut     string `table:"执行结果"`
+	Output     string `table:"标准输出"`
+	StdErrMsg  string
+	Err        error
+	sync.Mutex // 保证并发下原子性
 }
 
 // ShellResultSlice shell执行结果切片
