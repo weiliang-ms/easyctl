@@ -150,3 +150,30 @@ func TestDetect(t *testing.T) {
 	f.Close()
 	os.Remove("1.tar.gz")
 }
+
+func TestPrune(t *testing.T) {
+	// test local
+	var config redisClusterConfig
+	config.CluterType = local
+	config.Logger = logrus.New()
+	assert.NotNil(t, config.Prune())
+
+	// test many node
+	var servers []runner.ServerInternal
+	for i := 1; i < 4; i++ {
+		servers = append(servers, runner.ServerInternal{
+			Host:     "10.10.10.1",
+			Port:     "22",
+			Username: "root",
+			Password: "123456",
+		})
+	}
+	config.Servers = servers
+	config.CluterType = threeNodesThreeShards
+	err := config.Prune()
+	assert.EqualError(t, err, "[10.10.10.1] 执行清理指令失败 runtime error: invalid memory address or nil pointer dereference")
+
+	// ignore err return nil
+	config.IgnoreErr = true
+	assert.Nil(t, config.Prune())
+}

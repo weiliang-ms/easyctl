@@ -160,7 +160,9 @@ func (config *redisClusterConfig) Prune() error {
 
 	ch := exec.ParallelRun()
 	for v := range ch {
-		if v.Err != nil {
+		if config.IgnoreErr {
+			break
+		} else if v.Err != nil {
 			return fmt.Errorf("[%s] 执行清理指令失败 %s", v.Host, v.Err)
 		}
 	}
