@@ -9,6 +9,7 @@ type Interface interface {
 	SetUpRuntime() error
 	Config() error
 	Boot() error
+	CloseFirewall() error
 }
 
 type task func() error
@@ -24,6 +25,7 @@ func install(i Interface) error {
 		i.SetUpRuntime,
 		i.Config,
 		i.Boot,
+		i.CloseFirewall,
 	}
 
 	for _, v := range jobs {
