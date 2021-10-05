@@ -21,7 +21,7 @@ func TestSubSlash(t *testing.T) {
 	assert.Equal(t, []string{"d:", "ddd", "1.txt"}, SubSlash("d:\\ddd\\1.txt"))
 	assert.Equal(t, []string{"", "root", "ddd", "1.txt"}, SubSlash("/root/ddd/1.txt"))
 	assert.Equal(t, []string{".", "1.txt"}, SubSlash("./1.txt"))
-	assert.Equal(t, []string{"redis.tar"}, SubSlash("./ddd\\redis.tar"))
+	assert.Equal(t, []string{".", "ddd", "redis.tar"}, SubSlash("./ddd\\redis.tar"))
 	assert.Equal(t, []string{"redis.tar"}, SubSlash("redis.tar"))
 }
 

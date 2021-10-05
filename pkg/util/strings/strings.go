@@ -27,30 +27,21 @@ func SplitIfContain(str string, contains []string) ([]string, error) {
 func SubSlash(str string) []string {
 
 	var splitSlice []string
-	if !strings.Contains(str, "\\") && !strings.Contains(str, "/"){
+	if !strings.Contains(str, "\\") && !strings.Contains(str, "/") {
 		return []string{str}
 	}
 
-	if strings.Contains(str, "/") {
-		for _, v := range strings.Split(str, "/") {
-			splitSlice = append(splitSlice, v)
+	windowsSlashSlice := strings.Split(str, "\\")
+	if len(windowsSlashSlice) != 0 {
+		for _, v := range windowsSlashSlice {
+			if strings.Contains(v, "/") {
+				for _, s := range strings.Split(v, "/") {
+					splitSlice = append(splitSlice, s)
+				}
+			} else {
+				splitSlice = append(splitSlice, v)
+			}
 		}
-	}
-
-	ifContinue := false
-
-	for _ , v := range splitSlice {
-		if strings.Contains(v, "\\") {
-			ifContinue=true
-		}
-	}
-
-	if !ifContinue {
-		return splitSlice
-	}
-
-	for _, v := range strings.Split(str, "\\") {
-		splitSlice = append(splitSlice, v)
 	}
 
 	return splitSlice
