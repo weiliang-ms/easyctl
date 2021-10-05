@@ -5,7 +5,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/weiliang-ms/easyctl/pkg/util/errors"
-	"github.com/weiliang-ms/easyctl/pkg/util/log"
 	"os"
 	"testing"
 )
@@ -30,19 +29,4 @@ func TestDetect(t *testing.T) {
 
 	f.Close()
 	fmt.Println(os.Remove("1.tar.gz"))
-}
-
-func TestInstallRedis(t *testing.T) {
-	b, readErr := os.ReadFile("../../asset/install/redis.yaml")
-	if readErr != nil {
-		panic(readErr)
-	}
-
-	logger := logrus.New()
-	logger.SetLevel(logrus.DebugLevel)
-	logger.SetFormatter(&log.CustomFormatter{})
-
-	if err := RedisCluster(b, logger); err != nil {
-		logger.Println(err)
-	}
 }

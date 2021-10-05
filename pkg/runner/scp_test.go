@@ -16,8 +16,7 @@ func TestScpErrorPathFile(t *testing.T) {
 	case "windows":
 		assert.EqualError(t, err, "CreateFile 1.tt: The system cannot find the file specified.")
 	case "linux":
-		assert.EqualError(t, err, "CreateFile 1.tt: The system cannot find the file specified.")
-
+		assert.EqualError(t, err, "stat 1.tt: no such file or directory")
 	}
 }
 
@@ -39,7 +38,13 @@ func TestConnectErr(t *testing.T) {
 	err := server.Scp(item)
 	fmt.Println(err)
 
-	assert.EqualError(t, err, "连接远程主机：失败 ->dial tcp :0: connectex: The requested address is not valid in its context.")
+	switch runtime.GOOS {
+	case "windows":
+		assert.EqualError(t, err, "连接远程主机：失败 ->dial tcp :0: connectex: The requested address is not valid in its context.")
+	case "linux":
+		assert.EqualError(t, err, "连接远程主机：失败 ->dial tcp :0: connect: connection refused")
+	}
+
 	_ = f.Close()
 	_ = os.Remove("1.txt")
 }
