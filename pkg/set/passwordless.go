@@ -4,7 +4,7 @@ import (
 	"github.com/lithammer/dedent"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/ssh"
-	"github.com/weiliang-ms/easyctl/pkg/util"
+	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"text/template"
 )
 

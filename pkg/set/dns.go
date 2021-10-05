@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/lithammer/dedent"
 	"github.com/sirupsen/logrus"
-	"github.com/weiliang-ms/easyctl/pkg/util"
+	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
 	"net"
 	"text/template"
