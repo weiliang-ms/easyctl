@@ -7,8 +7,6 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/errors"
 	"os"
-	"os/exec"
-	"runtime"
 	"sort"
 	"testing"
 )
@@ -113,18 +111,20 @@ func TestDetect(t *testing.T) {
 	err = config.Detect()
 	assert.Equal(t, runner.ExecutorInternal{Script: "gcc -v", Logger: config.Logger}, config.Executor)
 
-	// install & detect -> return nil
-	if runtime.GOOS == "windows" {
-		return
-	}
-	err = exec.Command("sudo apt install -y gcc").Run()
-	if err != nil {
-		fmt.Println(err)
-	}
-	err = config.Detect()
-	fmt.Println(err)
+	// test many node
+	var servers []runner.ServerInternal
 
-	assert.Nil(t, err)
+	servers = append(servers, runner.ServerInternal{
+		Host:     "10.10.10.1",
+		Port:     "22",
+		Username: "root",
+		Password: "123456",
+	})
+
+	config.Servers = servers
+	config.CluterType = threeNodesThreeShards
+	err = config.Detect()
+	assert.Errorf(t, err, "10.10.10.1 依赖检测失败 -> runtime error: invalid memory address or nil pointer dereference")
 
 	f.Close()
 	os.Remove("1.tar.gz")

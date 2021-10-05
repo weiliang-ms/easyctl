@@ -284,13 +284,3 @@ func (config *redisClusterConfig) run(script string) error {
 
 	return nil
 }
-
-func handleErr(err *error) {
-	if v := recover(); v != nil {
-		if _, ok := v.(runner.WindowsErr); ok {
-			*err = nil
-		} else {
-			panic(v)
-		}
-	}
-}
