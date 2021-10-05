@@ -113,8 +113,13 @@ func TestDetect(t *testing.T) {
 	assert.Equal(t, runner.ExecutorInternal{Script: "gcc -v", Logger: config.Logger}, config.Executor)
 
 	// install & detect -> return nil
-	exec.Command("apt install -y gcc").Run()
+	err = exec.Command("apt install -y gcc").Run()
+	if err != nil {
+		fmt.Println(err)
+	}
 	err = config.Detect()
+	fmt.Println(err)
+
 	assert.Nil(t, err)
 
 	f.Close()
