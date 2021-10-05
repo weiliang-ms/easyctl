@@ -7,6 +7,7 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/errors"
 	"os"
+	"os/exec"
 	"sort"
 	"testing"
 )
@@ -110,6 +111,11 @@ func TestDetect(t *testing.T) {
 	config.CluterType = local
 	err = config.Detect()
 	assert.Equal(t, runner.ExecutorInternal{Script: "gcc -v", Logger: config.Logger}, config.Executor)
+
+	// install & detect -> return nil
+	exec.Command("apt install -y gcc").Run()
+	err = config.Detect()
+	assert.Nil(t, err)
 
 	f.Close()
 	os.Remove("1.tar.gz")
