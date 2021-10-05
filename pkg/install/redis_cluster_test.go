@@ -4,42 +4,46 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/errors"
 	"os"
 	"testing"
 )
 
-//func RedisCluster(b []byte, logger *logrus.Logger) error {
-//	var config RedisClusterConfig
-//
-//	logger.Info("解析redis cluster安装配置")
-//	if err := yaml.Unmarshal(b, &config); err != nil {
-//		return err
-//	}
-//
-//	// 深拷贝属性
-//	redisCluster := config.deepCopy()
-//	redisCluster.Logger = logger
-//	servers, err := runner.ParseServerList(b, logger)
-//
-//	if err != nil {
-//		return fmt.Errorf("[redis-cluster] 反序列化主机列表失败 -> %v", err)
-//	}
-//	redisCluster.Servers = servers
-//
-//	return install(redisCluster)
-//}
-
-func TestRedisCluster(t *testing.T) {
-	logger := logrus.New()
+func TestParse(t *testing.T) {
 	content := `
+server:
+  - host: 10.10.10.[1:3]
+    username: root
+    password: 123456
+    port: 22
+excludes:
+  - 192.168.235.132
 redis-cluster:
-  paasword: ""
+  password: "ddd"
   cluster-type: 0 # [0] 本地伪集群 ; [1] 三节点3分片2副本 ; [2] 6节点3分片2副本
-  package: D:\github\easyctl\asset\install\redis-5.0.13.tar.gz
+  package: /root/redis-5.0.13.tar.gz
 `
-	err := RedisCluster([]byte(content), logger)
+	var servers []runner.ServerInternal
+	for i := 1; i < 4; i++ {
+		servers = append(servers, runner.ServerInternal{
+			Host:     fmt.Sprintf("10.10.10.%d", i),
+			Port:     "22",
+			Username: "root",
+			Password: "123456",
+		})
+	}
+	config := redisClusterConfig{
+		Logger:        logrus.New(),
+		ConfigContent: []byte(content),
+	}
+
+	err := config.Parse()
 	assert.Nil(t, err)
+
+	assert.Equal(t, "ddd", config.Password)
+	assert.Equal(t, "/root/redis-5.0.13.tar.gz", config.Package)
+	assert.Equal(t, servers, config.Servers)
 }
 
 func TestDetect(t *testing.T) {
