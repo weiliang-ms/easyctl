@@ -76,8 +76,12 @@ func RedisCluster(b []byte, logger *logrus.Logger) error {
 
 func (config *redisClusterConfig) Parse() error {
 
-	config.Logger.Info("解析redis cluster安装配置")
+	if config.Logger == nil {
+		config.Logger = logrus.New()
+	}
+
 	config.ConfigItem = RedisClusterConfig{}
+	config.Logger.Info("解析redis cluster安装配置")
 	if err := yaml.Unmarshal(config.ConfigContent, &config.ConfigItem); err != nil {
 		return err
 	}

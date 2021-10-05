@@ -7,6 +7,7 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/errors"
 	"os"
+	"sort"
 	"testing"
 )
 
@@ -38,12 +39,35 @@ redis-cluster:
 		ConfigContent: []byte(content),
 	}
 
+	actualServers := runner.InternelServersSlice{}
 	err := config.Parse()
-	assert.Nil(t, err)
+	actualServers = config.Servers
+	sort.Sort(actualServers)
 
+	assert.Nil(t, err)
 	assert.Equal(t, "ddd", config.Password)
 	assert.Equal(t, "/root/redis-5.0.13.tar.gz", config.Package)
 	assert.Equal(t, servers, config.Servers)
+
+	// test yaml.Unmarshal RedisClusterConfig err
+	ddd := `
+server:
+  - host: 10.10.10.[1:3]
+    username: root
+    password: 123456
+    port: 22
+excludes:
+  - 192.168.235.132
+redis-cluster:
+  password: "ddd"
+  cluster-type: "0" # [0] 本地伪集群 ; [1] 三节点3分片2副本 ; [2] 6节点3分片2副本
+  package: /root/redis-5.0.13.tar.gz
+`
+	ccc := redisClusterConfig{}
+	ccc.ConfigContent = []byte(ddd)
+	err = ccc.Parse()
+	assert.Errorf(t, err, "Expected nil, but got: &yaml.TypeError{Errors:[]string{\"line 11: cannot unmarshal !!str `0` into install.RedisClusterType")
+	fmt.Println(ccc.ConfigItem)
 }
 
 func TestDetect(t *testing.T) {
