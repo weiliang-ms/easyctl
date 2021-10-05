@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/pkg/util"
+	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"k8s.io/klog"
 	"os"
 )
@@ -43,8 +43,8 @@ func init() {
 // Deny 组装执行器
 func Deny(entity Entity) error {
 	if configFile == "" {
-		klog.Infof("检测到配置文件为空，生成配置文件样例 -> %s", util.ConfigFile)
-		_ = os.WriteFile(util.ConfigFile, config, 0666)
+		klog.Infof("检测到配置文件为空，生成配置文件样例 -> %s", constant.ConfigFile)
+		_ = os.WriteFile(constant.ConfigFile, config, 0666)
 	}
 
 	flagset := entity.Cmd.Parent().Parent().PersistentFlags()

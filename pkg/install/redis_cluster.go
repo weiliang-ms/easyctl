@@ -5,8 +5,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/install/tmpl"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
-	"github.com/weiliang-ms/easyctl/pkg/util"
 	"github.com/weiliang-ms/easyctl/pkg/util/errors"
+	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
+	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
 	"os"
 )
@@ -150,7 +151,7 @@ func (config *redisClusterConfig) HandPackage() error {
 
 	if config.CluterType == local {
 		return os.Rename(config.Package, fmt.Sprintf("/tmp/%s",
-			util.SubFileName(config.Package)))
+			strings2.SubFileName(config.Package)))
 	}
 
 	config.Logger.Infoln("分发package...")
@@ -158,7 +159,7 @@ func (config *redisClusterConfig) HandPackage() error {
 		Servers: config.Servers,
 		SrcPath: config.Package,
 		DstPath: fmt.Sprintf("/tmp/%s",
-			util.SubFileName(config.Package)),
+			strings2.SubFileName(config.Package)),
 		Mode:   0755,
 		Logger: config.Logger,
 	})
@@ -177,8 +178,8 @@ func (config *redisClusterConfig) HandPackage() error {
 func (config *redisClusterConfig) Compile() error {
 
 	config.Logger.Infoln("开始编译redis")
-	compileCmd, err := util.Render(tmpl.RedisCompileTmpl, util.TmplRenderData{
-		"PackageName": util.SubFileName(config.Package),
+	compileCmd, err := tmplutil.Render(tmpl.RedisCompileTmpl, tmplutil.TmplRenderData{
+		"PackageName": strings2.SubFileName(config.Package),
 	})
 
 	if err != nil {
@@ -205,7 +206,7 @@ func (config *redisClusterConfig) Config() error {
 	}
 
 	// todo: 考虑io替代shell
-	generateConfigShell, err := util.Render(tmpl.RedisClusterConfigTmpl, util.TmplRenderData{
+	generateConfigShell, err := tmplutil.Render(tmpl.RedisClusterConfigTmpl, tmplutil.TmplRenderData{
 		"Ports":    ports,
 		"Password": config.Password,
 	})
@@ -228,7 +229,7 @@ func (config *redisClusterConfig) Boot() error {
 	}
 
 	// todo: 考虑io替代shell
-	bootRedisShell, err := util.Render(tmpl.RedisBootTmpl, util.TmplRenderData{
+	bootRedisShell, err := tmplutil.Render(tmpl.RedisBootTmpl, tmplutil.TmplRenderData{
 		"Ports": ports,
 	})
 

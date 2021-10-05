@@ -3,8 +3,8 @@ package clean
 import (
 	"github.com/lithammer/dedent"
 	"github.com/sirupsen/logrus"
-	"github.com/weiliang-ms/easyctl/pkg/util"
 	"github.com/weiliang-ms/easyctl/pkg/util/slice"
+	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
 	"text/template"
 )
@@ -65,7 +65,7 @@ func PruneDnsScript(b []byte, tmpl *template.Template) (string, error) {
 	} else {
 		preserveList = config.CleanDns.Excludes
 	}
-	return util.Render(tmpl, map[string]interface{}{
+	return tmplutil.Render(tmpl, map[string]interface{}{
 		"DnsServerList": cleanList,
 		"ALL":           len(cleanList) == 0,
 		"PreserveList":  preserveList,

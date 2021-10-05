@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"github.com/weiliang-ms/easyctl/pkg/util"
+	"github.com/weiliang-ms/easyctl/pkg/util/slice"
 	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
@@ -344,7 +344,7 @@ func (executor *HarborExecutor) FilterProjects() error {
 	executor.Logger.Info("过滤excludes中的project...")
 	var projects []ProjectInternel
 	for _, v := range executor.ProjectSlice {
-		if !util.SliceContain(executor.HarborConfig.Excludes, v.Name) {
+		if !slice.StringSliceContain(executor.HarborConfig.Excludes, v.Name) {
 			projects = append(projects, v)
 		}
 	}

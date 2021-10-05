@@ -12,9 +12,9 @@ func StringSliceRemove(sup []string, cut []string) []string {
 }
 
 // StringSliceContain todo 优化判断方式
-func StringSliceContain(sup []string, s string) bool {
+func StringSliceContain(sup []string, element string) bool {
 	for _, v := range sup {
-		if v == s {
+		if v == element {
 			return true
 		}
 	}

@@ -45,7 +45,7 @@ func MakeKeyPairScript(tmpl *template.Template) (string, error) {
 		return "", err
 	}
 
-	return util.Render(tmpl, map[string]interface{}{
+	return tmplutil.Render(tmpl, map[string]interface{}{
 		"PublicKey":  pub,
 		"PrivateKey": prv,
 	})

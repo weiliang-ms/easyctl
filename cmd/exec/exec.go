@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
-	"github.com/weiliang-ms/easyctl/pkg/util"
+	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"k8s.io/klog"
 	"os"
 )
@@ -50,8 +50,8 @@ func Exec(entity Entity) error {
 	}
 
 	if configFile == "" {
-		klog.Infof("检测到配置文件参数为空，生成配置文件样例 -> %s", util.ConfigFile)
-		_ = os.WriteFile(util.ConfigFile, entity.DefaultConfig, 0666)
+		klog.Infof("检测到配置文件参数为空，生成配置文件样例 -> %s", constant.ConfigFile)
+		_ = os.WriteFile(constant.ConfigFile, entity.DefaultConfig, 0666)
 		os.Exit(0)
 	}
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/lithammer/dedent"
 	"github.com/sirupsen/logrus"
-	"github.com/weiliang-ms/easyctl/pkg/util"
+	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
 	"text/template"
 )
@@ -42,7 +42,7 @@ func NewPasswordScript(b []byte, tmpl *template.Template) (string, error) {
 		return "", fmt.Errorf("密码长度：%d 不符合标准", len(p.Password))
 	}
 
-	return util.Render(tmpl, map[string]interface{}{
+	return tmplutil.Render(tmpl, map[string]interface{}{
 		"NewPassword": p.Password,
 	})
 }

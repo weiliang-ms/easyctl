@@ -29,7 +29,7 @@ openssl version
 //}
 //
 //func (ac *Actuator) compileOpensslCmd() *Actuator {
-//	content, _ := util.Render(opensslUpgradeShellTmpl, util.Data{
+//	content, _ := tmplutil.Render(opensslUpgradeShellTmpl, util.Data{
 //		"FilePath": ac.FilePath,
 //	})
 //	ac.Cmd = content

@@ -1,4 +1,4 @@
-package util
+package tmplutil
 
 import (
 	"github.com/pkg/errors"

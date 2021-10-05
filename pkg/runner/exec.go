@@ -7,7 +7,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/modood/table"
 	"github.com/sirupsen/logrus"
-	"github.com/weiliang-ms/easyctl/pkg/util"
+	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"k8s.io/klog"
@@ -161,7 +161,7 @@ func (executor ExecutorInternal) runOnNode() ShellResult {
 	if err != nil {
 		errMsg := fmt.Sprintf("ssh会话建立失败->%s", err.(*net.OpError).Error())
 		return ShellResult{Host: executor.RunOnServer.Host, Err: errors.New(errMsg),
-			Cmd: executor.Script, Status: util.Fail, Code: -1, StdErrMsg: errMsg}
+			Cmd: executor.Script, Status: constant.Fail, Code: -1, StdErrMsg: errMsg}
 	}
 
 	if executor.OutPutRealTime == true {
@@ -172,7 +172,7 @@ func (executor ExecutorInternal) runOnNode() ShellResult {
 				Host:      executor.RunOnServer.Host,
 				Err:       errors.New(err.(*ssh.ExitError).String()),
 				Cmd:       executor.Script,
-				Status:    util.Fail,
+				Status:    constant.Fail,
 				Code:      err.(*ssh.ExitError).ExitStatus(),
 				StdErrMsg: err.(*ssh.ExitError).String()}
 		}
@@ -184,7 +184,7 @@ func (executor ExecutorInternal) runOnNode() ShellResult {
 				Host:      executor.RunOnServer.Host,
 				Err:       errors.New(err.(*ssh.ExitError).String()),
 				Cmd:       executor.Script,
-				Status:    util.Fail,
+				Status:    constant.Fail,
 				Code:      err.(*ssh.ExitError).ExitStatus(),
 				StdErrMsg: err.(*ssh.ExitError).String()}
 		}
@@ -201,7 +201,7 @@ func (executor ExecutorInternal) runOnNode() ShellResult {
 		}
 
 		return ShellResult{Host: executor.RunOnServer.Host, StdOut: subOut,
-			Cmd: strings.TrimPrefix(subCmd, "\n"), Status: util.Success}
+			Cmd: strings.TrimPrefix(subCmd, "\n"), Status: constant.Success}
 	}
 
 	return ShellResult{}
