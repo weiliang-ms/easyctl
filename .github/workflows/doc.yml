@@ -10,6 +10,8 @@ jobs:
   go-test:
     runs-on: ubuntu-latest
     steps:
+      - run: go get -t -v ./...
+      - run: go test -race -coverprofile=coverage.txt -covermode=atomic
       - run: bash <(curl -s https://codecov.io/bash)
   build-doc:
     runs-on: ubuntu-latest
