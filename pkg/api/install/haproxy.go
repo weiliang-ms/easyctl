@@ -123,5 +123,4 @@ package install
 //		v.RemoteShell("systemctl enable haproxy --now")
 //		v.RemoteShell("systemctl restart haproxy")
 //	}
-//
 //}
