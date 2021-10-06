@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@master
       - run: go get -t -v ./...
       - name: generate coverage report
-        run: go test ./... -race -vet=off -covermode=atomic > coverage.txt
+        run: go test ./... -race -vet=off -coverprofile=coverage.txt -covermode=atomic
       - run: cat coverage.txt
       - run: pwd
       - run: cat /home/runner/work/easyctl/easyctl/coverage.txt
