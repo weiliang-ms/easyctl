@@ -29,16 +29,14 @@ func sftpConnect(user, password, host string, port string) (sftpClient *sftp.Cli
 	addr := host + ":" + port
 	sshClient, err := ssh.Dial("tcp", addr, clientConfig) //连接ssh
 	if err != nil {
-		fmt.Println("连接ssh失败", err)
-		return
+		return nil, fmt.Errorf("连接ssh失败 %s", err)
 	}
 
 	if sftpClient, err = sftp.NewClient(sshClient); err != nil { //创建客户端
-		fmt.Println("创建客户端失败", err)
-		return
+		return nil, fmt.Errorf("创建客户端失败 %s", err)
 	}
 
-	return
+	return sftpClient, nil
 }
 
 // RemoteRun 远程执行输出结果
@@ -69,15 +67,16 @@ func RemoteRun(b []byte, logger *logrus.Logger, cmd string) error {
 // GetResult 远程执行，获取结果
 func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]ShellResult, error) {
 
-	servers, err := ParseServerList(b, nil)
+	servers, err := ParseServerList(b, logger)
 	if err != nil {
 		return []ShellResult{}, err
 	}
 
+	// 组装执行器,执行命令
 	executor := ExecutorInternal{Servers: servers, Script: cmd, Logger: logger}
-
 	ch := executor.ParallelRun()
 
+	// 打包执行结果
 	var results []ShellResult
 
 	for re := range ch {
@@ -86,7 +85,6 @@ func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]ShellResult, erro
 		results = append(results, result)
 	}
 
-	// todo: ip地址排序
 	sort.Sort(ShellResultSlice(results))
 
 	return results, nil

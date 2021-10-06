@@ -10,4 +10,7 @@ const (
 	// ConfigFile 通用配置文件
 	ConfigFile    = "config.yaml"
 	TRunnerCaller = "testing.tRunner"
+
+	Root = "root"
+	RsaPrvPath = "~/.ssh/id_rsa"
 )
