@@ -1,27 +1,27 @@
-#name: Test
-#
-#on:
-#  push:
-#    branches: [ master ]
-#  pull_request:
-#    branches: [ master ]
-#
-#jobs:
-#  go-test:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Set up Go 1.16
-#        uses: actions/setup-go@v1
-#        with:
-#          go-version: 1.16
-#      - uses: actions/checkout@master
-#      - run: go get -t -v ./...
-#      - run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic -v
-#      - uses: codecov/codecov-action@v2
-#        with:
-#          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-#          files: coverage.txt # optional
-#          flags: unittests # optional
-#          name: codecov-umbrella # optional
-#          fail_ci_if_error: true # optional (default = false)
-#          verbose: true # optional (default = false)
+name: Test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  go-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.16
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.16
+      - uses: actions/checkout@master
+      - run: go get -t -v ./...
+      - run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic -v
+      - uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          files: coverage.txt # optional
+          flags: unittests # optional
+          name: codecov-umbrella # optional
+          fail_ci_if_error: true # optional (default = false)
+          verbose: true # optional (default = false)
