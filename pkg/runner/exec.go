@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mitchellh/go-homedir"
-	"github.com/mitchellh/mapstructure"
-	"github.com/modood/table"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"golang.org/x/crypto/ssh"
@@ -16,7 +14,6 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -38,28 +35,6 @@ func (e *WindowsErr) Error() string {
 	return e.Errors
 }
 
-// Run 执行
-func Run(b []byte, logger *logrus.Logger) error {
-
-	exec, err := ParseExecutor(b, logger)
-	if err != nil {
-		return err
-	}
-
-	exec.Logger = logger
-	ch := exec.ParallelRun()
-
-	var result []ShellResult
-
-	if v, err := ReadWithSelect(ch); err != nil {
-		result = append(result, v)
-	}
-
-	table.OutputA(result)
-
-	return nil
-}
-
 // LocalRun 本地执行
 func LocalRun(shell string, logger *logrus.Logger) error {
 
@@ -75,36 +50,6 @@ func LocalRun(shell string, logger *logrus.Logger) error {
 	}
 
 	return nil
-}
-
-// GetResult 获取执行结果
-func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]ShellResult, error) {
-
-	servers, err := ParseServerList(b, logger)
-	if err != nil {
-		return []ShellResult{}, err
-	}
-
-	executor := ExecutorInternal{
-		Servers: servers,
-		Script:  cmd,
-		Logger:  logger,
-	}
-
-	ch := executor.ParallelRun()
-
-	var results []ShellResult
-
-	for re := range ch {
-		var result ShellResult
-		_ = mapstructure.Decode(re, &result)
-		results = append(results, result)
-	}
-
-	// todo: ip地址排序
-	sort.Sort(ShellResultSlice(results))
-
-	return results, nil
 }
 
 // ParallelRun 并发执行
@@ -133,16 +78,6 @@ func (executor ExecutorInternal) ParallelRun() chan ShellResult {
 	wg.Wait()
 	close(ch)
 	return ch
-}
-
-// ReadWithSelect select结构实现通道读
-func ReadWithSelect(ch chan ShellResult) (value ShellResult, err error) {
-	select {
-	case value = <-ch:
-		return value, nil
-	default:
-		return ShellResult{}, errors.New("channel has no data")
-	}
 }
 
 func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResult) {
@@ -220,22 +155,6 @@ func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResul
 	}
 
 	return ShellResult{}
-}
-
-// ReturnParalleRunResult 并发执行，并接收执行结果
-func ReturnParalleRunResult(servers []ServerInternal, cmd string) chan ShellResult {
-	wg := &sync.WaitGroup{}
-	ch := make(chan ShellResult, len(servers))
-	for _, s := range servers {
-		wg.Add(1)
-		go func() {
-			ch <- s.ReturnRunResult(cmd)
-			defer wg.Done()
-		}()
-	}
-	wg.Wait()
-
-	return ch
 }
 
 // ReturnRunResult 获取执行结果
