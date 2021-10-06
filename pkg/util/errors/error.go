@@ -20,7 +20,7 @@ func FileNotFoundErr(filepath string) error {
 func IgnoreErrorFromCaller(skip int, callerName string, err *error) {
 	pc, _, _, _ := runtime.Caller(skip)
 	name := runtime.FuncForPC(pc).Name()
-	if name == callerName {
+	if name == callerName && err != nil {
 		*err = nil
 	}
 }
