@@ -36,20 +36,25 @@ func (e *WindowsErr) Error() string {
 }
 
 // LocalRun 本地执行
-func LocalRun(shell string, logger *logrus.Logger) error {
+func LocalRun(shell string, logger *logrus.Logger) ShellResult {
+
+	result := ShellResult{}
+
+	if logger == nil {
+		logger = logrus.New()
+	}
 
 	logger.Debugf("执行指令: %s", shell)
 	cmd := exec.Command(shell)
 	b, err := cmd.CombinedOutput()
+
 	if err != nil {
-		return err
-	}
-	logger.Debug(string(b))
-	if err := cmd.Run(); err != nil {
-		return err
+		return ShellResult{Err: err}
 	}
 
-	return nil
+	logger.Debug(string(b))
+
+	return result
 }
 
 // ParallelRun 并发执行

@@ -10,6 +10,3 @@ var RootCmd = &cobra.Command{
 	Short: "secure something through easyctl",
 	Args:  cobra.ExactValidArgs(1),
 }
-
-func init() {
-}

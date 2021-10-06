@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/track"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 )
 
 //go:embed asset/tail_log.yaml
@@ -15,8 +16,12 @@ var tailLogCmd = &cobra.Command{
 	Use:   "tail-log [flags]",
 	Short: "追踪日志命令",
 	Run: func(cmd *cobra.Command, args []string) {
-		if runErr := Exec(Entity{Cmd: cmd, Fnc: track.TaiLog, DefaultConfig: tailLogConfig}); runErr != nil {
-			panic(runErr)
+		if err := command.SetExecutorDefault(command.ExecutorEntity{
+			Cmd:           cmd,
+			Fnc:           track.TaiLog,
+			DefaultConfig: tailLogConfig,
+		}, configFile); err != nil {
+			panic(err)
 		}
 	},
 }

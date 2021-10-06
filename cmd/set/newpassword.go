@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/set"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 )
 
 //go:embed asset/newpassword_config.yaml
@@ -16,8 +17,12 @@ var newPasswordCmd = &cobra.Command{
 	Short: "修改主机root口令",
 	Args:  cobra.ExactValidArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		if runErr := Set(Entity{Cmd: cmd, Fnc: set.NewPassword, DefaultConfig: newPasswordConfig}); runErr != nil {
-			panic(runErr)
+		if err := command.SetExecutorDefault(command.ExecutorEntity{
+			Cmd:           cmd,
+			Fnc:           set.NewPassword,
+			DefaultConfig: newPasswordConfig,
+		}, configFile); err != nil {
+			panic(err)
 		}
 	},
 }

@@ -9,11 +9,11 @@ var configFile string
 func init() {
 	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "配置文件")
 
-	RootCmd.AddCommand(keepaliveCmd)
-	RootCmd.AddCommand(haproxyCmd)
-	RootCmd.AddCommand(dockerCmd)
-	RootCmd.AddCommand(dockerComposeCmd)
-	RootCmd.AddCommand(harborCmd)
+	//RootCmd.AddCommand(keepaliveCmd)
+	//RootCmd.AddCommand(haproxyCmd)
+	//RootCmd.AddCommand(dockerCmd)
+	//RootCmd.AddCommand(dockerComposeCmd)
+	//RootCmd.AddCommand(harborCmd)
 	RootCmd.AddCommand(redisClusterCmd)
 }
 

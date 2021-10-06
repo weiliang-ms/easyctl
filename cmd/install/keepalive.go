@@ -14,15 +14,8 @@ var keepaliveCmd = &cobra.Command{
 	Use:   "keepalived [flags]",
 	Short: "install keepalived through easyctl...",
 	Run: func(cmd *cobra.Command, args []string) {
-		keepalive()
 	},
 	Args: cobra.NoArgs,
-}
-
-func keepalive() {
-	//if offline {
-	//	keepaliveOffline()
-	//}
 }
 
 //func keepaliveOffline() {
