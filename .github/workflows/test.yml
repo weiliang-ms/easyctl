@@ -18,7 +18,7 @@ jobs:
       - run: go get -t -v ./...
       - name: generate coverage report
         run: go test ./... -race -vet=off -coverprofile=coverage.txt -covermode=atomic
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
           files: coverage.txt # optional
