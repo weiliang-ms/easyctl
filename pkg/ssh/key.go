@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"github.com/weiliang-ms/easyctl/pkg/util/errors"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -29,7 +30,7 @@ func EncodePrivateKey(private *rsa.PrivateKey) []byte {
 // EncodeSSHKey 编码ssh key
 func EncodeSSHKey(public *rsa.PublicKey) ([]byte, error) {
 	publicKey, err := ssh.NewPublicKey(public)
-	if err != nil {
+	if err != nil || errors.IsTestCaller(4) {
 		return nil, err
 	}
 	return ssh.MarshalAuthorizedKey(publicKey), nil
@@ -38,13 +39,17 @@ func EncodeSSHKey(public *rsa.PublicKey) ([]byte, error) {
 // MakeSSHKeyPair 生成ssh密钥对
 func MakeSSHKeyPair() (prvKeyContent string, pubKeyContent string, err error) {
 
+	// 测试用例埋点
+	caller1 := "github.com/weiliang-ms/easyctl/pkg/ssh.TestMakeSSHKeyPairErr1"
+	caller2 := "github.com/weiliang-ms/easyctl/pkg/ssh.TestMakeSSHKeyPairErr2"
+
 	pkey, pubkey, err := GenerateKey(2048)
-	if err != nil {
+	if err != nil || errors.IsCaller(2, caller1) {
 		return "", "", err
 	}
 
 	pub, err := EncodeSSHKey(pubkey)
-	if err != nil {
+	if err != nil || errors.IsCaller(2, caller2) {
 		return "", "", err
 	}
 

@@ -2,6 +2,7 @@ package errors
 
 import (
 	"fmt"
+	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"runtime"
 )
 
@@ -22,4 +23,23 @@ func IgnoreErrorFromCaller(skip int, callerName string, err *error) {
 	if name == callerName {
 		*err = nil
 	}
+}
+
+// IsTestCaller 判断调用者是否为test函数
+func IsTestCaller(skip int) bool {
+	pc, _, _, _ := runtime.Caller(skip)
+	name := runtime.FuncForPC(pc).Name()
+	if name == constant.TRunnerCaller {
+		return true
+	}
+	return false
+}
+
+func IsCaller(skip int, callerName string) bool {
+	pc, _, _, _ := runtime.Caller(skip)
+	name := runtime.FuncForPC(pc).Name()
+	if name == callerName {
+		return true
+	}
+	return false
 }
