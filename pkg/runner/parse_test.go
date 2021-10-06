@@ -388,3 +388,20 @@ excludes:
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(servers))
 }
+
+// 测试解析ParseExecutor地址区间异常情况
+func TestParseExecutorWithErrIPRange(t *testing.T) {
+	// a.测试异常元数据类型
+	const b = `
+server:
+   - host: xxx.xxx.xxx.1-3
+     username: root
+     password: 123456
+     port: 22
+excludes:
+ - 192.168.235.132
+`
+	executor, err := ParseExecutor([]byte(b), nil)
+	assert.NotNil(t, err)
+	assert.Equal(t, 0, len(executor.Servers))
+}

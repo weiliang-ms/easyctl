@@ -29,4 +29,5 @@ func TestNumNotEqualErr(t *testing.T) {
 
 func TestIsCaller(t *testing.T) {
 	assert.Equal(t, true, IsCaller(1, "github.com/weiliang-ms/easyctl/pkg/util/errors.TestIsCaller"))
+	assert.NotEqual(t, true, IsCaller(2, "github.com/weiliang-ms/easyctl/pkg/util/errors.TestIsCaller"))
 }
