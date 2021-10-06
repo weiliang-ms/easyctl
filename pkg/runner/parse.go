@@ -28,6 +28,7 @@ var validSplitChar = []string{"..", "-", ":"}
 // ServerListFilter 解析、过滤server主机列表
 // 解析ip地址区间类型，排除excludes数组内的主机
 func (serverListInternal ServerListInternal) serverListFilter(logger *logrus.Logger) ([]ServerInternal, error) {
+
 	var servers []ServerInternal
 	serverMap := make(map[string]ServerInternal)
 
@@ -60,6 +61,10 @@ func contain(server ServerInternal, excludeServers []string) bool {
 
 // ParseServerList ServerList反序列化
 func ParseServerList(b []byte, logger *logrus.Logger) ([]ServerInternal, error) {
+	if logger == nil {
+		logger = logrus.New()
+	}
+
 	serverList := ServerListExternal{}
 	if err := yaml.Unmarshal(b, &serverList); err != nil {
 		return []ServerInternal{}, err
@@ -200,12 +205,11 @@ func getInterval(cidr, rangeStr string, logger *logrus.Logger) addressInterval {
 
 	result, err := strings2.SplitIfContain(rangeStr, validSplitChar)
 	if err != nil {
-		logger.Printf(err.Error())
 		return interval
 	}
 
 	if len(result) != 2 {
-		logger.Printf(err.Error())
+		logger.Info(result)
 		return interval
 	}
 

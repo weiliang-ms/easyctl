@@ -371,3 +371,20 @@ script: 1.sh
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(executor.Servers))
 }
+
+// 测试解析带有多个分隔符的主机列表配置
+func TestParseMultiSplitCharServers(t *testing.T) {
+	// a.测试异常元数据类型
+	const b = `
+server:
+   - host: 10.10.10.,-1-3
+     username: root
+     password: 123456
+     port: 22
+excludes:
+ - 192.168.235.132
+`
+	servers, err := ParseServerList([]byte(b), nil)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(servers))
+}
