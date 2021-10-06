@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/lithammer/dedent"
 	"github.com/sirupsen/logrus"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
 	"text/template"
@@ -50,9 +51,9 @@ func User(b []byte, logger *logrus.Logger) error {
 		return err
 	}
 
-	script, err := config.addUserScript()
+	script, _ := config.addUserScript()
 
-	return Run(b, logger, script)
+	return runner.RemoteRun(b, logger, script)
 }
 
 // ParseNewUserConfig 解析新用户属性
@@ -67,12 +68,15 @@ func ParseNewUserConfig(b []byte, logger *logrus.Logger) (*NewUserConfig, error)
 
 // IsValid 判断用户属性是否合法
 func (config *NewUserConfig) IsValid() error {
-	if config.NewUser.UserDir == "" {
+	if config.NewUser.Nologin == false && config.NewUser.UserDir == "" {
 		config.NewUser.Name = fmt.Sprintf("/home/%s", config.NewUser.Name)
+	}
+
+	if len(config.NewUser.Password) < 6 {
+		return fmt.Errorf("密码长度不能小于6位")
 	}
 	// todo 新增用户名称合法性检测
 	// todo 新增用户密码合法性检测
-
 	return nil
 }
 
