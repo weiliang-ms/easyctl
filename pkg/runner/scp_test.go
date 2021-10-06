@@ -42,7 +42,7 @@ func TestConnectErr(t *testing.T) {
 	case "windows":
 		assert.EqualError(t, err, "连接远程主机：失败 ->dial tcp :0: connectex: The requested address is not valid in its context.")
 	case "linux":
-		assert.EqualError(t, err, "连接远程主机：失败 ->dial tcp :0: connect: connection refused")
+		assert.EqualError(t, err, "连接远程主机：失败 ->连接ssh失败 dial tcp :0: connect: connection refused")
 	}
 
 	_ = f.Close()
