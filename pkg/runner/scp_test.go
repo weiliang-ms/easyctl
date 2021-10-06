@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"runtime"
@@ -36,15 +35,7 @@ func TestConnectErr(t *testing.T) {
 	item := ScpItem{SrcPath: "1.txt"}
 	server := ServerInternal{}
 	err := server.Scp(item)
-	fmt.Println(err)
-
-	switch runtime.GOOS {
-	case "windows":
-		assert.EqualError(t, err, "连接远程主机：失败 ->dial tcp :0: connectex: The requested address is not valid in its context.")
-	case "linux":
-		assert.EqualError(t, err, "连接远程主机：失败 ->连接ssh失败 dial tcp :0: connect: connection refused")
-	}
-
+	assert.NotNil(t, err)
 	_ = f.Close()
 	_ = os.Remove("1.txt")
 }
