@@ -3,6 +3,7 @@ package clean
 import (
 	"github.com/lithammer/dedent"
 	"github.com/sirupsen/logrus"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/slice"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
@@ -47,7 +48,7 @@ func Dns(b []byte, logger *logrus.Logger) error {
 	if err != nil {
 		return err
 	}
-	return Config(b, logger, script)
+	return runner.RemoteRun(b, logger, script)
 }
 
 // PruneDnsScript 清理dns脚本
