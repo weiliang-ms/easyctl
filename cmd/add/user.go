@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/add"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 )
 
 //go:embed asset/user.yaml
@@ -15,8 +16,15 @@ var addUserCmd = &cobra.Command{
 	Use:   "user [flags]",
 	Short: "创建用户指令",
 	Run: func(cmd *cobra.Command, args []string) {
-		if runErr := Add(Entity{Cmd: cmd, Fnc: add.User, DefaultConfig: userConfig}); runErr != nil {
-			panic(runErr)
+		if err := command.SetExecutorDefault(
+			command.ExecutorEntity{
+				Cmd:           cmd,
+				Fnc:           add.User,
+				DefaultConfig: userConfig,
+			},
+			configFile,
+		); err != nil {
+			panic(err)
 		}
 	},
 	Args: cobra.NoArgs,
