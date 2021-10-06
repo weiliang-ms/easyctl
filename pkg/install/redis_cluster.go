@@ -203,15 +203,14 @@ func (config *redisClusterConfig) HandPackage() (err error) {
 
 // Compile 编译
 func (config *redisClusterConfig) Compile() error {
-
+	// todo: if nit set value
+	if config.Logger == nil {
+		config.Logger = logrus.New()
+	}
 	config.Logger.Infoln("开始编译redis")
-	compileCmd, err := tmplutil.Render(tmpl.RedisCompileTmpl, tmplutil.TmplRenderData{
+	compileCmd, _ := tmplutil.Render(tmpl.RedisCompileTmpl, tmplutil.TmplRenderData{
 		"PackageName": strings2.SubFileName(config.Package),
 	})
-
-	if err != nil {
-		return fmt.Errorf("生成编译指令模板失败, %s", err)
-	}
 
 	defer config.Logger.Info("redis编译完毕")
 
@@ -225,6 +224,12 @@ func (config *redisClusterConfig) SetUpRuntime() error {
 }
 
 func (config *redisClusterConfig) Config() error {
+
+	// todo: 非空校验
+	if config.Logger == nil {
+		config.Logger = logrus.New()
+	}
+
 	config.Logger.Info("生成配置文件")
 	// local
 	var ports []int
@@ -233,14 +238,10 @@ func (config *redisClusterConfig) Config() error {
 	}
 
 	// todo: 考虑io替代shell
-	generateConfigShell, err := tmplutil.Render(tmpl.RedisClusterConfigTmpl, tmplutil.TmplRenderData{
+	generateConfigShell, _ := tmplutil.Render(tmpl.RedisClusterConfigTmpl, tmplutil.TmplRenderData{
 		"Ports":    ports,
 		"Password": config.Password,
 	})
-
-	if err != nil {
-		return err
-	}
 
 	return config.run(generateConfigShell)
 }
@@ -273,6 +274,7 @@ func (config *redisClusterConfig) CloseFirewall() error {
 }
 
 func (config *redisClusterConfig) run(script string) error {
+
 	if config.CluterType == local {
 		return runner.LocalRun(script, config.Logger).Err
 	}

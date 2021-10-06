@@ -204,3 +204,19 @@ func TestHandPackage(t *testing.T) {
 	config.IgnoreErr = true
 	assert.Nil(t, config.HandPackage())
 }
+
+func TestRedisClusterConfig_Compile(t *testing.T) {
+	// test local
+	var config redisClusterConfig
+	config.CluterType = local
+	config.Package = "1.tar.gz"
+	assert.NotNil(t, config.Compile())
+}
+
+func TestRedisClusterConfig_Config(t *testing.T) {
+	// test local
+	var config redisClusterConfig
+	config.CluterType = threeNodesThreeShards
+	config.Package = "1.tar.gz"
+	assert.NotNil(t, config.Config())
+}
