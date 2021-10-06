@@ -14,7 +14,7 @@ func init() {
 }
 
 // 配置yum repo
-// todo
+// todo:
 var yumRepoCmd = &cobra.Command{
 	Use:   "yum-repo",
 	Short: "配置yum仓库",

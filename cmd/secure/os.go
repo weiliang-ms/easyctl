@@ -8,10 +8,5 @@ var osSecureCmd = &cobra.Command{
 	Short: "secure os through easyctl",
 	Args:  cobra.ExactValidArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		secureOS()
 	},
-}
-
-func secureOS() {
-
 }

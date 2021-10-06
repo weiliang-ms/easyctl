@@ -129,7 +129,7 @@ func (config *redisClusterConfig) Detect() (err error) {
 	}
 
 	if config.CluterType == local {
-		return runner.LocalRun(check, config.Logger)
+		return runner.LocalRun(check, config.Logger).Err
 	}
 
 	for v := range config.Executor.ParallelRun() {
@@ -148,7 +148,7 @@ func (config *redisClusterConfig) Prune() error {
 
 	config.Logger.Infoln("清理redis历史文件...")
 	if config.CluterType == local {
-		return runner.LocalRun(pruneRedisShell, config.Logger)
+		return runner.LocalRun(pruneRedisShell, config.Logger).Err
 	}
 
 	exec := runner.ExecutorInternal{
@@ -274,7 +274,7 @@ func (config *redisClusterConfig) CloseFirewall() error {
 
 func (config *redisClusterConfig) run(script string) error {
 	if config.CluterType == local {
-		return runner.LocalRun(script, config.Logger)
+		return runner.LocalRun(script, config.Logger).Err
 	}
 
 	exec := runner.ExecutorInternal{
