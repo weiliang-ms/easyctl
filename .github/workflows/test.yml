@@ -16,13 +16,12 @@ jobs:
           go-version: 1.16
       - uses: actions/checkout@master
       - run: go get -t -v ./...
-      - name: generate coverage report
-        run: go test ./... -race -vet=off -coverprofile=coverage.txt -covermode=atomic
+      - run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic -v
       - uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
           files: coverage.txt # optional
           flags: unittests # optional
           name: codecov-umbrella # optional
-          fail_ci_if_error: false # optional (default = false)
-          verbose: false # optional (default = false)
+          fail_ci_if_error: true # optional (default = false)
+          verbose: true # optional (default = false)
