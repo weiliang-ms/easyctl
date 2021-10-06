@@ -5,6 +5,7 @@
 ![GitHub all releases](https://img.shields.io/github/downloads/weiliang-ms/easyctl/total?style=flat-square)
 [![codecov](https://codecov.io/gh/weiliang-ms/easyctl/branch/master/graph/badge.svg?token=7RGD5V5L9Y)](https://codecov.io/gh/weiliang-ms/easyctl)
 ![GitHub](https://img.shields.io/github/license/weiliang-ms/easyctl?style=flat-square)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fweiliang-ms%2Feasyctl.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fweiliang-ms%2Feasyctl?ref=badge_shield)
 # easyctl 
 
 `easyctl`是一款基于`golang`轻量级运维工具集，详情使用请移步[使用文档](https://weiliang-ms.github.io/easyctl/)
@@ -77,3 +78,6 @@ sudo cp easyctl /usr/local/bin
 > `v2`功能预览
 
 - `windows GUI`
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fweiliang-ms%2Feasyctl.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fweiliang-ms%2Feasyctl?ref=badge_large)
