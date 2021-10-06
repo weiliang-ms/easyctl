@@ -2,6 +2,9 @@ package runner
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/weiliang-ms/easyctl/pkg/util/constant"
+	"os"
+	"runtime"
 	"testing"
 )
 
@@ -11,8 +14,61 @@ func TestLocalRun(t *testing.T) {
 	assert.NotNil(t, result.Err)
 
 	// test success cmd
-	result = LocalRun("ls", nil)
-	assert.Nil(t, result.Err)
+	if runtime.GOOS == "linux" {
+		result = LocalRun("ls", nil)
+		assert.Nil(t, result.Err)
+	}
+}
+
+func TestParallelRun(t *testing.T) {
+
+	server := ServerInternal{
+		Host:     "10.10.10.10",
+		Port:     "22",
+		Password: "123",
+		Username: "root",
+	}
+
+	script := "ls"
+
+	// test shell
+	executor := ExecutorInternal{
+		Servers: []ServerInternal{server},
+		Script:  script,
+	}
+
+	re := executor.ParallelRun()
+	for v := range re {
+		assert.NotNil(t, v.Err)
+		assert.Equal(t, script, v.Cmd)
+	}
+
+	// test shell-script file
+	script = "1.sh"
+	f, _ := os.Create(script)
+	f.Write([]byte("pwd"))
+	f.Close()
+	executor = ExecutorInternal{
+		Servers: []ServerInternal{server},
+		Script:  script,
+	}
+
+	re = executor.ParallelRun()
+	for v := range re {
+		assert.NotNil(t, v.Err)
+		assert.Equal(t, "pwd", v.Cmd)
+	}
+	os.Remove(script)
+}
+
+func TestCompleteDefault(t *testing.T) {
+	server := ServerInternal{
+		Password: "123",
+	}
+	s := server.completeDefault()
+	assert.Equal(t, "22", s.Port)
+	assert.Equal(t, constant.Root, s.Username)
+	assert.Equal(t, constant.RsaPrvPath, s.PrivateKeyPath)
 }
 
 //// ParallelRun 并发执行
@@ -200,22 +256,17 @@ func TestLocalRun(t *testing.T) {
 //	}
 //	return ssh.PublicKeys(signer)
 //}
-//
-//func (server ServerInternal) completeDefault() ServerInternal {
-//	if server.Port == "" {
-//		server.Port = "22"
-//	}
-//
-//	if server.Username == "" {
-//		server.Username = "root"
-//	}
-//
-//	if server.PrivateKeyPath == "" {
-//		server.PrivateKeyPath = "~/.ssh/id_rsa.pub"
-//	}
-//
-//	return server
-//}
+
+func TestPublicKeyAuthFunc(t *testing.T) {
+	_, err := publicKeyAuthFunc("/ss/ss")
+	assert.Errorf(t, err, "ssh key file read failed open /ss/ss: The system cannot find the path specified.")
+
+	// test not read
+	_, err = publicKeyAuthFunc("~/.ssh/1.pub")
+	assert.NotNil(t, err)
+
+}
+
 //
 //func handleErr(err *error) {
 //

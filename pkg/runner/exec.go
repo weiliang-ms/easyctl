@@ -8,7 +8,6 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
-	"k8s.io/klog"
 	"log"
 	"net"
 	"os"
@@ -59,6 +58,10 @@ func LocalRun(shell string, logger *logrus.Logger) ShellResult {
 
 // ParallelRun 并发执行
 func (executor ExecutorInternal) ParallelRun() chan ShellResult {
+
+	if executor.Logger == nil {
+		executor.Logger = logrus.New()
+	}
 
 	executor.Logger.Infoln("开始并行执行命令...")
 	wg := sync.WaitGroup{}
@@ -195,7 +198,11 @@ func (server ServerInternal) sshConnect() (*ssh.Session, error) {
 	auth = make([]ssh.AuthMethod, 0)
 
 	if server.Password == "" || server.PrivateKeyPath != "" {
-		auth = append(auth, publicKeyAuthFunc(server.PrivateKeyPath))
+		a, err := publicKeyAuthFunc(server.PrivateKeyPath)
+		if err != nil {
+			return session, err
+		}
+		auth = append(auth, a)
 	} else {
 		auth = append(auth, ssh.Password(s.Password))
 	}
@@ -226,34 +233,35 @@ func (server ServerInternal) sshConnect() (*ssh.Session, error) {
 	return session, nil
 }
 
-func publicKeyAuthFunc(kPath string) ssh.AuthMethod {
+func publicKeyAuthFunc(kPath string) (ssh.AuthMethod, error) {
 	keyPath, err := homedir.Expand(kPath)
 	if err != nil {
-		klog.Fatal("find key's home dir failed", err)
+		return nil, fmt.Errorf("find key's home dir failed %s", err)
 	}
 	key, err := ioutil.ReadFile(keyPath)
 	if err != nil {
-		klog.Fatal("ssh key file read failed", err)
+		return nil, fmt.Errorf("ssh key file read failed %s", err)
 	}
 	// Create the Signer for this private key.
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
-		klog.Fatal("ssh key signer failed", err)
+		return nil, fmt.Errorf("ssh key signer failed %s", err)
 	}
-	return ssh.PublicKeys(signer)
+	return ssh.PublicKeys(signer), nil
 }
 
+// todo: 利用反射断言等赋默认值
 func (server ServerInternal) completeDefault() ServerInternal {
 	if server.Port == "" {
 		server.Port = "22"
 	}
 
 	if server.Username == "" {
-		server.Username = "root"
+		server.Username = constant.Root
 	}
 
 	if server.PrivateKeyPath == "" {
-		server.PrivateKeyPath = "~/.ssh/id_rsa.pub"
+		server.PrivateKeyPath = constant.RsaPrvPath
 	}
 
 	return server
