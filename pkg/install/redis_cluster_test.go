@@ -218,5 +218,5 @@ func TestRedisClusterConfig_Config(t *testing.T) {
 	var config redisClusterConfig
 	config.CluterType = threeNodesThreeShards
 	config.Package = "1.tar.gz"
-	assert.NotNil(t, config.Config())
+	assert.Nil(t, config.Config())
 }
