@@ -18,14 +18,11 @@ jobs:
       - run: go get -t -v ./...
       - name: generate coverage report
         run: go test ./... -race -vet=off -coverprofile=coverage.txt -covermode=atomic
-      - run: cat coverage.txt
-      - run: pwd
-      - run: cat /home/runner/work/easyctl/easyctl/coverage.txt
       - uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-          files: coverage.txt, /home/runner/work/easyctl/easyctl/coverage.txt # optional
+          files: coverage.txt # optional
           flags: unittests # optional
           name: codecov-umbrella # optional
-          fail_ci_if_error: true # optional (default = false)
+          fail_ci_if_error: false # optional (default = false)
           verbose: true # optional (default = false)
