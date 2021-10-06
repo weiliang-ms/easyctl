@@ -20,7 +20,7 @@ func sftpConnect(user, password, host string, port string) (sftpClient *sftp.Cli
 	clientConfig := &ssh.ClientConfig{
 		User:    user,
 		Auth:    auth,
-		Timeout: 30 * time.Second,
+		Timeout: 5 * time.Second,
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 			return nil
 		},
