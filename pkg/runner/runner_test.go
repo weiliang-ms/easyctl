@@ -35,6 +35,17 @@ func TestSortServers(t *testing.T) {
 	}
 
 	assert.Equal(t, expect, servers)
+
+	expect2 := InternelServersSlice{
+		ServerInternal{
+			Host: "10.10.10.1",
+		},
+		ServerInternal{
+			Host: "10.10.10.1",
+		},
+	}
+
+	assert.Equal(t, true, expect2.Less(0, 1))
 }
 
 // 测试ShellResult排序
@@ -66,4 +77,15 @@ func TestSortShellResult(t *testing.T) {
 	}
 
 	assert.Equal(t, expect, result)
+
+	result2 := ShellResultSlice{
+		ShellResult{
+			Host: "10.10.10.1",
+		},
+		ShellResult{
+			Host: "10.10.10.1",
+		},
+	}
+
+	assert.Equal(t, true, result2.Less(0, 1))
 }

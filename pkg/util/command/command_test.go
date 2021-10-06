@@ -47,7 +47,7 @@ func TestSetExecutorDefaultReturnErr(t *testing.T) {
 	parentCmd.AddCommand(entity.Cmd)
 	parentParentCmd := &cobra.Command{}
 	parentParentCmd.AddCommand(parentCmd)
-	parentParentCmd.PersistentFlags().BoolVar(&debug, "debug", true, "debug")
+	parentParentCmd.PersistentFlags().BoolVar(&debug, "debug", false, "debug")
 
 	entity.Fnc = func(b []byte, logger *logrus.Logger) error {
 		return nil
@@ -58,5 +58,22 @@ func TestSetExecutorDefaultReturnErr(t *testing.T) {
 		return errors.New("ddd")
 	}
 
+	assert.Nil(t, SetExecutorDefault(entity, "config.yaml"))
+}
+
+// test logrus debug
+func TestSetLogrusDebug(t *testing.T) {
+	var debug bool
+	entity := ExecutorEntity{}
+	entity.Cmd = &cobra.Command{}
+	parentCmd := &cobra.Command{}
+	parentCmd.AddCommand(entity.Cmd)
+	parentParentCmd := &cobra.Command{}
+	parentParentCmd.AddCommand(parentCmd)
+	parentParentCmd.PersistentFlags().BoolVar(&debug, "debug", true, "debug")
+
+	entity.Fnc = func(b []byte, logger *logrus.Logger) error {
+		return nil
+	}
 	assert.Nil(t, SetExecutorDefault(entity, "config.yaml"))
 }

@@ -1,6 +1,7 @@
 package clean
 
 import (
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"regexp"
 	"strings"
@@ -118,4 +119,22 @@ clean-dns:
 
 	actureConfig, err = ParseDnsConfig([]byte(badConfig))
 	assert.NotNil(t, err)
+}
+
+func TestDns(t *testing.T) {
+	const b = `
+clean-dns:
+  address-list: 8.8.8.8
+  excludes:
+    - 114.114.114.114
+`
+	assert.EqualError(t, Dns([]byte(b), logrus.New()), "yaml: unmarshal errors:\n  line 3: cannot unmarshal !!str `8.8.8.8` into []string")
+
+	const c = `
+clean-dns:
+  address-list:
+  excludes:
+    - 114.114.114.114
+`
+	assert.Nil(t, Dns([]byte(c), logrus.New()))
 }
