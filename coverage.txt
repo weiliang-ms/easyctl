@@ -1,0 +1,201 @@
+  ?   	github.com/weiliang-ms/easyctl	[no test files]
+=== RUN   TestAdd
+--- PASS: TestAdd (0.00s)
+PASS
+coverage: 18.2% of statements
+ok  	github.com/weiliang-ms/easyctl/cmd/add	(cached)	coverage: 18.2% of statements
+?   	github.com/weiliang-ms/easyctl/cmd/clean	[no test files]
+?   	github.com/weiliang-ms/easyctl/cmd/deny	[no test files]
+?   	github.com/weiliang-ms/easyctl/cmd/exec	[no test files]
+?   	github.com/weiliang-ms/easyctl/cmd/export	[no test files]
+?   	github.com/weiliang-ms/easyctl/cmd/install	[no test files]
+?   	github.com/weiliang-ms/easyctl/cmd/scan	[no test files]
+?   	github.com/weiliang-ms/easyctl/cmd/secure	[no test files]
+?   	github.com/weiliang-ms/easyctl/cmd/set	[no test files]
+?   	github.com/weiliang-ms/easyctl/cmd/stat	[no test files]
+?   	github.com/weiliang-ms/easyctl/cmd/track	[no test files]
+?   	github.com/weiliang-ms/easyctl/cmd/upgrade	[no test files]
+=== RUN   TestParseHelmRepoConfig
+time="2021-10-06T13:59:41+08:00" level=debug msg="chart导出器结构体: {{    false }}"
+{{    false }}
+--- PASS: TestParseHelmRepoConfig (0.01s)
+=== RUN   TestChartList
+time="2021-10-06T13:59:41+08:00" level=debug msg="chart导出器结构体: {{    false }}"
+--- FAIL: TestChartList (0.00s)
+panic: Get "http:///api/chartrepo/charts/charts": http: no Host in request URL [recovered]
+	panic: Get "http:///api/chartrepo/charts/charts": http: no Host in request URL
+
+goroutine 7 [running]:
+testing.tRunner.func1.2(0xad6580, 0xc00021fad0)
+	D:/Program Files/Go/src/testing/testing.go:1143 +0x345
+testing.tRunner.func1(0xc000057680)
+	D:/Program Files/Go/src/testing/testing.go:1146 +0x4b6
+panic(0xad6580, 0xc00021fad0)
+	D:/Program Files/Go/src/runtime/panic.go:965 +0x1c7
+github.com/weiliang-ms/easyctl/gotest/export/chart.TestChartList(0xc000057680)
+	D:/github/easyctl/gotest/export/chart/chart_test.go:46 +0x40a
+testing.tRunner(0xc000057680, 0xb5aec0)
+	D:/Program Files/Go/src/testing/testing.go:1193 +0xef
+created by testing.(*T).Run
+	D:/Program Files/Go/src/testing/testing.go:1238 +0x2b3
+FAIL	github.com/weiliang-ms/easyctl/gotest/export/chart	0.987s
+=== RUN   TestHarborImageList
+time="2021-10-06T12:18:47+08:00" level=info msg="解析harbor配置信息..."
+time="2021-10-06T12:18:47+08:00" level=info msg="获取待导出镜像tag列表的project集合..."
+time="2021-10-06T12:18:47+08:00" level=info msg="获取harbor的project集合..."
+--- PASS: TestHarborImageList (21.05s)
+PASS
+coverage: [no statements]
+ok  	github.com/weiliang-ms/easyctl/gotest/export/harbor	(cached)	coverage: [no statements]
+=== RUN   TestInstallRedis
+[easyctl] DESKTOP-O8QG6I5 | 2021-10-06T12:18:45+08:00 | info | 解析redis cluster安装配置
+[easyctl] DESKTOP-O8QG6I5 | 2021-10-06T12:18:45+08:00 | info | 检测到配置文件中可能含有IP地址区间，开始解析组装...
+[easyctl] DESKTOP-O8QG6I5 | 2021-10-06T12:18:45+08:00 | info | 截取到IP地址区间: 10.79.165.0/24
+[easyctl] DESKTOP-O8QG6I5 | 2021-10-06T12:18:45+08:00 | info | 区间为: [51:53]
+[easyctl] DESKTOP-O8QG6I5 | 2021-10-06T12:18:45+08:00 | info | 开始组装地址区间类型server
+[easyctl] DESKTOP-O8QG6I5 | 2021-10-06T12:18:45+08:00 | info | 解析到起始IP为：10.79.165.51...
+[easyctl] DESKTOP-O8QG6I5 | 2021-10-06T12:18:45+08:00 | info | 解析到末尾IP为：10.79.165.53...
+[easyctl] DESKTOP-O8QG6I5 | 2021-10-06T12:18:45+08:00 | info | 地址区间类型server组装完毕！
+[easyctl] DESKTOP-O8QG6I5 | 2021-10-06T12:18:45+08:00 | info | 解析server列表完毕!
+[easyctl] DESKTOP-O8QG6I5 | 2021-10-06T12:18:45+08:00 | info | 检测依赖环境...
+[easyctl] DESKTOP-O8QG6I5 | 2021-10-06T12:18:45+08:00 | info | 开始并行执行命令...
+[easyctl] DESKTOP-O8QG6I5 | 2021-10-06T12:18:45+08:00 | info | [10.79.165.52] 开始执行指令 -> gcc -v
+[easyctl] DESKTOP-O8QG6I5 | 2021-10-06T12:18:45+08:00 | info | [10.79.165.51] 开始执行指令 -> gcc -v
+[easyctl] DESKTOP-O8QG6I5 | 2021-10-06T12:18:45+08:00 | info | [10.79.165.53] 开始执行指令 -> gcc -v
+--- PASS: TestInstallRedis (3.03s)
+PASS
+coverage: [no statements]
+ok  	github.com/weiliang-ms/easyctl/gotest/install	(cached)	coverage: [no statements]
+=== RUN   TestRun
+time="2021-10-06T12:18:45+08:00" level=info msg="开始并行执行命令..."
+| IP ADDRESS | CMD | EXIT CODE | RESULT | OUTPUT | EXCEPTION |
+|------------|-----|-----------|--------|--------|-----------|
+--- PASS: TestRun (0.02s)
+PASS
+coverage: [no statements]
+ok  	github.com/weiliang-ms/easyctl/gotest/runner	(cached)	coverage: [no statements]
+=== RUN   TestParseDnsConfig
+[114.114.114.114 8.8.8.8]
+--- PASS: TestParseDnsConfig (0.00s)
+=== RUN   TestAddDnsScript
+
+#!/bin/bash
+set -e
+echo "<no value>" | passwd --stdin root
+
+--- PASS: TestAddDnsScript (0.00s)
+=== RUN   TestSetDns
+time="2021-10-06T12:18:46+08:00" level=info msg="解析server列表完毕!"
+time="2021-10-06T12:18:46+08:00" level=info msg="开始并行执行命令..."
+| IP ADDRESS | CMD | EXIT CODE | RESULT | OUTPUT | EXCEPTION |
+|------------|-----|-----------|--------|--------|-----------|
+--- PASS: TestSetDns (0.01s)
+PASS
+coverage: [no statements]
+ok  	github.com/weiliang-ms/easyctl/gotest/set/dns	(cached)	coverage: [no statements]
+=== RUN   TestUlimit
+time="2021-10-06T12:18:45+08:00" level=info msg="解析server列表完毕!"
+time="2021-10-06T12:18:45+08:00" level=info msg="开始并行执行命令..."
+time="2021-10-06T12:18:45+08:00" level=info msg="解析server列表完毕!"
+time="2021-10-06T12:18:45+08:00" level=info msg="开始并行执行命令..."
+| IP ADDRESS | CMD | EXIT CODE | RESULT | OUTPUT | EXCEPTION |
+|------------|-----|-----------|--------|--------|-----------|
+--- PASS: TestUlimit (0.01s)
+PASS
+coverage: [no statements]
+ok  	github.com/weiliang-ms/easyctl/gotest/set/hostresolve	(cached)	coverage: [no statements]
+=== RUN   TestParseNewPasswordConfig
+Cloud@2021%^&*
+--- PASS: TestParseNewPasswordConfig (0.00s)
+=== RUN   TestNewPasswordScript
+
+#!/bin/bash
+set -e
+echo "Cloud@2021%^&*" | passwd --stdin root
+
+--- PASS: TestNewPasswordScript (0.00s)
+=== RUN   TestNewPassword
+time="2021-10-06T12:18:46+08:00" level=info msg="解析server列表完毕!"
+time="2021-10-06T12:18:46+08:00" level=info msg="开始并行执行命令..."
+| IP ADDRESS | CMD | EXIT CODE | RESULT | OUTPUT | EXCEPTION |
+|------------|-----|-----------|--------|--------|-----------|
+--- PASS: TestNewPassword (0.01s)
+PASS
+coverage: [no statements]
+ok  	github.com/weiliang-ms/easyctl/gotest/set/newpaasword	(cached)	coverage: [no statements]
+=== RUN   TestGenRsaKey
+time="2021-10-06T12:18:46+08:00" level=info msg="解析server列表完毕!"
+time="2021-10-06T12:18:46+08:00" level=info msg="开始并行执行命令..."
+| IP ADDRESS | CMD | EXIT CODE | RESULT | OUTPUT | EXCEPTION |
+|------------|-----|-----------|--------|--------|-----------|
+--- PASS: TestGenRsaKey (0.19s)
+=== RUN   TestMakeKeyPairScript
+
+#!/bin/bash
+set -e
+mkdir -p ~/.ssh
+tee ~/.ssh/id_rsa.pub <<EOF
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCxx2hYUPJ0KI4s7fLauyXqWvRpg0+GMt4I7a1g5x/lDxaQYdwNY8rpfuhAIoHiO71OZTPJ0BKMRby5HYLt6cPR2dGtf72mm7ThfmLQBbsK89bImxYMOYK/oSSw2QLkOQGhFSuwhqfvlHUqjq5JOLMf4sAS++8or0J+z+djGbgfFmc6c8nwQgDAPAVjdK7oQpu+D8g98LBvaZqshPQ5JKE39B/upYDKSJjkPDBScVlmDw3nZ7lf1bfLpw1qSWapg7oj7twnLC1m7YSWBpYXRiZaPpEXGHPlaM1jSlg0mhMZfVD0JW4rjY+FVkBDi8/182gEZX4Sr+zhLFRfPnUye12F
+
+EOF
+
+tee ~/.ssh/authorized_keys <<EOF
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCxx2hYUPJ0KI4s7fLauyXqWvRpg0+GMt4I7a1g5x/lDxaQYdwNY8rpfuhAIoHiO71OZTPJ0BKMRby5HYLt6cPR2dGtf72mm7ThfmLQBbsK89bImxYMOYK/oSSw2QLkOQGhFSuwhqfvlHUqjq5JOLMf4sAS++8or0J+z+djGbgfFmc6c8nwQgDAPAVjdK7oQpu+D8g98LBvaZqshPQ5JKE39B/upYDKSJjkPDBScVlmDw3nZ7lf1bfLpw1qSWapg7oj7twnLC1m7YSWBpYXRiZaPpEXGHPlaM1jSlg0mhMZfVD0JW4rjY+FVkBDi8/182gEZX4Sr+zhLFRfPnUye12F
+
+EOF
+
+tee ~/.ssh/id_rsa <<EOF
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEAscdoWFDydCiOLO3y2rsl6lr0aYNPhjLeCO2tYOcf5Q8WkGHc
+DWPK6X7oQCKB4ju9TmUzydASjEW8uR2C7enD0dnRrX+9ppu04X5i0AW7CvPWyJsW
+DDmCv6EksNkC5DkBoRUrsIan75R1Ko6uSTizH+LAEvvvKK9Cfs/nYxm4HxZnOnPJ
+8EIAwDwFY3Su6EKbvg/IPfCwb2marIT0OSShN/Qf7qWAykiY5DwwUnFZZg8N52e5
+X9W3y6cNaklmqYO6I+7cJywtZu2ElgaWF0YmWj6RFxhz5WjNY0pYNJoTGX1Q9CVu
+K42PhVZAQ4vP9fNoBGV+Eq/s4SxUXz51MntdhQIDAQABAoIBAHmhOkyiJR8/1/X5
+Xlw0Cn7Kd8nwounnx21IX4Sa3IF0zzU9HrayfdM+llu6wC4uPRhzuPjsOKRr2fC0
+ti1b8DOU2RXg/boNcbWNKMG2CgA2T86z/GOkvUWqVFYCQy4tqmWw/FEr753Ebl0N
+fURvXG4GTu8uGrQ1JENqrp5orEXngoEZccMgH0yfGAIOaA7Qy2ddKJFFF6dXV4FV
+Ain2CCOhwMaKCHepWW73w/edw8Bg2IqiRBa9YLjAMo2IxezX5IjoMCDrrXqLB/JX
+rV4UtdMgl7Gdybk+FoWUq3bN/1wabGplCBWx79P5EjJ9NyIhxBwf09+ByE6mB0yK
+VehqaAECgYEA7J8uxi4Y+aNSxEnQTaSnIQQPv8M8IguexD9eNIfDc5zrK6mqufzQ
+XpAcDm7Ib6fZpAaANtL3yIkWNqe1E3tk/bbMNg4G++cXxxDRB4XZwPxzX5lnGZId
+JDYoze1e9+O0jpypnWiBpPFf8eD1QxPVqBHsI9LZ/fHI9h7mu5nTnwECgYEAwFaS
+6M5+Skk21KMT095UEH7qZQy+TXt+BJbN9VsqeD3J+gjJOWpsW3y8U3Nm++jdvtxg
+uo3dCRyU0RBG/9MRINbkl7oYeG6lhuhLA8ADFIKbF6BCveo+LS41gX0btv9UK1tH
+Iy3kl6eQL6XiCARPhflfE+PV7zTqdDH36BQLwoUCgYEA0A4zmYxE55QFHZTttKeX
+UL96fZnUUPc4tcQmODg70ndijPTVqk2yhcNe+A3O7eZ/xur0Z8BeoRRw1MPnwuaX
+6UKHEuyIlYwf6yhNM7ksu7T+WUvQTLqeJw38GP2jqIGubEsyFLckb3zRaSPtY/qX
+vf1sTh+DD/g+RLLtHH1ohwECgYA9U11EHZLm3LE+20BXLWxgVhcmYQnMarOjgvHo
+aUkBTbI4ptSCGgyynvLtKL6NU5JgaKPu14zCevp4Llh0+Tdc4SfBuPRUcfMVMLu6
+Vl6lC3+n6NFe/HEWtsUYpGtRzddoe5ITBW79a8/tYVbQd49jiD9oeByeSKD4q3X/
+6WRWgQKBgQDByJ0Hom5JbVuAvzP1caVIUOdTUeuMUu0kmKg72imsyma3X2Zs/Hzn
+L6APRd46cCR8QGjhS1t+YOTIVzAvUb33GUWiNFjKgcPnoZxphzyum5C0dENjMaUQ
+lvBhcvEtrmGqHyxjQZ/zA1V5T2dUIISYzsoXnrH4eDKfY4ocOCtM1g==
+-----END RSA PRIVATE KEY-----
+
+EOF
+
+chmod 600 ~/.ssh -R
+
+--- PASS: TestMakeKeyPairScript (0.12s)
+PASS
+coverage: [no statements]
+ok  	github.com/weiliang-ms/easyctl/gotest/set/paaswordless	(cached)	coverage: [no statements]
+=== RUN   TestTimezone
+time="2021-10-06T12:18:46+08:00" level=info msg="解析server列表完毕!"
+time="2021-10-06T12:18:46+08:00" level=info msg="开始并行执行命令..."
+| IP ADDRESS | CMD | EXIT CODE | RESULT | OUTPUT | EXCEPTION |
+|------------|-----|-----------|--------|--------|-----------|
+--- PASS: TestTimezone (0.01s)
+PASS
+coverage: [no statements]
+ok  	github.com/weiliang-ms/easyctl/gotest/set/timezone	(cached)	coverage: [no statements]
+=== RUN   TestUlimit
+time="2021-10-06T12:18:45+08:00" level=info msg="解析server列表完毕!"
+time="2021-10-06T12:18:45+08:00" level=info msg="开始并行执行命令..."
+| IP ADDRESS | CMD | EXIT CODE | RESULT | OUTPUT | EXCEPTION |
+|------------|-----|-----------|--------|--------|-----------|
+--- PASS: TestUlimit (0.01s)
+PASS
+coverage: [no statements]
+ok  	github.com/weiliang-ms/easyctl/gotest/set/ulimit	(cached)	coverage: [no statements]
