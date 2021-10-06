@@ -16,7 +16,8 @@ jobs:
           go-version: 1.16
       - uses: actions/checkout@master
       - run: go get -t -v ./...
-      - run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
+      - name: generate coverage report
+        run: go test ./... -race -vet=off -covermode=atomic > coverage.txt
       - run: cat coverage.txt
       - run: pwd
       - run: cat /home/runner/work/easyctl/easyctl/coverage.txt
