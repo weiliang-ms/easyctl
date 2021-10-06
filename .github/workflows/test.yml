@@ -18,6 +18,8 @@ jobs:
       - run: go get -t -v ./...
       - run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
       - run: cat coverage.txt
+      - run: pwd
+      - run: cat /home/runner/work/easyctl/easyctl/coverage.txt
       - uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
