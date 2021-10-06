@@ -77,3 +77,9 @@ sudo cp easyctl /usr/local/bin
 > `v2`功能预览
 
 - `windows GUI`
+
+## License
+
+The code in this project is released under the [MIT License](LICENSE).
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fweiliang-ms%2Feasyctl.svg?type=large)](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fweiliang-ms%2Feasyctl.svg?type=large)
