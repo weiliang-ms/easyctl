@@ -162,7 +162,7 @@ type CustomFormatter struct {
 	levelTextMaxLength int
 }
 
-// 自定义格式
+// Format 自定义格式
 func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	data := make(Fields)
 	for k, v := range entry.Data {

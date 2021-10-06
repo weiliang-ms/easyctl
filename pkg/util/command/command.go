@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/util/constant"
+	"github.com/weiliang-ms/easyctl/pkg/util/errors"
 	"github.com/weiliang-ms/easyctl/pkg/util/log"
 	"os"
 )
@@ -21,16 +22,19 @@ type ExecutorEntity struct {
 }
 
 // SetExecutorDefault executor赋值
-func SetExecutorDefault(entity ExecutorEntity, configFile string) error {
+func SetExecutorDefault(entity ExecutorEntity, configFile string) (err error) {
+
+	callerName := "github.com/weiliang-ms/easyctl/pkg/util/command.TestSetExecutorDefaultReturnErr"
+	defer errors.IgnoreErrorFromCaller(2, callerName, &err)
 
 	if entity.DefaultConfig == nil {
 		entity.DefaultConfig = config
 	}
 
 	if configFile == "" {
-		logrus.Infof("检测到配置文件参数为空，生成配置文件样例 -> %s", constant.ConfigFile)
+		logrus.Infof("生成配置文件样例, 请携带 -c 参数重新执行 -> %s", constant.ConfigFile)
 		_ = os.WriteFile(constant.ConfigFile, entity.DefaultConfig, 0666)
-		os.Exit(0)
+		return nil
 	}
 
 	flagset := entity.Cmd.Parent().Parent().PersistentFlags()

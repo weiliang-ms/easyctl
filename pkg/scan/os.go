@@ -1,7 +1,6 @@
 package scan
 
 import (
-	"github.com/weiliang-ms/easyctl/pkg/file"
 	"log"
 	"net"
 	"regexp"
@@ -30,9 +29,9 @@ const cpuInfo = "/proc/cpuinfo"
 func (sys system) kernel() system {
 
 	filePath := "/proc/version"
-	content := file.ReadAll(filePath)
+	//content := file.ReadAll(filePath)
 	reg := regexp.MustCompile("^[0-9]\\.[0-9]*\\.[0-9]*-[0-9]*.*.x86_64")
-	for _, v := range strings.Split(content, " ") {
+	for _, v := range strings.Split(filePath, " ") {
 		if reg.MatchString(v) {
 			sys.Kernel = v
 		}
@@ -42,7 +41,7 @@ func (sys system) kernel() system {
 }
 
 func (sys system) cores() system {
-	sys.CPUCores = strings.Count(file.ReadAll(cpuInfo), "processor")
+	sys.CPUCores = strings.Count("", "processor")
 	return sys
 }
 
