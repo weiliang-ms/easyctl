@@ -3,6 +3,7 @@ package clean
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"regexp"
 	"strings"
 	"testing"
@@ -128,7 +129,7 @@ clean-dns:
   excludes:
     - 114.114.114.114
 `
-	assert.EqualError(t, Dns([]byte(b), logrus.New()), "yaml: unmarshal errors:\n  line 3: cannot unmarshal !!str `8.8.8.8` into []string")
+	assert.EqualError(t, Dns(command.OperationItem{B: []byte(b), Logger: logrus.New()}), "yaml: unmarshal errors:\n  line 3: cannot unmarshal !!str `8.8.8.8` into []string")
 
 	const c = `
 clean-dns:
@@ -136,5 +137,5 @@ clean-dns:
   excludes:
     - 114.114.114.114
 `
-	assert.Nil(t, Dns([]byte(c), logrus.New()))
+	assert.Nil(t, Dns(command.OperationItem{B: []byte(c), Logger: logrus.New()}))
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/install/tmpl"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/errors"
 	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
@@ -68,11 +69,11 @@ chown redis:redis /etc/redis
 `
 
 // RedisCluster 部署redis集群
-func RedisCluster(b []byte, logger *logrus.Logger) (err error) {
+func RedisCluster(item command.OperationItem) (err error) {
 	defer errors.IgnoreErrorFromCaller(3, "testing.tRunner", &err)
 	config := &redisClusterConfig{
-		Logger:        logger,
-		ConfigContent: b,
+		Logger:        item.Logger,
+		ConfigContent: item.B,
 	}
 	return install(config)
 }

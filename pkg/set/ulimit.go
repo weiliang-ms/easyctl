@@ -1,7 +1,7 @@
 package set
 
 import (
-	"github.com/sirupsen/logrus"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 )
 
 const ulimitShell = `
@@ -19,7 +19,7 @@ EOF
 `
 
 // Ulimit 设置文件描述符
-func Ulimit(b []byte, logger *logrus.Logger) error {
+func Ulimit(item command.OperationItem) error {
 
-	return Config(b, logger, ulimitShell)
+	return Config(item.B, item.Logger, ulimitShell)
 }

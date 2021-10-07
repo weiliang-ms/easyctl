@@ -16,11 +16,12 @@ var dnsCmd = &cobra.Command{
 	Use:   "dns [flags]",
 	Short: "配置主机dns",
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := command.SetExecutorDefault(command.ExecutorEntity{
-			Cmd:           cmd,
-			Fnc:           set.Dns,
-			DefaultConfig: dnsConfig,
-		}, configFile); err != nil {
+		if err := command.SetExecutorDefault(command.OperationItem{
+			Cmd:            cmd,
+			Fnc:            set.Dns,
+			DefaultConfig:  dnsConfig,
+			ConfigFilePath: configFile,
+		}); err != nil {
 			panic(err)
 		}
 	},

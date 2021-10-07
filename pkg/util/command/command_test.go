@@ -2,7 +2,6 @@ package command
 
 import (
 	"errors"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -10,22 +9,22 @@ import (
 
 func TestSetExecutorDefault(t *testing.T) {
 	// test -c is nil
-	entity := ExecutorEntity{}
-	assert.Nil(t, SetExecutorDefault(entity, ""))
+	assert.Nil(t, SetExecutorDefault(Item{}))
 
 	// test debug flag
-	entity = ExecutorEntity{}
+	entity := Item{}
 	entity.Cmd = &cobra.Command{}
 	parentCmd := &cobra.Command{}
 	parentCmd.AddCommand(entity.Cmd)
 	parentParentCmd := &cobra.Command{}
 	parentParentCmd.AddCommand(parentCmd)
-	assert.EqualError(t, SetExecutorDefault(entity, "config.yaml"), "flag accessed but not defined: debug")
+	entity.ConfigFilePath = "config.yaml"
+	assert.EqualError(t, SetExecutorDefault(entity), "flag accessed but not defined: debug")
 
 	// test err path configfile & full in DefaultConfig
 	var debug bool
 
-	entity = ExecutorEntity{}
+	entity = Item{}
 	entity.Cmd = &cobra.Command{}
 	entity.DefaultConfig = []byte("ddd")
 	parentCmd = &cobra.Command{}
@@ -33,15 +32,16 @@ func TestSetExecutorDefault(t *testing.T) {
 	parentParentCmd = &cobra.Command{}
 	parentParentCmd.AddCommand(parentCmd)
 	parentParentCmd.PersistentFlags().BoolVar(&debug, "debug", false, "debug")
+	entity.ConfigFilePath = "1.txt"
 
-	assert.Errorf(t, SetExecutorDefault(entity, "1.txt"), "open 1.txt: The system cannot find the file specified.")
+	assert.Errorf(t, SetExecutorDefault(entity), "open 1.txt: The system cannot find the file specified.")
 
 }
 
 // test panic return
 func TestSetExecutorDefaultReturnErr(t *testing.T) {
 	var debug bool
-	entity := ExecutorEntity{}
+	entity := Item{}
 	entity.Cmd = &cobra.Command{}
 	parentCmd := &cobra.Command{}
 	parentCmd.AddCommand(entity.Cmd)
@@ -49,22 +49,24 @@ func TestSetExecutorDefaultReturnErr(t *testing.T) {
 	parentParentCmd.AddCommand(parentCmd)
 	parentParentCmd.PersistentFlags().BoolVar(&debug, "debug", false, "debug")
 
-	entity.Fnc = func(b []byte, logger *logrus.Logger) error {
+	entity.Fnc = func(item OperationItem) error {
 		return nil
 	}
-	assert.Nil(t, SetExecutorDefault(entity, "config.yaml"))
+	entity.ConfigFilePath = "config.yaml"
 
-	entity.Fnc = func(b []byte, logger *logrus.Logger) error {
+	assert.Nil(t, SetExecutorDefault(entity))
+
+	entity.Fnc = func(item OperationItem) error {
 		return errors.New("ddd")
 	}
 
-	assert.Nil(t, SetExecutorDefault(entity, "config.yaml"))
+	assert.Nil(t, SetExecutorDefault(entity))
 }
 
 // test logrus debug
 func TestSetLogrusDebug(t *testing.T) {
 	var debug bool
-	entity := ExecutorEntity{}
+	entity := Item{}
 	entity.Cmd = &cobra.Command{}
 	parentCmd := &cobra.Command{}
 	parentCmd.AddCommand(entity.Cmd)
@@ -72,8 +74,9 @@ func TestSetLogrusDebug(t *testing.T) {
 	parentParentCmd.AddCommand(parentCmd)
 	parentParentCmd.PersistentFlags().BoolVar(&debug, "debug", true, "debug")
 
-	entity.Fnc = func(b []byte, logger *logrus.Logger) error {
+	entity.Fnc = func(item OperationItem) error {
 		return nil
 	}
-	assert.Nil(t, SetExecutorDefault(entity, "config.yaml"))
+	entity.ConfigFilePath = "config.yaml"
+	assert.Nil(t, SetExecutorDefault(entity))
 }

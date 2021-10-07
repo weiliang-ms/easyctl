@@ -2,8 +2,8 @@ package set
 
 import (
 	"github.com/lithammer/dedent"
-	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/ssh"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"text/template"
 )
@@ -29,12 +29,12 @@ chmod 600 ~/.ssh -R
 `)))
 
 // PasswordLess 设置主机互信
-func PasswordLess(config []byte, logger *logrus.Logger) error {
+func PasswordLess(item command.OperationItem) error {
 	script, err := MakeKeyPairScript(PasswordLessTmpl)
 	if err != nil {
 		return err
 	}
-	return Config(config, logger, script)
+	return Config(item.B, item.Logger, script)
 }
 
 // MakeKeyPairScript 生成密钥对

@@ -17,11 +17,13 @@ var cleanDnsCmd = &cobra.Command{
 	Short:   "清理dns列表",
 	Example: "\neasyctl clean dns",
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := command.SetExecutorDefault(command.ExecutorEntity{
-			Cmd:           cmd,
-			Fnc:           clean.Dns,
-			DefaultConfig: dnsDefaultConfig,
-		}, configFile); err != nil {
+		if err := command.SetExecutorDefault(
+			command.Item{
+				Cmd:            cmd,
+				Fnc:            clean.Dns,
+				DefaultConfig:  dnsDefaultConfig,
+				ConfigFilePath: configFile,
+			}); err != nil {
 			panic(err)
 		}
 	},

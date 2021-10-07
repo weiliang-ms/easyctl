@@ -5,6 +5,7 @@ import (
 	"github.com/lithammer/dedent"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
 	"text/template"
@@ -41,8 +42,8 @@ type NewUserConfig struct {
 }
 
 // User 添加user指令入口
-func User(b []byte, logger *logrus.Logger) error {
-	config, err := ParseNewUserConfig(b, logger)
+func User(item command.OperationItem) error {
+	config, err := ParseNewUserConfig(item.B, item.Logger)
 	if err != nil {
 		return err
 	}
@@ -53,7 +54,7 @@ func User(b []byte, logger *logrus.Logger) error {
 
 	script, _ := config.addUserScript()
 
-	return runner.RemoteRun(b, logger, script)
+	return runner.RemoteRun(item.B, item.Logger, script)
 }
 
 // ParseNewUserConfig 解析新用户属性

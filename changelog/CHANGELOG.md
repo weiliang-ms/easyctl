@@ -1,0 +1,5 @@
+- v0.7.8-alpha
+    - 提交部分指令测试用例
+    - 重构`cmd`包内`cmd`指令调用函数
+    - 集成`travis CI`
+    - 集成`FOSSA license scan`
