@@ -8,7 +8,6 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/errors"
 	"os"
-	"os/exec"
 	"sort"
 	"testing"
 )
@@ -230,8 +229,7 @@ func TestRedisClusterConfig_SetUpRuntime(t *testing.T) {
 	config.CluterType = local
 	config.Logger = logrus.New()
 	err := config.SetUpRuntime()
-	_, ok := err.(*exec.Error)
-	assert.Equal(t, true, ok)
+	assert.NotNil(t, err)
 
 	// test multi nodes
 	config.CluterType = threeNodesThreeShards
