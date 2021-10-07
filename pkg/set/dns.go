@@ -3,7 +3,7 @@ package set
 import (
 	"fmt"
 	"github.com/lithammer/dedent"
-	"github.com/sirupsen/logrus"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
 	"net"
@@ -24,12 +24,12 @@ type DnsConfig struct {
 }
 
 // Dns 设置Dns
-func Dns(b []byte, logger *logrus.Logger) error {
-	script, err := AddDnsScript(b, setDnsShellTmpl)
+func Dns(item command.OperationItem) error {
+	script, err := AddDnsScript(item.B, setDnsShellTmpl)
 	if err != nil {
 		return err
 	}
-	return Config(b, logger, script)
+	return Config(item.B, item.Logger, script)
 }
 
 // AddDnsScript 获取添加dns脚本

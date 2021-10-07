@@ -15,10 +15,11 @@ var passwordLessCmd = &cobra.Command{
 	Example: "\neasyctl set password-less --server-list=server.yaml",
 	Args:    cobra.ExactValidArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := command.SetExecutorDefault(command.ExecutorEntity{
-			Cmd:           cmd,
-			Fnc:           set.PasswordLess,
-		}, configFile); err != nil {
+		if err := command.SetExecutorDefault(command.Item{
+			Cmd:            cmd,
+			Fnc:            set.PasswordLess,
+			ConfigFilePath: configFile,
+		}); err != nil {
 			panic(err)
 		}
 	},

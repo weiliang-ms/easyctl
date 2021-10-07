@@ -14,10 +14,11 @@ var timeZoneCmd = &cobra.Command{
 	Aliases: []string{"tz"},
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := command.SetExecutorDefault(command.ExecutorEntity{
-			Cmd:           cmd,
-			Fnc:           set.Timezone,
-		}, configFile); err != nil {
+		if err := command.SetExecutorDefault(command.Item{
+			Cmd:            cmd,
+			Fnc:            set.Timezone,
+			ConfigFilePath: configFile,
+		}); err != nil {
 			panic(err)
 		}
 	},

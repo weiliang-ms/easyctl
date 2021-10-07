@@ -2,8 +2,8 @@ package clean
 
 import (
 	"github.com/lithammer/dedent"
-	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/slice"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
@@ -43,12 +43,12 @@ type DnsCleanerConfig struct {
 }
 
 // Dns 清理dns
-func Dns(b []byte, logger *logrus.Logger) error {
-	script, err := PruneDnsScript(b, pruneDnsShellTmpl)
+func Dns(item command.OperationItem) error {
+	script, err := PruneDnsScript(item.B, pruneDnsShellTmpl)
 	if err != nil {
 		return err
 	}
-	return runner.RemoteRun(b, logger, script)
+	return runner.RemoteRun(item.B, item.Logger, script)
 }
 
 // PruneDnsScript 清理dns脚本

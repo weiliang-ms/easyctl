@@ -3,7 +3,7 @@ package set
 import (
 	"fmt"
 	"github.com/lithammer/dedent"
-	"github.com/sirupsen/logrus"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"strconv"
 	"strings"
@@ -30,9 +30,9 @@ EOF
 `)))
 
 // HostResolve 配置主机host解析
-func HostResolve(b []byte, logger *logrus.Logger) error {
+func HostResolve(item command.OperationItem) error {
 
-	results, err := GetResult(b, logger, "hostname")
+	results, err := GetResult(item.B, item.Logger, "hostname")
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func HostResolve(b []byte, logger *logrus.Logger) error {
 		return err
 	}
 
-	return Config(b, logger, shell)
+	return Config(item.B, item.Logger, shell)
 }
 
 func (addresses IPAddress) Len() int { return len(addresses) }

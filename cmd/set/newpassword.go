@@ -17,11 +17,12 @@ var newPasswordCmd = &cobra.Command{
 	Short: "修改主机root口令",
 	Args:  cobra.ExactValidArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := command.SetExecutorDefault(command.ExecutorEntity{
-			Cmd:           cmd,
-			Fnc:           set.NewPassword,
-			DefaultConfig: newPasswordConfig,
-		}, configFile); err != nil {
+		if err := command.SetExecutorDefault(command.Item{
+			Cmd:            cmd,
+			Fnc:            set.NewPassword,
+			DefaultConfig:  newPasswordConfig,
+			ConfigFilePath: configFile,
+		}); err != nil {
 			panic(err)
 		}
 	},

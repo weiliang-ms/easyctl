@@ -3,7 +3,7 @@ package set
 import (
 	"fmt"
 	"github.com/lithammer/dedent"
-	"github.com/sirupsen/logrus"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
 	"text/template"
@@ -22,12 +22,12 @@ type PasswordConfig struct {
 }
 
 //NewPassword 修改用户口令
-func NewPassword(config []byte, logger *logrus.Logger) error {
-	script, err := NewPasswordScript(config, NewPasswordTmpl)
+func NewPassword(item command.OperationItem) error {
+	script, err := NewPasswordScript(item.B, NewPasswordTmpl)
 	if err != nil {
 		return err
 	}
-	return Config(config, logger, script)
+	return Config(item.B, item.Logger, script)
 }
 
 // NewPasswordScript 获取修改用户口令脚本

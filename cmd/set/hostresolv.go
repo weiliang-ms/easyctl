@@ -13,10 +13,11 @@ var hostResolveCmd = &cobra.Command{
 	Short: "配置host解析",
 	Args:  cobra.ExactValidArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := command.SetExecutorDefault(command.ExecutorEntity{
-			Cmd:           cmd,
-			Fnc:           set.HostResolve,
-		}, configFile); err != nil {
+		if err := command.SetExecutorDefault(command.Item{
+			Cmd:            cmd,
+			Fnc:            set.HostResolve,
+			ConfigFilePath: configFile,
+		}); err != nil {
 			panic(err)
 		}
 	},

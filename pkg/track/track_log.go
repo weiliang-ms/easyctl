@@ -1,8 +1,8 @@
 package track
 
 import (
-	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"gopkg.in/yaml.v2"
 )
 
@@ -16,15 +16,15 @@ type TailLogExecutor struct {
 }
 
 // TaiLog 多级追踪日志
-func TaiLog(config []byte, logger *logrus.Logger) error {
+func TaiLog(item command.OperationItem) error {
 
-	servers, err := runner.ParseServerList(config, logger)
+	servers, err := runner.ParseServerList(item.B, item.Logger)
 	stopCh := make(chan struct{})
 	if err != nil {
 		return err
 	}
 
-	executor, err := parseTailLogExecutor(config)
+	executor, err := parseTailLogExecutor(item.B)
 	if err != nil {
 		return err
 	}

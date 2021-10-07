@@ -14,36 +14,45 @@ import (
 //go:embed config.yaml
 var config []byte
 
-// ExecutorEntity executor实体
-type ExecutorEntity struct {
-	Cmd           *cobra.Command
-	Fnc           func(b []byte, logger *logrus.Logger) error
-	DefaultConfig []byte
+// Item 初始化赋值实体
+type Item struct {
+	Cmd            *cobra.Command
+	DefaultConfig  []byte
+	Fnc            func(item OperationItem) error
+	ConfigFilePath string
+	OptionFunc     map[string]interface{}
+}
+
+// OperationItem 操作实体
+type OperationItem struct {
+	B          []byte
+	Logger     *logrus.Logger
+	OptionFunc map[string]interface{}
 }
 
 // SetExecutorDefault executor赋值
-func SetExecutorDefault(entity ExecutorEntity, configFile string) (err error) {
+func SetExecutorDefault(item Item) (err error) {
 
 	callerName := "github.com/weiliang-ms/easyctl/pkg/util/command.TestSetExecutorDefaultReturnErr"
 	defer errors.IgnoreErrorFromCaller(2, callerName, &err)
 
-	if entity.DefaultConfig == nil {
-		entity.DefaultConfig = config
+	if item.DefaultConfig == nil {
+		item.DefaultConfig = config
 	}
 
-	if configFile == "" {
+	if item.ConfigFilePath == "" {
 		logrus.Infof("生成配置文件样例, 请携带 -c 参数重新执行 -> %s", constant.ConfigFile)
-		_ = os.WriteFile(constant.ConfigFile, entity.DefaultConfig, 0666)
+		_ = os.WriteFile(constant.ConfigFile, item.DefaultConfig, 0666)
 		return nil
 	}
 
-	flagset := entity.Cmd.Parent().Parent().PersistentFlags()
+	flagset := item.Cmd.Parent().Parent().PersistentFlags()
 	debug, err := flagset.GetBool("debug")
 	if err != nil {
 		return err
 	}
 
-	b, readErr := os.ReadFile(configFile)
+	b, readErr := os.ReadFile(item.ConfigFilePath)
 	if readErr != nil {
 		return readErr
 	}
@@ -56,5 +65,10 @@ func SetExecutorDefault(entity ExecutorEntity, configFile string) (err error) {
 	}
 
 	logger.SetFormatter(&log.CustomFormatter{})
-	return entity.Fnc(b, logger)
+
+	return item.Fnc(OperationItem{
+		B:          b,
+		Logger:     logger,
+		OptionFunc: item.OptionFunc,
+	})
 }

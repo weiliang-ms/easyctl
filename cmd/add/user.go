@@ -17,13 +17,12 @@ var addUserCmd = &cobra.Command{
 	Short: "创建用户指令",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := command.SetExecutorDefault(
-			command.ExecutorEntity{
-				Cmd:           cmd,
-				Fnc:           add.User,
-				DefaultConfig: userConfig,
-			},
-			configFile,
-		); err != nil {
+			command.Item{
+				Cmd:            cmd,
+				Fnc:            add.User,
+				DefaultConfig:  userConfig,
+				ConfigFilePath: configFile,
+			}); err != nil {
 			panic(err)
 		}
 	},

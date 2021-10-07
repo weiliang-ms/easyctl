@@ -5,6 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/errors"
 	"os"
 	"sort"
@@ -25,7 +26,7 @@ redis-cluster:
   cluster-type: 0 # [0] 本地伪集群 ; [1] 三节点3分片2副本 ; [2] 6节点3分片2副本
   package: /root/redis-5.0.13.tar.gz
 `
-	assert.Nil(t, RedisCluster([]byte(content), logrus.New()))
+	assert.Nil(t, RedisCluster(command.OperationItem{B: []byte(content), Logger: logrus.New()}))
 }
 
 func TestParse(t *testing.T) {

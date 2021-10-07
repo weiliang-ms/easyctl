@@ -45,6 +45,9 @@ github.com/docker/go-connections/tlsconfig
 github.com/docker/go-units
 # github.com/gogo/protobuf v1.3.2
 github.com/gogo/protobuf/proto
+# github.com/golang/mock v1.6.0
+## explicit
+github.com/golang/mock/gomock
 # github.com/golang/protobuf v1.5.2
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
@@ -72,7 +75,6 @@ github.com/mitchellh/mapstructure
 ## explicit
 # github.com/modood/table v0.0.0-20200225102042-88de94bb9876
 ## explicit
-github.com/modood/table
 # github.com/morikuni/aec v1.0.0
 ## explicit
 # github.com/olekukonko/tablewriter v0.0.5
@@ -105,6 +107,7 @@ github.com/spf13/pflag
 # github.com/stretchr/testify v1.7.0
 ## explicit
 github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
 # github.com/vbauerster/mpb/v6 v6.0.4
 ## explicit
 github.com/vbauerster/mpb/v6
