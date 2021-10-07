@@ -158,7 +158,7 @@ func (executor ChartExecutor) Save(list []ChartItem) error {
 	return nil
 }
 
-func getChartsByte(list []ChartItem, endpoint, user, password, preserveDir string) (map[string][]byte, error) {
+func GetChartsByte(list []ChartItem, endpoint, user, password, preserveDir string) (map[string][]byte, error) {
 	result := make(map[string][]byte)
 	for _, v := range list {
 		name := fmt.Sprintf("%s-%s.tgz", v.Name, v.LatestVersion)

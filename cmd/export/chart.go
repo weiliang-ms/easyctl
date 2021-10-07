@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/export"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 )
 
 //go:embed asset/chart-repo.yaml
@@ -15,8 +16,18 @@ var chartCmd = &cobra.Command{
 	Use:   "chart [flags]",
 	Short: "导出charts指令",
 	Run: func(cmd *cobra.Command, args []string) {
-		if runErr := Export(Entity{Cmd: cmd, Fnc: export.Chart, DefaultConfig: chartConfig}); runErr != nil {
-			panic(runErr)
+		options := make(map[string]interface{})
+		options[export.GetChartListFunc] = export.GetChartList
+		options[export.GetChartsByteFunc] = export.GetChartsByte
+
+		if err := command.SetExecutorDefault(command.Item{
+			Cmd:            cmd,
+			DefaultConfig:  chartConfig,
+			Fnc:            export.Chart,
+			ConfigFilePath: configFile,
+			OptionFunc:     options,
+		}); err != nil {
+			panic(err)
 		}
 	},
 }
