@@ -240,7 +240,35 @@ func TestRedisClusterConfig_Boot(t *testing.T) {
 	// test three noeds
 	var config redisClusterConfig
 	config.CluterType = threeNodesThreeShards
+	config.Servers = []runner.ServerInternal{
+		{
+			Host:     "10.10.10.1",
+			Port:     "22",
+			Username: "root",
+			Password: "222",
+		},
+		{
+			Host:     "10.10.10.2",
+			Port:     "22",
+			Username: "root",
+			Password: "222",
+		},
+		{
+			Host:     "10.10.10.3",
+			Port:     "22",
+			Username: "root",
+			Password: "222",
+		},
+	}
 	config.Logger = logrus.New()
 	err := config.Boot()
+	assert.NotNil(t, err)
+}
+
+func TestRedisClusterConfig_CloseFirewall(t *testing.T) {
+	var config redisClusterConfig
+	config.CluterType = threeNodesThreeShards
+	config.Logger = logrus.New()
+	err := config.CloseFirewall()
 	assert.Nil(t, err)
 }
