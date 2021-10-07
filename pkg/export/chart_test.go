@@ -2,8 +2,10 @@ package export
 
 import (
 	_ "embed"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
+	"io/fs"
 	"testing"
 )
 
@@ -69,6 +71,10 @@ helm-repo:
 
 	options[GetChartListFunc] = mockGetChartList
 	item.OptionFunc = options
-	assert.EqualError(t, Chart(item), "mkdir : The system cannot find the path specified.")
+
+	err := Chart(item)
+	fmt.Println(err)
+	_, ok := err.(*fs.PathError)
+	assert.Equal(t, true, ok)
 
 }
