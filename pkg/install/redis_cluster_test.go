@@ -244,6 +244,5 @@ func TestRedisClusterConfig_Boot(t *testing.T) {
 	config.CluterType = threeNodesThreeShards
 	config.Logger = logrus.New()
 	err := config.Boot()
-	_, ok := err.(*exec.Error)
-	assert.Equal(t, true, ok)
+	assert.Nil(t, err)
 }
