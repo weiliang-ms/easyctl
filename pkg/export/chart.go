@@ -43,8 +43,8 @@ type ChartItem struct {
 const GetChartListFunc = "getChartListFunc"
 const GetChartsByteFunc = "getChartsByteFunc"
 
-type getChartListFunc func(endpoint, user, password string) ([]byte, error)
-type getChartsByteFunc func(list []ChartItem) (map[string][]byte, error)
+type getChartListFunc func(executor *ChartExecutor) ([]byte, error)
+type getChartsByteFunc func(list []ChartItem, executor *ChartExecutor) (map[string][]byte, error)
 
 // Chart 批量下载chart
 func Chart(item command.OperationItem) error {
@@ -58,12 +58,12 @@ func Chart(item command.OperationItem) error {
 		return err
 	}
 
-	listFunc, ok := item.OptionFunc[GetChartListFunc].(func(endpoint, user, password string) ([]byte, error))
+	listFunc, ok := item.OptionFunc[GetChartListFunc].(func(executor *ChartExecutor) ([]byte, error))
 	if !ok {
 		return fmt.Errorf("%s 入参非法", GetChartListFunc)
 	}
 
-	chartBytes, ok := item.OptionFunc[GetChartsByteFunc].(func(list []ChartItem) (map[string][]byte, error))
+	chartBytes, ok := item.OptionFunc[GetChartsByteFunc].(func(list []ChartItem, executor *ChartExecutor) (map[string][]byte, error))
 	if !ok {
 		return fmt.Errorf("%s 入参非法", GetChartsByteFunc)
 	}
@@ -101,9 +101,7 @@ func (executor *ChartExecutor) List() ([]ChartItem, error) {
 	// todo ssl
 
 	var items []ChartItem
-	b, err := executor.ChartListFunc(executor.Config.HelmRepo.Endpoint,
-		executor.Config.HelmRepo.Username,
-		executor.Config.HelmRepo.Password)
+	b, err := executor.ChartListFunc(executor)
 
 	if err != nil {
 		return nil, err
@@ -117,10 +115,10 @@ func (executor *ChartExecutor) List() ([]ChartItem, error) {
 	return items, nil
 }
 
-func GetChartList(endpoint, user, password string) ([]byte, error) {
+func GetChartList(executor *ChartExecutor) ([]byte, error) {
 
-	url := fmt.Sprintf("http://%s/api/chartrepo/charts/charts", endpoint)
-	resp, err := doGET(url, user, password)
+	url := fmt.Sprintf("http://%s/api/chartrepo/charts/charts", executor.Config.HelmRepo.Endpoint)
+	resp, err := doGET(url, executor.Config.HelmRepo.Username, executor.Config.HelmRepo.Password)
 
 	if err != nil {
 		return nil, err
@@ -130,7 +128,7 @@ func GetChartList(endpoint, user, password string) ([]byte, error) {
 }
 
 // Save 保存chart列表
-func (executor ChartExecutor) Save(list []ChartItem) error {
+func (executor *ChartExecutor) Save(list []ChartItem) error {
 
 	executor.Logger.Infof("导出chart -> 创建目录: %s", executor.Config.HelmRepo.PreserveDir)
 
@@ -140,7 +138,7 @@ func (executor ChartExecutor) Save(list []ChartItem) error {
 
 	executor.Logger.Info("逐一导出chart中...")
 
-	byteSlice, err := executor.ChartsByteFunc(list)
+	byteSlice, err := executor.ChartsByteFunc(list, executor)
 	if err != nil {
 		return err
 	}
@@ -158,17 +156,17 @@ func (executor ChartExecutor) Save(list []ChartItem) error {
 	return nil
 }
 
-func GetChartsByte(list []ChartItem, endpoint, user, password, preserveDir string) (map[string][]byte, error) {
+func GetChartsByte(list []ChartItem, executor *ChartExecutor) (map[string][]byte, error) {
 	result := make(map[string][]byte)
 	for _, v := range list {
 		name := fmt.Sprintf("%s-%s.tgz", v.Name, v.LatestVersion)
-		url := fmt.Sprintf("http://%s/chartrepo/charts/charts/%s", endpoint, name)
-		resp, err := doGET(url, user, password)
+		url := fmt.Sprintf("http://%s/chartrepo/charts/charts/%s", executor.Config.HelmRepo.Endpoint, name)
+		resp, err := doGET(url, executor.Config.HelmRepo.Username, executor.Config.HelmRepo.Password)
 		if err != nil {
 			return result, err
 		}
 
-		path := fmt.Sprintf("%s/%s", preserveDir, name)
+		path := fmt.Sprintf("%s/%s", executor.Config.HelmRepo.PreserveDir, name)
 
 		b, err := io.ReadAll(resp.Body)
 		if err != nil {

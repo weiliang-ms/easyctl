@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func mockGetChartListErr(endpoint, user, password string) ([]byte, error) {
+func mockGetChartListErr(executor *ChartExecutor) ([]byte, error) {
 	b := []byte("ddd")
 	return b, nil
 }
@@ -15,7 +15,7 @@ func mockGetChartListErr(endpoint, user, password string) ([]byte, error) {
 //go:embed mocks/chart-list.json
 var chartListMockByte []byte
 
-func mockGetChartList(endpoint, user, password string) ([]byte, error) {
+func mockGetChartList(executor *ChartExecutor) ([]byte, error) {
 
 	return chartListMockByte, nil
 }
@@ -60,10 +60,15 @@ helm-repo:
 	// c.test mock get list function err
 	options[GetChartListFunc] = mockGetChartListErr
 	item.OptionFunc = options
-	assert.EqualError(t, Chart(item), "invalid character 'd' looking for beginning of value")
+	assert.EqualError(t, Chart(item), "getChartsByteFunc 入参非法")
 
 	// d.test mock get list function success
-	options[GetChartListFunc] = mockGetChartList
+	options[GetChartsByteFunc] = GetChartsByte
 	item.OptionFunc = options
 	assert.EqualError(t, Chart(item), "invalid character 'd' looking for beginning of value")
+
+	options[GetChartListFunc] = mockGetChartList
+	item.OptionFunc = options
+	assert.EqualError(t, Chart(item), "mkdir : The system cannot find the path specified.")
+
 }
