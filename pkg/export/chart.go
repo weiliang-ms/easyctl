@@ -132,7 +132,7 @@ func GetChartList(endpoint, user, password string) ([]byte, error) {
 // Save 保存chart列表
 func (executor ChartExecutor) Save(list []ChartItem) error {
 
-	executor.Logger.Info("导出chart -> 创建目录: %s", executor.Config.HelmRepo.PreserveDir)
+	executor.Logger.Infof("导出chart -> 创建目录: %s", executor.Config.HelmRepo.PreserveDir)
 
 	if err := os.Mkdir(executor.Config.HelmRepo.PreserveDir, 0755); err != nil {
 		return err
