@@ -8,6 +8,7 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/errors"
 	"os"
+	"os/exec"
 	"sort"
 	"testing"
 )
@@ -220,4 +221,29 @@ func TestRedisClusterConfig_Config(t *testing.T) {
 	config.CluterType = threeNodesThreeShards
 	config.Package = "1.tar.gz"
 	assert.Nil(t, config.Config())
+}
+
+func TestRedisClusterConfig_SetUpRuntime(t *testing.T) {
+
+	// test local
+	var config redisClusterConfig
+	config.CluterType = local
+	config.Logger = logrus.New()
+	err := config.SetUpRuntime()
+	_, ok := err.(*exec.Error)
+	assert.Equal(t, true, ok)
+
+	// test multi nodes
+	config.CluterType = threeNodesThreeShards
+	assert.Nil(t, config.SetUpRuntime())
+}
+
+func TestRedisClusterConfig_Boot(t *testing.T) {
+	// test three noeds
+	var config redisClusterConfig
+	config.CluterType = threeNodesThreeShards
+	config.Logger = logrus.New()
+	err := config.Boot()
+	_, ok := err.(*exec.Error)
+	assert.Equal(t, true, ok)
 }

@@ -258,13 +258,9 @@ func (config *redisClusterConfig) Boot() error {
 	}
 
 	// todo: 考虑io替代shell
-	bootRedisShell, err := tmplutil.Render(tmpl.RedisBootTmpl, tmplutil.TmplRenderData{
+	bootRedisShell, _ := tmplutil.Render(tmpl.RedisBootTmpl, tmplutil.TmplRenderData{
 		"Ports": ports,
 	})
-
-	if err != nil {
-		return err
-	}
 
 	return config.run(bootRedisShell)
 }
