@@ -52,8 +52,7 @@ excludes:
 `
 	//assert.Nil(t, RemoteRun([]byte(aaa), nil, ""))
 	os.Setenv(constant.SshNoTimeout, "true")
-	assert.Errorf(t, RemoteRun([]byte(aaa), nil, ""),
-		"line 3: cannot unmarshal !!map into []runner.ServerExternal")
+	assert.NotEqual(t, nil, RemoteRun([]byte(aaa), nil, ""))
 
 	aaa = `
 server:
