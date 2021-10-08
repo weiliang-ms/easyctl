@@ -30,10 +30,6 @@ type WindowsErr struct {
 	Errors string
 }
 
-func (e *WindowsErr) Error() string {
-	return e.Errors
-}
-
 // LocalRun 本地执行
 func LocalRun(shell string, logger *logrus.Logger) ShellResult {
 

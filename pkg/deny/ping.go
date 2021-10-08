@@ -1,8 +1,11 @@
 package deny
 
-import "github.com/sirupsen/logrus"
+import (
+	"github.com/weiliang-ms/easyctl/pkg/runner"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
+)
 
 // Ping 禁ping
-func Ping(config []byte, logger *logrus.Logger) error {
-	return Item(config, logger, denyPingShell)
+func Ping(item command.OperationItem) error {
+	return runner.RemoteRun(item.B, item.Logger, denyPingShell)
 }
