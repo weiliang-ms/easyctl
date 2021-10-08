@@ -3,6 +3,7 @@ package set
 import (
 	"fmt"
 	"github.com/lithammer/dedent"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
@@ -27,7 +28,7 @@ func NewPassword(item command.OperationItem) error {
 	if err != nil {
 		return err
 	}
-	return Config(item.B, item.Logger, script)
+	return runner.RemoteRun(item.B, item.Logger, script)
 }
 
 // NewPasswordScript 获取修改用户口令脚本

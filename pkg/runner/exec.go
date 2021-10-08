@@ -211,10 +211,18 @@ func (server ServerInternal) sshConnect() (*ssh.Session, error) {
 		return nil
 	}
 
+	var timeout time.Duration
+
+	if os.Getenv(constant.SshNoTimeout) == "true" {
+		timeout = 1
+	} else {
+		timeout = 3
+	}
+
 	clientConfig = &ssh.ClientConfig{
 		User:            s.Username,
 		Auth:            auth,
-		Timeout:         3 * time.Second,
+		Timeout:         timeout * time.Second,
 		HostKeyCallback: hostKeyCallbk,
 	}
 

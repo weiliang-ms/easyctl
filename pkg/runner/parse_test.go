@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/weiliang-ms/easyctl/pkg/util/constant"
+	"os"
 	"sort"
 	"testing"
 )
 
 // ipaddress
 func TestParseIPAddress(t *testing.T) {
+	os.Setenv(constant.SshNoTimeout, "true")
 	var slice InternelServersSlice
 	var expect []ServerInternal
 	var err error
@@ -63,6 +66,7 @@ server:
     port: 22
 excludes:
   - 10.10.10.9`
+	os.Setenv(constant.SshNoTimeout, "true")
 	servers, err := ParseServerList([]byte(d), logrus.New())
 	assert.Nil(t, err)
 	assert.Nil(t, servers)

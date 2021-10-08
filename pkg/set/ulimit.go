@@ -1,6 +1,7 @@
 package set
 
 import (
+	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 )
 
@@ -21,5 +22,5 @@ EOF
 // Ulimit 设置文件描述符
 func Ulimit(item command.OperationItem) error {
 
-	return Config(item.B, item.Logger, ulimitShell)
+	return runner.RemoteRun(item.B, item.Logger, ulimitShell)
 }

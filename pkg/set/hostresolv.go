@@ -3,9 +3,10 @@ package set
 import (
 	"fmt"
 	"github.com/lithammer/dedent"
+	"github.com/sirupsen/logrus"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
-	"strconv"
 	"strings"
 	"text/template"
 )
@@ -29,10 +30,21 @@ EOF
 {{- end }}
 `)))
 
+// e.g: 1.1.1.1 server-ddd
+type getHostResolveFunc func(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResult, error)
+
+const GetHostResolveFunc = "getHostResolveFunc"
+
 // HostResolve 配置主机host解析
 func HostResolve(item command.OperationItem) error {
 
-	results, err := GetResult(item.B, item.Logger, "hostname")
+	resolveFnc, ok := item.OptionFunc[GetHostResolveFunc].(func(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResult, error))
+	if !ok {
+		return fmt.Errorf("入参：%s 非法", GetHostResolveFunc)
+	}
+
+	results, err := resolveFnc(item.B, item.Logger, "hostname")
+
 	if err != nil {
 		return err
 	}
@@ -50,33 +62,14 @@ func HostResolve(item command.OperationItem) error {
 		addresses = append(addresses, strings.TrimSuffix(fmt.Sprintf("%s %s", v, k), "\n"))
 	}
 
-	shell, err := tmplutil.Render(setHostsShellTmpl, tmplutil.TmplRenderData{
+	shell, _ := tmplutil.Render(setHostsShellTmpl, tmplutil.TmplRenderData{
 		"HostResolveList": addresses,
 	})
 
-	if err != nil {
-		return err
-	}
+	return runner.RemoteRun(item.B, item.Logger, shell)
 
-	return Config(item.B, item.Logger, shell)
 }
 
-func (addresses IPAddress) Len() int { return len(addresses) }
-
-func (addresses IPAddress) Swap(i, j int) { addresses[i], addresses[j] = addresses[j], addresses[i] }
-
-func (addresses IPAddress) Less(i, j int) bool {
-
-	address1 := strings.Split(addresses[i], ".")
-	address2 := strings.Split(addresses[j], ".")
-
-	for k := 0; k < 4; k++ {
-		if address1[k] != address2[k] {
-			num1, _ := strconv.Atoi(address1[k])
-			num2, _ := strconv.Atoi(address2[k])
-			return num1 < num2
-		}
-	}
-
-	return true
+func GetHostResolve(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResult, error) {
+	return runner.GetResult(b, logger, cmd)
 }

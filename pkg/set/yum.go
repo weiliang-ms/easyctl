@@ -2,8 +2,6 @@ package set
 
 import (
 	"github.com/lithammer/dedent"
-	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
-	"log"
 	"text/template"
 )
 
@@ -74,32 +72,7 @@ EOF
 {{- end}}
 `)))
 
-// YUM 实体
-type YUM struct {
-}
-
-// Config 配置yum源
-func (yum YUM) Config(b []byte, debug bool) error {
-	return nil
-}
-func repoSetCmd(repoUrl string) string {
-	content, err := tmplutil.Render(baseRepoConfigTmpl, tmplutil.TmplRenderData{
-		"RepoUrl": repoUrl,
-	})
-	if err != nil {
-		log.Fatalf("解析模板失败：%s", err.Error())
-	}
-
-	return content
-}
-
-func localRepoSetCmd(isoPath string) string {
-	content, err := tmplutil.Render(localRepoConfigTmpl, tmplutil.TmplRenderData{
-		"ISOPath": isoPath,
-	})
-	if err != nil {
-		log.Fatalf("解析模板失败：%s", err.Error())
-	}
-
-	return content
-}
+// Yum 配置yum源
+//func Yum(item command.OperationItem) error {
+//	return nil
+//}
