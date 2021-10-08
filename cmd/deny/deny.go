@@ -3,12 +3,8 @@ package deny
 import (
 	// embed
 	_ "embed"
-	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/pkg/util/constant"
-	"k8s.io/klog"
-	"os"
 )
 
 var (
@@ -38,32 +34,4 @@ func init() {
 	RootCmd.AddCommand(denyFirewallCmd)
 	RootCmd.AddCommand(denySelinuxCmd)
 	RootCmd.AddCommand(denyPingCmd)
-}
-
-// Deny 组装执行器
-func Deny(entity Entity) error {
-	if configFile == "" {
-		klog.Infof("检测到配置文件为空，生成配置文件样例 -> %s", constant.ConfigFile)
-		_ = os.WriteFile(constant.ConfigFile, config, 0666)
-	}
-
-	flagset := entity.Cmd.Parent().Parent().PersistentFlags()
-	debug, err := flagset.GetBool("debug")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	b, readErr := os.ReadFile(configFile)
-	if readErr != nil {
-		klog.Fatalf("读取配置文件失败")
-	}
-
-	logger := logrus.New()
-	if debug {
-		logrus.SetLevel(logrus.DebugLevel)
-	} else {
-		logrus.SetLevel(logrus.InfoLevel)
-	}
-
-	return entity.Fnc(b, logger)
 }

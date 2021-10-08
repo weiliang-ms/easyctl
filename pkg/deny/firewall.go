@@ -1,8 +1,11 @@
 package deny
 
-import "github.com/sirupsen/logrus"
+import (
+	"github.com/weiliang-ms/easyctl/pkg/runner"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
+)
 
 // Firewall 关闭防火墙
-func Firewall(config []byte, logger *logrus.Logger) error {
-	return Item(config, logger, disableFirewallShell)
+func Firewall(item command.OperationItem) error {
+	return runner.RemoteRun(item.B, item.Logger, disableFirewallShell)
 }
