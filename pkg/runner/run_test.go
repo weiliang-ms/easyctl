@@ -47,7 +47,8 @@ server:
 excludes:
  - 192.168.235.132
 `
-	assert.Error(t, RemoteRun([]byte(aaa), nil, ""),
+	//assert.Nil(t, RemoteRun([]byte(aaa), nil, ""))
+	assert.Errorf(t, RemoteRun([]byte(aaa), nil, ""),
 		"line 3: cannot unmarshal !!map into []runner.ServerExternal")
 
 	aaa = `
