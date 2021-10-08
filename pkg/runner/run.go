@@ -6,6 +6,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/sftp"
 	"github.com/sirupsen/logrus"
+	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"golang.org/x/crypto/ssh"
 	"net"
 	"os"
@@ -17,10 +18,17 @@ func sftpConnect(user, password, host string, port string) (sftpClient *sftp.Cli
 	auth := make([]ssh.AuthMethod, 0)
 	auth = append(auth, ssh.Password(password))
 
+	var timeout time.Duration
+
+	if os.Getenv(constant.SshNoTimeout) == "true" {
+		timeout = 1
+	} else {
+		timeout = 5
+	}
 	clientConfig := &ssh.ClientConfig{
 		User:    user,
 		Auth:    auth,
-		Timeout: 5 * time.Second,
+		Timeout: timeout * time.Second,
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 			return nil
 		},

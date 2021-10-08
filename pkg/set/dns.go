@@ -3,6 +3,7 @@ package set
 import (
 	"fmt"
 	"github.com/lithammer/dedent"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
@@ -29,7 +30,7 @@ func Dns(item command.OperationItem) error {
 	if err != nil {
 		return err
 	}
-	return Config(item.B, item.Logger, script)
+	return runner.RemoteRun(item.B, item.Logger, script)
 }
 
 // AddDnsScript 获取添加dns脚本

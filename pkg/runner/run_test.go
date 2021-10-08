@@ -2,10 +2,13 @@ package runner
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/weiliang-ms/easyctl/pkg/util/constant"
+	"os"
 	"testing"
 )
 
 func TestGetResult(t *testing.T) {
+	os.Setenv(constant.SshNoTimeout, "true")
 	// a.测试反序列化失败
 	aaa := `
 server:
@@ -48,6 +51,7 @@ excludes:
  - 192.168.235.132
 `
 	//assert.Nil(t, RemoteRun([]byte(aaa), nil, ""))
+	os.Setenv(constant.SshNoTimeout, "true")
 	assert.Errorf(t, RemoteRun([]byte(aaa), nil, ""),
 		"line 3: cannot unmarshal !!map into []runner.ServerExternal")
 
@@ -66,13 +70,8 @@ excludes:
 
 // ssh连接异常error
 func TestSFtpConnectSSHError(t *testing.T) {
+	os.Setenv(constant.SshNoTimeout, "true")
 	sftp, err := sftpConnect("root", "ddd", "1.1.1.1", "22")
 	assert.Nil(t, sftp)
 	assert.Error(t, err, "连接ssh失败 dial tcp 1.1.1.1:22: i/o timeout")
 }
-
-//func TestSFtpError(t *testing.T) {
-//	sftp , err := sftpConnect("root", "ddd","1.1.1.1", "22")
-//	assert.Nil(t, sftp)
-//	assert.Error(t, err, "连接ssh失败 dial tcp 1.1.1.1:22: i/o timeout")
-//}

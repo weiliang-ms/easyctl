@@ -2,6 +2,7 @@ package set
 
 import (
 	"github.com/lithammer/dedent"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/ssh"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
@@ -30,20 +31,14 @@ chmod 600 ~/.ssh -R
 
 // PasswordLess 设置主机互信
 func PasswordLess(item command.OperationItem) error {
-	script, err := MakeKeyPairScript(PasswordLessTmpl)
-	if err != nil {
-		return err
-	}
-	return Config(item.B, item.Logger, script)
+	script, _ := MakeKeyPairScript(PasswordLessTmpl)
+	return runner.RemoteRun(item.B, item.Logger, script)
 }
 
 // MakeKeyPairScript 生成密钥对
 func MakeKeyPairScript(tmpl *template.Template) (string, error) {
 
-	prv, pub, err := ssh.MakeSSHKeyPair()
-	if err != nil {
-		return "", err
-	}
+	prv, pub, _ := ssh.MakeSSHKeyPair()
 
 	return tmplutil.Render(tmpl, map[string]interface{}{
 		"PublicKey":  pub,
