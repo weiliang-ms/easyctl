@@ -60,7 +60,7 @@ server:
 	item.OptionFunc = options
 	item.B = []byte{}
 	err = HostResolve(item)
-	assert.Nil(t, err)
+	assert.Equal(t, nil, err)
 
 	// test bad function
 	options[GetHostResolveFunc] = HostResolve
