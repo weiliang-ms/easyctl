@@ -11,7 +11,7 @@
 - [x] 三节点集群（三主三从，每个节点共运行两个服务）
 - [x] 六节点集群（三主三从，每个节点共运行一个服务）
 
-版本支持：[v0.7.8-alpha以上]()
+版本支持：[v0.7.9-alpha以上](https://github.com/weiliang-ms/easyctl/releases/tag/v0.7.9-alpha)
 
 ### 单机伪集群
 
