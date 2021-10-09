@@ -6,6 +6,6 @@ server:
 excludes:
   - 192.168.235.132
 redis-cluster:
-  paasword: ""
-  cluster-type: 0 # [0] 本地伪集群 ; [1] 三节点3分片2副本 ; [2] 6节点3分片2副本
-  package: "redis-5.0.13.tar.gz"
+  password: ""
+  cluster-type: 1 # [0] 本地伪集群 ; [1] 三节点3分片2副本 ; [2] 6节点3分片2副本
+  package: "redis-5.0.14.tar.gz"

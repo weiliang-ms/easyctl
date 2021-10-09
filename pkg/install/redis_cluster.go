@@ -11,6 +11,7 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
 	"os"
+	"strings"
 )
 
 // RedisClusterConfig redis安装配置反序列化对象
@@ -32,7 +33,10 @@ type redisClusterConfig struct {
 	ConfigContent []byte
 	ConfigItem    RedisClusterConfig
 	Executor      runner.ExecutorInternal
-	IgnoreErr     bool // UnitTest
+	IgnoreErr     bool     // UnitTest
+	PortsNeedOpen []int    // 需要放开的防火墙策略
+	EndpointList  []string // 节点列表
+	BootCommand   string
 }
 
 // RedisClusterType redis cluster部署模式
@@ -48,6 +52,7 @@ var defaultPorts = []int{26379, 26380, 26381, 26382, 26383, 26384}
 
 // todo: io实现
 const pruneRedisShell = `
+pkill -9 redis || true
 userdel -r redis || true
 rm -rf /etc/redis || true
 rm -rf /tmp/redis* || true
@@ -75,6 +80,7 @@ func RedisCluster(item command.OperationItem) (err error) {
 		Logger:        item.Logger,
 		ConfigContent: item.B,
 	}
+
 	return install(config)
 }
 
@@ -100,7 +106,27 @@ func (config *redisClusterConfig) Parse() error {
 		return fmt.Errorf("[redis-cluster] 反序列化主机列表失败 -> %s", err)
 	}
 
+	config.Logger.Debugf("主机列表为：%v", servers)
+	config.Logger.Debugf("开始安装redis集群，集群模式为: %d", config.CluterType)
 	config.Servers = servers
+
+	return nil
+}
+
+func (config *redisClusterConfig) SetValue() error {
+	var ports []int
+	var endpointList []string
+
+	for _, i := range defaultPorts[:config.numPerNode()] {
+		ports = append(ports, i)
+		ports = append(ports, i+10000)
+		for _, v := range config.Servers {
+			endpointList = append(endpointList, fmt.Sprintf("%s:%d", v.Host, i))
+		}
+	}
+
+	config.PortsNeedOpen = ports
+	config.EndpointList = endpointList
 
 	return nil
 }
@@ -130,7 +156,7 @@ func (config *redisClusterConfig) Detect() (err error) {
 	}
 
 	if config.CluterType == local {
-		return runner.LocalRun(check, config.Logger).Err
+		config.Servers = config.Servers[:1]
 	}
 
 	for v := range config.Executor.ParallelRun() {
@@ -149,7 +175,7 @@ func (config *redisClusterConfig) Prune() error {
 
 	config.Logger.Infoln("清理redis历史文件...")
 	if config.CluterType == local {
-		return runner.LocalRun(pruneRedisShell, config.Logger).Err
+		config.Servers = config.Servers[:1]
 	}
 
 	exec := runner.ExecutorInternal{
@@ -213,8 +239,6 @@ func (config *redisClusterConfig) Compile() error {
 		"PackageName": strings2.SubFileName(config.Package),
 	})
 
-	defer config.Logger.Info("redis编译完毕")
-
 	return config.run(compileCmd)
 }
 
@@ -234,8 +258,16 @@ func (config *redisClusterConfig) Config() error {
 	config.Logger.Info("生成配置文件")
 	// local
 	var ports []int
+	if config.CluterType == local {
+		ports = defaultPorts[:6]
+	}
+
 	if config.CluterType == threeNodesThreeShards {
 		ports = defaultPorts[:2]
+	}
+
+	if config.CluterType == sixNodesThreeShards {
+		ports = defaultPorts[:1]
 	}
 
 	// todo: 考虑io替代shell
@@ -247,33 +279,89 @@ func (config *redisClusterConfig) Config() error {
 	return config.run(generateConfigShell)
 }
 
+func (config *redisClusterConfig) SetService() error {
+	config.Logger.Info("配置开机自启动redis")
+
+	// local
+	ports := defaultPorts[:config.numPerNode()]
+	config.Logger.Debugf("ports: %v", ports)
+
+	// todo: 考虑io替代shell
+	setServiceShell, _ := tmplutil.Render(tmpl.SetRedisServiceTmpl, tmplutil.TmplRenderData{
+		"Ports":    ports,
+		"Password": config.Password,
+	})
+
+	return config.run(setServiceShell)
+}
+
 func (config *redisClusterConfig) Boot() error {
 
 	config.Logger.Info("启动redis")
+
 	// local
-	var ports []int
-	if config.CluterType == threeNodesThreeShards {
-		ports = defaultPorts[:2]
-		config.Logger.Debugf("ports: %v", ports)
-	}
+	ports := defaultPorts[:config.numPerNode()]
+	config.Logger.Debugf("ports: %v", ports)
 
 	// todo: 考虑io替代shell
 	bootRedisShell, _ := tmplutil.Render(tmpl.RedisBootTmpl, tmplutil.TmplRenderData{
-		"Ports": ports,
+		"Ports":    ports,
+		"Password": config.Password,
 	})
+
+	config.BootCommand = bootRedisShell
 
 	return config.run(bootRedisShell)
 }
 
 func (config *redisClusterConfig) CloseFirewall() error {
+	config.Logger.Info("开放防火墙端口")
 
+	script, _ := tmplutil.Render(tmpl.OpenFirewallPortTmpl, tmplutil.TmplRenderData{
+		"Ports": config.PortsNeedOpen,
+	})
+
+	return config.run(script)
+}
+
+func (config *redisClusterConfig) Init() error {
+	config.Logger.Info("初始化redis集群")
+
+	script, _ := tmplutil.Render(tmpl.InitClusterTmpl, tmplutil.TmplRenderData{
+		"EndpointList": config.EndpointList,
+		"Password":     config.Password,
+	})
+
+	if len(config.Servers) > 0 {
+		config.Servers = config.Servers[:1]
+	}
+
+	return config.run(script)
+}
+
+func (config *redisClusterConfig) Print() error {
+	config.Logger.Info("redis集群安装完毕,相关信息如下：")
+	var endpoint string
+	for _, v := range config.EndpointList {
+		endpoint = fmt.Sprintf("%s,%s", endpoint, v)
+	}
+	fmt.Printf("1.节点列表: %s\n"+
+		"2.密码: %s\n"+
+		"3.日志目录: /var/log/redis\n"+
+		"4.数据目录: /var/data/redis\n"+
+		"5.启动命令/节点: %s\n"+
+		"6.二进制目录：/usr/local/bin/redis-*", strings.TrimPrefix(endpoint, ","), config.Password, config.BootCommand)
 	return nil
 }
 
 func (config *redisClusterConfig) run(script string) error {
 
 	if config.CluterType == local {
-		return runner.LocalRun(script, config.Logger).Err
+		if len(config.Servers) > 0 {
+			config.Servers = config.Servers[:1]
+		} else {
+			return fmt.Errorf("单机集群：server不能为空也需指定")
+		}
 	}
 
 	exec := runner.ExecutorInternal{
@@ -291,4 +379,17 @@ func (config *redisClusterConfig) run(script string) error {
 	}
 
 	return nil
+}
+
+func (config *redisClusterConfig) numPerNode() int {
+	switch config.CluterType {
+	case local:
+		return 6
+	case threeNodesThreeShards:
+		return 2
+	case sixNodesThreeShards:
+		return 1
+	default:
+		return 0
+	}
 }

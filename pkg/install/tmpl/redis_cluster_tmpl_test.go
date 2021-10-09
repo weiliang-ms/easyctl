@@ -39,3 +39,82 @@ func TestRedisClusterConfigTmpl(t *testing.T) {
 	assert.NotNil(t, content)
 	fmt.Println(content)
 }
+
+func TestOpenFirewallPortTmpl(t *testing.T) {
+	content, err := tmplutil.Render(OpenFirewallPortTmpl, tmplutil.TmplRenderData{
+		"Ports": []int{26379, 26380},
+	})
+	const expect = `
+#!/bin/sh
+firewall-cmd --zone=public --add-port=26379/tcp --permanent || true
+firewall-cmd --zone=public --add-port=26380/tcp --permanent || true
+firewall-cmd --reload || true
+`
+	assert.Equal(t, nil, err)
+	assert.Equal(t, expect, content)
+	assert.NotNil(t, content)
+}
+
+func TestInitClusterTmpl(t *testing.T) {
+	content, err := tmplutil.Render(InitClusterTmpl, tmplutil.TmplRenderData{
+		"EndpointList": []string{
+			"10.10.10.1:26379",
+			"10.10.10.1:26380",
+			"10.10.10.1:26381",
+			"10.10.10.1:26382",
+			"10.10.10.1:26383",
+			"10.10.10.1:26384",
+		},
+	})
+	expect := `
+#!/bin/sh
+echo "yes" | /usr/local/bin/redis-cli --cluster create \
+10.10.10.1:26379 \
+10.10.10.1:26380 \
+10.10.10.1:26381 \
+10.10.10.1:26382 \
+10.10.10.1:26383 \
+10.10.10.1:26384 \
+--cluster-replicas 1
+`
+	assert.Equal(t, nil, err)
+	assert.Equal(t, expect, content)
+	assert.NotNil(t, content)
+
+	// with password
+	content, err = tmplutil.Render(InitClusterTmpl, tmplutil.TmplRenderData{
+		"EndpointList": []string{
+			"10.10.10.1:26379",
+			"10.10.10.1:26380",
+			"10.10.10.1:26381",
+			"10.10.10.1:26382",
+			"10.10.10.1:26383",
+			"10.10.10.1:26384",
+		},
+		"Password": "1111",
+	})
+	expect = `
+#!/bin/sh
+echo "yes" | /usr/local/bin/redis-cli --cluster create \
+10.10.10.1:26379 \
+10.10.10.1:26380 \
+10.10.10.1:26381 \
+10.10.10.1:26382 \
+10.10.10.1:26383 \
+10.10.10.1:26384 \
+--cluster-replicas 1 -a 1111
+`
+	assert.Equal(t, nil, err)
+	assert.Equal(t, expect, content)
+	assert.NotNil(t, content)
+}
+
+func TestSetRedisServiceTmpl(t *testing.T) {
+	content, err := tmplutil.Render(SetRedisServiceTmpl, tmplutil.TmplRenderData{
+		"Ports": []int{26379, 26380},
+	})
+
+	assert.Nil(t, err)
+
+	fmt.Println(content)
+}
