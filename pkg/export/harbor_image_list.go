@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/slice"
 	"gopkg.in/yaml.v2"
 	"io"
@@ -166,9 +167,9 @@ type TagExternel struct {
 }
 
 // HarborImageList harbor镜像列表导出
-func HarborImageList(b []byte, logger *logrus.Logger) error {
+func HarborImageList(item command.OperationItem) error {
 
-	executor, err := ParseHarborConfig(b, logger)
+	executor, err := ParseHarborConfig(item.B, item.Logger)
 	if err != nil {
 		return err
 	}

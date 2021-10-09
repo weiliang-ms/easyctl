@@ -110,7 +110,86 @@ EOF
 var RedisBootTmpl = template.Must(template.New("redisBootTmpl").Parse(dedent.Dedent(`
 {{- if .Ports }}
 {{- range .Ports }}
-/usr/local/bin/redis-server /etc/redis/redis-{{ . }}.conf
+service redis-{{ . }} start
+{{- end }}
+{{- end }}
+`)))
+
+// OpenFirewallPortTmpl todo: 兼容性适配
+var OpenFirewallPortTmpl = template.Must(template.New("openFirewallPortTmpl").Parse(dedent.Dedent(`
+#!/bin/sh
+{{- if .Ports }}
+{{- range .Ports }}
+firewall-cmd --zone=public --add-port={{ . }}/tcp --permanent || true
+{{- end }}
+firewall-cmd --reload || true
+{{- end }}
+`)))
+
+var InitClusterTmpl = template.Must(template.New("InitClusterTmpl").Parse(dedent.Dedent(`
+#!/bin/sh
+{{- if .EndpointList }}
+echo "yes" | /usr/local/bin/redis-cli --cluster create \
+{{- range .EndpointList }}
+{{ . }} \
+{{- end }}
+--cluster-replicas 1 {{- if $.Password }} -a {{ $.Password }} {{- end }}
+{{- end }}
+`)))
+
+var SetRedisServiceTmpl = template.Must(template.New("SetServiceTmpl").Parse(dedent.Dedent(`
+{{- if .Ports }}
+{{- range .Ports }}
+tee /etc/init.d/redis-{{ . }} <<EOF
+#!/bin/sh
+# chkconfig: 2345 10 90 
+# description: Start and Stop redis
+
+#
+# Simple Redis init.d script conceived to work on Linux systems
+# as it does use of the /proc filesystem.
+
+REDISPORT={{ . }}
+EXEC=/usr/local/bin/redis-server #redis-server 路径
+CLIEXEC=/usr/local/bin/redis-cli #redis-cli 路径
+
+PIDFILE=/var/run/redis-{{ . }}.pid
+CONF="/etc/redis/redis-{{ . }}.conf" #配置地址
+
+case "\$1" in
+    start)
+        if [ -f \$PIDFILE ]
+        then
+                echo "\$PIDFILE exists, process is already running or crashed"
+        else
+                echo "Starting Redis server..."
+                \$EXEC \$CONF
+        fi
+        ;;
+    stop)
+        if [ ! -f \$PIDFILE ]
+        then
+                echo "\$PIDFILE does not exist, process is not running"
+        else
+                PID=\$(cat \$PIDFILE)
+                echo "Stopping ..."
+                \$CLIEXEC -p \$REDISPORT {{- if $.Password }} -a {{ $.Password }} {{- end }} shutdown
+                while [ -x /proc/\${PID} ]
+                do
+                    echo "Waiting for Redis to shutdown ..."
+                    sleep 1
+                done
+                echo "Redis stopped"
+        fi
+        ;;
+    *)
+        echo "Please use start or stop as first argument"
+        ;;
+esac
+EOF
+
+chmod +x /etc/init.d/redis-{{ . }}
+chkconfig redis-{{ . }} on
 {{- end }}
 {{- end }}
 `)))

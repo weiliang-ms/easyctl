@@ -13,10 +13,9 @@ var redisClusterConfig []byte
 
 // redisClusterCmd 安装redis集群指令
 var redisClusterCmd = &cobra.Command{
-	Use:     "redis-cluster [flags]",
-	Short:   "配置主机互信",
-	Example: "\neasyctl set password-less --server-list=server.yaml",
-	Args:    cobra.ExactValidArgs(0),
+	Use:   "redis-cluster [flags]",
+	Short: "安装redis集群",
+	Args:  cobra.ExactValidArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := command.SetExecutorDefault(
 			command.Item{
