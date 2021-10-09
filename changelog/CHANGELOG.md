@@ -1,5 +1,6 @@
-- v0.7.8-alpha
+- `v0.7.9-alpha`  `2021-10-09 21:32:00`
     - 提交部分指令测试用例
     - 重构`cmd`包内`cmd`指令调用函数
     - 集成`travis CI`
     - 集成`FOSSA license scan`
+    - 添加`redis`集群安装指令
