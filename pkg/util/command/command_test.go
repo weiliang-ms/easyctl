@@ -9,7 +9,7 @@ import (
 
 func TestSetExecutorDefault(t *testing.T) {
 	// test -c is nil
-	assert.Nil(t, SetExecutorDefault(Item{}))
+	assert.Equal(t, RunErr{}, SetExecutorDefault(Item{}))
 
 	// test debug flag
 	entity := Item{}
@@ -49,18 +49,18 @@ func TestSetExecutorDefaultReturnErr(t *testing.T) {
 	parentParentCmd.AddCommand(parentCmd)
 	parentParentCmd.PersistentFlags().BoolVar(&debug, "debug", false, "debug")
 
-	entity.Fnc = func(item OperationItem) error {
-		return nil
+	entity.Fnc = func(item OperationItem) RunErr {
+		return RunErr{}
 	}
 	entity.ConfigFilePath = "config.yaml"
 
-	assert.Nil(t, SetExecutorDefault(entity))
+	assert.Equal(t, RunErr{}, SetExecutorDefault(entity))
 
-	entity.Fnc = func(item OperationItem) error {
-		return errors.New("ddd")
+	entity.Fnc = func(item OperationItem) RunErr {
+		return RunErr{Err: errors.New("ddd")}
 	}
 
-	assert.Nil(t, SetExecutorDefault(entity))
+	assert.NotEqual(t, RunErr{}, SetExecutorDefault(entity))
 }
 
 // test logrus debug
@@ -74,11 +74,11 @@ func TestSetLogrusDebug(t *testing.T) {
 	parentParentCmd.AddCommand(parentCmd)
 	parentParentCmd.PersistentFlags().BoolVar(&debug, "debug", true, "debug")
 
-	entity.Fnc = func(item OperationItem) error {
-		return nil
+	entity.Fnc = func(item OperationItem) RunErr {
+		return RunErr{}
 	}
 	entity.ConfigFilePath = "config.yaml"
-	assert.Nil(t, SetExecutorDefault(entity))
+	assert.Equal(t, RunErr{}, SetExecutorDefault(entity))
 }
 
 func TestRunErr_Error(t *testing.T) {
