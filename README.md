@@ -66,7 +66,7 @@ sudo cp easyctl /usr/local/bin
   - [x] [从harbor批量下载chart](https://weiliang-ms.github.io/easyctl/%E5%AF%BC%E5%87%BA%E6%8C%87%E4%BB%A4%E9%9B%86/01%E4%BB%8Eharbor%E5%BA%93%E4%B8%AD%E5%AF%BC%E5%87%BAchart.html)
   - [x] [从harbor导出镜像tag列表](https://weiliang-ms.github.io/easyctl/%E5%AF%BC%E5%87%BA%E6%8C%87%E4%BB%A4%E9%9B%86/02%E4%BB%8Eharbor%E5%BA%93%E4%B8%AD%E5%AF%BC%E5%87%BA%E9%95%9C%E5%83%8Ftag%E5%88%97%E8%A1%A8.html)
 - `install`
-  - [] [单机redis]()
+  - [x] [单机redis]()
   - [x] [redis集群](https://weiliang-ms.github.io/easyctl/%E5%AE%89%E8%A3%85%E6%8C%87%E4%BB%A4%E9%9B%86/02%E5%AE%89%E8%A3%85redis%E9%9B%86%E7%BE%A4.html)
 - `set`
   - [x] [时区](https://weiliang-ms.github.io/easyctl/%E8%AE%BE%E7%BD%AE%E6%8C%87%E4%BB%A4%E9%9B%86/05%E5%A4%9A%E4%B8%BB%E6%9C%BA%E8%AE%BE%E7%BD%AE%E6%97%B6%E5%8C%BA.html)
