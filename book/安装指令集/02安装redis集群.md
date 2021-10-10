@@ -4,6 +4,7 @@
 
 1. 配置好`yum`源，目前支持三种集群规模
 2. 下载[redis](https://download.redis.io/releases/redis-5.0.14.tar.gz) 安装包
+3. 安装[easyctl](../-安装文档/README.md)
 
 支持的集群类型：
 
