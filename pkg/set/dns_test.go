@@ -35,5 +35,5 @@ dns:
   - 114.114.114.114
   - 8.8.8.8
 `)
-	assert.Nil(t, Dns(item))
+	assert.Equal(t, command.RunErr{}, Dns(item))
 }
