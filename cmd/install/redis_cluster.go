@@ -17,14 +17,14 @@ var redisClusterCmd = &cobra.Command{
 	Short: "安装redis集群",
 	Args:  cobra.ExactValidArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := command.SetExecutorDefault(
+		if runErr := command.SetExecutorDefault(
 			command.Item{
 				Cmd:            cmd,
 				Fnc:            install.RedisCluster,
 				DefaultConfig:  redisClusterConfig,
 				ConfigFilePath: configFile,
-			}); err != nil {
-			panic(err)
+			}); runErr.Err != nil {
+			panic(runErr.Err)
 		}
 	},
 }

@@ -7,5 +7,5 @@ import (
 )
 
 func TestTimezone(t *testing.T) {
-	assert.Nil(t, Timezone(command.OperationItem{}))
+	assert.Equal(t, command.RunErr{}, Timezone(command.OperationItem{}))
 }

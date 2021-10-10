@@ -167,11 +167,11 @@ type TagExternel struct {
 }
 
 // HarborImageList harbor镜像列表导出
-func HarborImageList(item command.OperationItem) error {
+func HarborImageList(item command.OperationItem) command.RunErr {
 
 	executor, err := ParseHarborConfig(item.B, item.Logger)
 	if err != nil {
-		return err
+		return command.RunErr{Err: err}
 	}
 
 	executor.ReposInProject = make(map[string][]string)
@@ -187,11 +187,11 @@ func HarborImageList(item command.OperationItem) error {
 
 	for _, v := range task {
 		if err := exec(v); err != nil {
-			return err
+			return command.RunErr{Err: err}
 		}
 	}
 
-	return nil
+	return command.RunErr{}
 }
 
 func exec(fnc func() error) error {

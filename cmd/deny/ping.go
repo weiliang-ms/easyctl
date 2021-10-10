@@ -11,8 +11,8 @@ var denyPingCmd = &cobra.Command{
 	Use:   "ping [flags]",
 	Short: "禁ping",
 	Run: func(cmd *cobra.Command, args []string) {
-		if runErr := command.SetExecutorDefault(command.Item{Cmd: cmd, Fnc: deny.Ping}); runErr != nil {
-			panic(runErr)
+		if runErr := command.SetExecutorDefault(command.Item{Cmd: cmd, Fnc: deny.Ping}); runErr.Err != nil {
+			panic(runErr.Err)
 		}
 	},
 }

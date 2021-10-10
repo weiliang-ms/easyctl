@@ -137,5 +137,5 @@ clean-dns:
   excludes:
     - 114.114.114.114
 `
-	assert.Nil(t, Dns(command.OperationItem{B: []byte(c), Logger: logrus.New()}))
+	assert.Equal(t, command.RunErr{}, Dns(command.OperationItem{B: []byte(c), Logger: logrus.New()}))
 }

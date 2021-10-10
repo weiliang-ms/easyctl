@@ -18,8 +18,8 @@ var timeZoneCmd = &cobra.Command{
 			Cmd:            cmd,
 			Fnc:            set.Timezone,
 			ConfigFilePath: configFile,
-		}); err != nil {
-			panic(err)
+		}); err.Err != nil {
+			panic(err.Err)
 		}
 	},
 }

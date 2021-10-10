@@ -23,8 +23,8 @@ make install
 {{- end}}
 `)))
 
-// RedisClusterConfigTmpl [1]Ports port列表 [2]Password 密码
-var RedisClusterConfigTmpl = template.Must(template.New("RedisClusterConfigTmpl").Parse(dedent.Dedent(`
+// RedisConfigTmpl [1]Ports port列表 [2]Password 密码 [3]ClusterEnabled 是否为集群模式
+var RedisConfigTmpl = template.Must(template.New("RedisConfigTmpl").Parse(dedent.Dedent(`
 {{- if .Ports }}
 
 {{- range .Ports }}
@@ -65,7 +65,6 @@ auto-aof-rewrite-min-size 64mb
 aof-load-truncated yes
 aof-use-rdb-preamble yes
 lua-time-limit 5000
-cluster-enabled yes
 slowlog-log-slower-than 10000
 slowlog-max-len 128
 latency-monitor-threshold 0
@@ -94,15 +93,17 @@ logfile "/var/log/redis-{{ . }}.log"
 pidfile "/var/run/redis-{{ . }}.pid"
 dir "/var/lib/redis"
 EOF
-
+{{- if $.ClusterEnabled }}
+cat >> /etc/redis/redis-{{ . }}.conf <<EOF
+cluster-enabled yes
+EOF
+{{- end }}
 {{- if $.Password }}
 cat >> /etc/redis/redis-{{ . }}.conf <<EOF
 requirepass "{{ $.Password }}"
 masterauth "{{ $.Password }}"
 EOF
-
 {{- end }}
-
 {{- end }}
 {{- end }}
 `)))

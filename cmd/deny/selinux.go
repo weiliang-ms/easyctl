@@ -11,8 +11,8 @@ var denySelinuxCmd = &cobra.Command{
 	Use:   "selinux [flags]",
 	Short: "关闭selinux",
 	Run: func(cmd *cobra.Command, args []string) {
-		if runErr := command.SetExecutorDefault(command.Item{Cmd: cmd, Fnc: deny.Selinux}); runErr != nil {
-			panic(runErr)
+		if runErr := command.SetExecutorDefault(command.Item{Cmd: cmd, Fnc: deny.Selinux}); runErr.Err != nil {
+			panic(runErr.Err)
 		}
 	},
 }

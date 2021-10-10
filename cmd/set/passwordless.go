@@ -19,8 +19,8 @@ var passwordLessCmd = &cobra.Command{
 			Cmd:            cmd,
 			Fnc:            set.PasswordLess,
 			ConfigFilePath: configFile,
-		}); err != nil {
-			panic(err)
+		}); err.Err != nil {
+			panic(err.Err)
 		}
 	},
 }

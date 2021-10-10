@@ -1,26 +1,28 @@
 package install
 
+import "github.com/weiliang-ms/easyctl/pkg/util/command"
+
 // Interface install操作类型接口
 type Interface interface {
-	Parse() error
-	SetValue() error
-	Detect() error
-	Prune() error
-	HandPackage() error
-	Compile() error
-	SetUpRuntime() error
-	Config() error
-	SetService() error // 开机自启动
-	Boot() error
-	CloseFirewall() error
-	Init() error
-	Print() error // 输出安装信息
+	Parse() command.RunErr
+	SetValue() command.RunErr
+	Detect() command.RunErr
+	Prune() command.RunErr
+	HandPackage() command.RunErr
+	Compile() command.RunErr
+	SetUpRuntime() command.RunErr
+	Config() command.RunErr
+	SetService() command.RunErr // 开机自启动
+	Boot() command.RunErr
+	CloseFirewall() command.RunErr
+	Init() command.RunErr
+	Print() command.RunErr // 输出安装信息
 }
 
-type task func() error
+type task func() command.RunErr
 
 // Install 安装指令通用函数
-func install(i Interface) error {
+func install(i Interface) command.RunErr {
 
 	jobs := []task{
 		i.Parse,
@@ -39,10 +41,10 @@ func install(i Interface) error {
 	}
 
 	for _, v := range jobs {
-		if err := v(); err != nil {
-			return err
+		if runErr := v(); runErr.Err != nil {
+			return runErr
 		}
 	}
 
-	return nil
+	return command.RunErr{}
 }

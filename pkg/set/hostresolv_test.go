@@ -47,7 +47,7 @@ server:
 	options[GetHostResolveFunc] = GetHostResolve
 	item.OptionFunc = options
 	err := HostResolve(item)
-	assert.Nil(t, err)
+	assert.Equal(t, command.RunErr{}, err)
 
 	// test mock with nil data
 	options[GetHostResolveFunc] = mockHostResolveFuncWithNilData
@@ -60,7 +60,7 @@ server:
 	item.OptionFunc = options
 	item.B = []byte{}
 	err = HostResolve(item)
-	assert.Equal(t, nil, err)
+	assert.Equal(t, command.RunErr{}, err)
 
 	// test bad function
 	options[GetHostResolveFunc] = HostResolve

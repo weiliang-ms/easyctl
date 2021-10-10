@@ -6,8 +6,8 @@ import (
 )
 
 // Selinux 关闭selinux
-func Selinux(item command.OperationItem) error {
-	return runner.RemoteRun(item.B, item.Logger, closeSELinuxShell)
+func Selinux(item command.OperationItem) command.RunErr {
+	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, closeSELinuxShell)}
 }
 
 // todo confirm

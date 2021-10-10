@@ -47,7 +47,7 @@ type getChartListFunc func(executor *ChartExecutor) ([]byte, error)
 type getChartsByteFunc func(list []ChartItem, executor *ChartExecutor) (map[string][]byte, error)
 
 // Chart 批量下载chart
-func Chart(item command.OperationItem) error {
+func Chart(item command.OperationItem) command.RunErr {
 
 	// set default
 	item.Logger = log.SetDefault(item.Logger)
@@ -55,17 +55,17 @@ func Chart(item command.OperationItem) error {
 	item.Logger.Info("解析chart仓库配置...")
 	config, err := parseHelmRepoConfig(item.B, item.Logger)
 	if err != nil {
-		return err
+		return command.RunErr{Err: err}
 	}
 
 	listFunc, ok := item.OptionFunc[GetChartListFunc].(func(executor *ChartExecutor) ([]byte, error))
 	if !ok {
-		return fmt.Errorf("%s 入参非法", GetChartListFunc)
+		return command.RunErr{Err: fmt.Errorf("%s 入参非法", GetChartListFunc)}
 	}
 
 	chartBytes, ok := item.OptionFunc[GetChartsByteFunc].(func(list []ChartItem, executor *ChartExecutor) (map[string][]byte, error))
 	if !ok {
-		return fmt.Errorf("%s 入参非法", GetChartsByteFunc)
+		return command.RunErr{Err: fmt.Errorf("%s 入参非法", GetChartsByteFunc)}
 	}
 
 	executor := ChartExecutor{
@@ -78,12 +78,12 @@ func Chart(item command.OperationItem) error {
 	list, err := executor.List()
 
 	if err != nil {
-		return err
+		return command.RunErr{Err: err}
 	}
 
 	item.Logger.Infof("待导出chart数量为: %d", len(list))
 
-	return executor.Save(list)
+	return command.RunErr{Err: executor.Save(list)}
 }
 
 // ParseHelmRepoConfig 解析helm仓库配置
