@@ -53,7 +53,7 @@ func init() {
 		upgrade.Cmd,
 		//cmd.InitTmplCmd,
 		export.RootCmd,
-		secure.RootCmd,
+		harden.RootCmd,
 		track.RootCmd,
 		versionCmd,
 		completionCmd,

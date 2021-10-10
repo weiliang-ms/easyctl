@@ -51,6 +51,7 @@ sudo cp easyctl /usr/local/bin
 
 - [x] [文档站点](https://weiliang-ms.github.io/easyctl/)
 - [x] 集成`github workflow`
+- [x] [集成codecov](https://app.codecov.io/gh/weiliang-ms/+)
 - `v0.x.y-alpha`: 开发
 - `v1.0.0-beta`: `bug`修复
 - `v1.0.0-release`: 正式版本

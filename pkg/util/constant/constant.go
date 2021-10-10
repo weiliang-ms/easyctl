@@ -11,7 +11,8 @@ const (
 	ConfigFile    = "config.yaml"
 	TRunnerCaller = "testing.tRunner"
 
-	Root         = "root"
-	RsaPrvPath   = "~/.ssh/id_rsa"
-	SshNoTimeout = "SSH_NO_TIMEOUT"
+	Root            = "root"
+	RsaPrvPath      = "~/.ssh/id_rsa"
+	SshNoTimeout    = "SSH_NO_TIMEOUT"
+	DefaultPassword = "YR4H0x*3wVyfyd"
 )
