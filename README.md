@@ -49,8 +49,10 @@ sudo cp easyctl /usr/local/bin
 
 > 里程碑
 
-- `v0.x.y-alpha`: 添加常用指令集功能（`x`为一级指令集，如`set`;`y`为二级指令集，如`set`指令集中的`dns`子指令集）
-- `v1.0.0-beta`: `bug`修复、文档站点、集成`github workflow`
+- [x] [文档站点](https://weiliang-ms.github.io/easyctl/)
+- [x] 集成`github workflow`
+- `v0.x.y-alpha`: 开发
+- `v1.0.0-beta`: `bug`修复
 - `v1.0.0-release`: 正式版本
 
 > `v1`功能列表
