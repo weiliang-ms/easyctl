@@ -7,5 +7,5 @@ import (
 
 // Ping 禁ping
 func Ping(item command.OperationItem) command.RunErr {
-	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, denyPingShell)}
+	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, UnsetPingResponse)}
 }

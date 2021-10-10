@@ -1,8 +1,8 @@
 package deny
 
 const (
-	disableFirewallShell = "systemctl disable firewalld --now"
-	denyPingShell        = `
+	disableFirewallShell   = "systemctl disable firewalld --now"
+	UnsetPingResponseShell = `
 sed -i "/net.ipv4.icmp_echo_ignore_all/d" /etc/sysctl.conf
 echo "net.ipv4.icmp_echo_ignore_all=1"  >> /etc/sysctl.conf
 sysctl -p

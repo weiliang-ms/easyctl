@@ -1,4 +1,4 @@
-package deny
+package harden
 
 import (
 	// embed
@@ -13,18 +13,14 @@ var (
 //go:embed asset/config.yaml
 var config []byte
 
-// RootCmd 禁用命令
+// RootCmd 安全加固命令
 var RootCmd = &cobra.Command{
-	Use:   "deny [OPTIONS] [flags]",
-	Short: "禁用指令集",
+	Use:   "harden [OPTIONS] [flags]",
+	Short: "安全加固指令",
 	Args:  cobra.ExactValidArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-	},
 }
 
 func init() {
 	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "配置文件")
-	RootCmd.AddCommand(denyFirewallCmd)
-	RootCmd.AddCommand(denySelinuxCmd)
-	RootCmd.AddCommand(denyPingCmd)
+	RootCmd.AddCommand(osHardenCmd)
 }
