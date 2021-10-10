@@ -25,12 +25,12 @@ type DnsConfig struct {
 }
 
 // Dns 设置Dns
-func Dns(item command.OperationItem) error {
+func Dns(item command.OperationItem) command.RunErr {
 	script, err := AddDnsScript(item.B, setDnsShellTmpl)
 	if err != nil {
-		return err
+		return command.RunErr{Err: err}
 	}
-	return runner.RemoteRun(item.B, item.Logger, script)
+	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, script)}
 }
 
 // AddDnsScript 获取添加dns脚本
