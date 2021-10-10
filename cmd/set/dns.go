@@ -21,8 +21,8 @@ var dnsCmd = &cobra.Command{
 			Fnc:            set.Dns,
 			DefaultConfig:  dnsConfig,
 			ConfigFilePath: configFile,
-		}); err != nil {
-			panic(err)
+		}); err.Err != nil {
+			panic(err.Err)
 		}
 	},
 }

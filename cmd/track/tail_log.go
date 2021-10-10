@@ -21,8 +21,8 @@ var tailLogCmd = &cobra.Command{
 			Fnc:            track.TaiLog,
 			DefaultConfig:  tailLogConfig,
 			ConfigFilePath: configFile,
-		}); err != nil {
-			panic(err)
+		}); err.Err != nil {
+			panic(err.Err)
 		}
 	},
 }

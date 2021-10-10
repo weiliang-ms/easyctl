@@ -16,22 +16,22 @@ type TailLogExecutor struct {
 }
 
 // TaiLog 多级追踪日志
-func TaiLog(item command.OperationItem) error {
+func TaiLog(item command.OperationItem) command.RunErr {
 
 	servers, err := runner.ParseServerList(item.B, item.Logger)
 	stopCh := make(chan struct{})
 	if err != nil {
-		return err
+		return command.RunErr{Err: err}
 	}
 
 	executor, err := parseTailLogExecutor(item.B)
 	if err != nil {
-		return err
+		return command.RunErr{Err: err}
 	}
 
 	executor.Tail(servers, stopCh)
 
-	return nil
+	return command.RunErr{}
 }
 
 // Tail tail日志
