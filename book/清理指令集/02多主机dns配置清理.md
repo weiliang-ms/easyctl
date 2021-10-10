@@ -49,7 +49,7 @@ clean-dns:
 > 执行
 
 ```shell
-$ easyctl track tail-log -c config.yaml
+$ easyctl clean dns -c config.yaml --debug
 ```
 
 ### 配置样例

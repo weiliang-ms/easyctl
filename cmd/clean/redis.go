@@ -15,7 +15,6 @@ var cleanRedisCmd = &cobra.Command{
 			command.Item{
 				Cmd:            cmd,
 				Fnc:            clean.Redis,
-				DefaultConfig:  dnsDefaultConfig,
 				ConfigFilePath: configFile,
 			}); err.Err != nil {
 			panic(err.Err)
