@@ -59,3 +59,7 @@ $ easyctl install redis -c config.yaml --debug
 service redis-33333 start
 6.二进制目录：/usr/local/bin/redis-*--- PASS: TestInstallRedis (31.00s)
 ```
+
+### 卸载
+
+参考[清理redis](../清理指令集/01多主机redis清理.md)
