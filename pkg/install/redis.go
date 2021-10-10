@@ -158,7 +158,7 @@ func (config *RedisInternalConfig) Prune() (err command.RunErr) {
 	config.Logger.Infoln("清理redis历史文件...")
 	exec := runner.ExecutorInternal{
 		Servers:        config.Servers,
-		Script:         pruneRedisShell,
+		Script:         PruneRedisShell,
 		Logger:         config.Logger,
 		OutPutRealTime: true,
 	}

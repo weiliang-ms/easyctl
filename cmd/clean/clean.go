@@ -23,4 +23,5 @@ var RootCmd = &cobra.Command{
 func init() {
 	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "配置文件")
 	RootCmd.AddCommand(cleanDnsCmd)
+	RootCmd.AddCommand(cleanRedisCmd)
 }
