@@ -20,14 +20,14 @@ var chartCmd = &cobra.Command{
 		options[export.GetChartListFunc] = export.GetChartList
 		options[export.GetChartsByteFunc] = export.GetChartsByte
 
-		if err := command.SetExecutorDefault(command.Item{
+		if runErr := command.SetExecutorDefault(command.Item{
 			Cmd:            cmd,
 			DefaultConfig:  chartConfig,
 			Fnc:            export.Chart,
 			ConfigFilePath: configFile,
 			OptionFunc:     options,
-		}); err != nil {
-			panic(err)
+		}); runErr.Err != nil {
+			panic(runErr.Err)
 		}
 	},
 }

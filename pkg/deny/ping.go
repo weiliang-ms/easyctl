@@ -6,6 +6,6 @@ import (
 )
 
 // Ping 禁ping
-func Ping(item command.OperationItem) error {
-	return runner.RemoteRun(item.B, item.Logger, denyPingShell)
+func Ping(item command.OperationItem) command.RunErr {
+	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, denyPingShell)}
 }

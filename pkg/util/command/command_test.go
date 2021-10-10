@@ -80,3 +80,8 @@ func TestSetLogrusDebug(t *testing.T) {
 	entity.ConfigFilePath = "config.yaml"
 	assert.Nil(t, SetExecutorDefault(entity))
 }
+
+func TestRunErr_Error(t *testing.T) {
+	err := RunErr{Err: errors.New("ddd"), Msg: "aaa"}
+	assert.Equal(t, "ddd", err.Error())
+}

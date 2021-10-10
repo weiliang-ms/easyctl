@@ -13,5 +13,5 @@ func TestUlimit(t *testing.T) {
 		OptionFunc: nil,
 	})
 
-	assert.Nil(t, err)
+	assert.Equal(t, command.RunErr{}, err)
 }

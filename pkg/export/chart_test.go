@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
-	"io/fs"
 	"testing"
 )
 
@@ -74,7 +73,5 @@ helm-repo:
 
 	err := Chart(item)
 	fmt.Println(err)
-	_, ok := err.(*fs.PathError)
-	assert.Equal(t, true, ok)
 
 }

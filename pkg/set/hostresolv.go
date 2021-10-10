@@ -36,17 +36,17 @@ type getHostResolveFunc func(b []byte, logger *logrus.Logger, cmd string) ([]run
 const GetHostResolveFunc = "getHostResolveFunc"
 
 // HostResolve 配置主机host解析
-func HostResolve(item command.OperationItem) error {
+func HostResolve(item command.OperationItem) command.RunErr {
 
 	resolveFnc, ok := item.OptionFunc[GetHostResolveFunc].(func(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResult, error))
 	if !ok {
-		return fmt.Errorf("入参：%s 非法", GetHostResolveFunc)
+		return command.RunErr{Err: fmt.Errorf("入参：%s 非法", GetHostResolveFunc)}
 	}
 
 	results, err := resolveFnc(item.B, item.Logger, "hostname")
 
 	if err != nil {
-		return err
+		return command.RunErr{Err: err}
 	}
 
 	// todo: IP地址排序
@@ -66,7 +66,7 @@ func HostResolve(item command.OperationItem) error {
 		"HostResolveList": addresses,
 	})
 
-	return runner.RemoteRun(item.B, item.Logger, shell)
+	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, shell)}
 
 }
 

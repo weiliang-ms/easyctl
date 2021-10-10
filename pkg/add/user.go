@@ -42,19 +42,19 @@ type NewUserConfig struct {
 }
 
 // User 添加user指令入口
-func User(item command.OperationItem) error {
+func User(item command.OperationItem) command.RunErr {
 	config, err := ParseNewUserConfig(item.B, item.Logger)
 	if err != nil {
-		return err
+		return command.RunErr{Err: err}
 	}
 
 	if err := config.IsValid(); err != nil {
-		return err
+		return command.RunErr{Err: err}
 	}
 
 	script, _ := config.addUserScript()
 
-	return runner.RemoteRun(item.B, item.Logger, script)
+	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, script)}
 }
 
 // ParseNewUserConfig 解析新用户属性

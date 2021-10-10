@@ -37,5 +37,5 @@ func TestNewPassword(t *testing.T) {
 	assert.EqualError(t, err, "yaml: line 2: found character that cannot start any token")
 
 	item.B = []byte(`newRootPassword: "Cloud@2021%^&*"`)
-	assert.Nil(t, NewPassword(item))
+	assert.Equal(t, command.RunErr{}, NewPassword(item))
 }

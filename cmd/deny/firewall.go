@@ -12,8 +12,8 @@ var denyFirewallCmd = &cobra.Command{
 	Short: "关闭防火墙",
 	Run: func(cmd *cobra.Command, args []string) {
 		if runErr := command.SetExecutorDefault(command.Item{
-			Cmd: cmd, Fnc: deny.Firewall}); runErr != nil {
-			panic(runErr)
+			Cmd: cmd, Fnc: deny.Firewall}); runErr.Err != nil {
+			panic(runErr.Err)
 		}
 	},
 }

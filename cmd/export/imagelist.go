@@ -15,8 +15,9 @@ var imageCmd = &cobra.Command{
 	Use:   "harbor-image-list [flags]",
 	Short: "导出harbor项目内的镜像列表",
 	Run: func(cmd *cobra.Command, args []string) {
-		if runErr := command.SetExecutorDefault(command.Item{Cmd: cmd, Fnc: export.HarborImageList, DefaultConfig: harborConfig}); runErr != nil {
-			panic(runErr)
+		if runErr := command.SetExecutorDefault(
+			command.Item{Cmd: cmd, Fnc: export.HarborImageList, DefaultConfig: harborConfig}); runErr.Err != nil {
+			panic(runErr.Err)
 		}
 	},
 }

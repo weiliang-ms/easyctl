@@ -23,8 +23,8 @@ var cleanDnsCmd = &cobra.Command{
 				Fnc:            clean.Dns,
 				DefaultConfig:  dnsDefaultConfig,
 				ConfigFilePath: configFile,
-			}); err != nil {
-			panic(err)
+			}); err.Err != nil {
+			panic(err.Err)
 		}
 	},
 }

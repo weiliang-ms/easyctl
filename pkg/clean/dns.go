@@ -43,12 +43,12 @@ type DnsCleanerConfig struct {
 }
 
 // Dns 清理dns
-func Dns(item command.OperationItem) error {
+func Dns(item command.OperationItem) command.RunErr {
 	script, err := PruneDnsScript(item.B, pruneDnsShellTmpl)
 	if err != nil {
-		return err
+		return command.RunErr{Err: err}
 	}
-	return runner.RemoteRun(item.B, item.Logger, script)
+	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, script)}
 }
 
 // PruneDnsScript 清理dns脚本

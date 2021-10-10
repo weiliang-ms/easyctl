@@ -8,6 +8,6 @@ import (
 const setTimezoneShell = "ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime"
 
 //Timezone 设置上海时区
-func Timezone(item command.OperationItem) error {
-	return runner.RemoteRun(item.B, item.Logger, setTimezoneShell)
+func Timezone(item command.OperationItem) command.RunErr {
+	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, setTimezoneShell)}
 }

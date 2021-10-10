@@ -16,8 +16,8 @@ var ulimitCmd = &cobra.Command{
 			Cmd:            cmd,
 			Fnc:            set.Ulimit,
 			ConfigFilePath: configFile,
-		}); err != nil {
-			panic(err)
+		}); err.Err != nil {
+			panic(err.Err)
 		}
 	},
 }

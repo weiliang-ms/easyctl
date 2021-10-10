@@ -31,9 +31,10 @@ make install
 }
 
 func TestRedisClusterConfigTmpl(t *testing.T) {
-	content, err := tmplutil.Render(RedisClusterConfigTmpl, tmplutil.TmplRenderData{
-		"Ports":    []int{26379, 26380, 26381},
-		"Password": "redis",
+	content, err := tmplutil.Render(RedisConfigTmpl, tmplutil.TmplRenderData{
+		"Ports":          []int{26379, 26380, 26381},
+		"Password":       "redis",
+		"ClusterEnabled": true,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, content)

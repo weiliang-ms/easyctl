@@ -23,12 +23,12 @@ type PasswordConfig struct {
 }
 
 //NewPassword 修改用户口令
-func NewPassword(item command.OperationItem) error {
+func NewPassword(item command.OperationItem) command.RunErr {
 	script, err := NewPasswordScript(item.B, NewPasswordTmpl)
 	if err != nil {
-		return err
+		return command.RunErr{Err: err}
 	}
-	return runner.RemoteRun(item.B, item.Logger, script)
+	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, script)}
 }
 
 // NewPasswordScript 获取修改用户口令脚本

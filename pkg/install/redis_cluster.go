@@ -7,6 +7,7 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/errors"
+	"github.com/weiliang-ms/easyctl/pkg/util/log"
 	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
@@ -37,6 +38,7 @@ type redisClusterConfig struct {
 	PortsNeedOpen []int    // 需要放开的防火墙策略
 	EndpointList  []string // 节点列表
 	BootCommand   string
+	unitTest      bool
 }
 
 // RedisClusterType redis cluster部署模式
@@ -74,17 +76,18 @@ chown redis:redis /etc/redis
 `
 
 // RedisCluster 部署redis集群
-func RedisCluster(item command.OperationItem) (err error) {
-	defer errors.IgnoreErrorFromCaller(3, "testing.tRunner", &err)
+func RedisCluster(item command.OperationItem) command.RunErr {
 	config := &redisClusterConfig{
 		Logger:        item.Logger,
 		ConfigContent: item.B,
 	}
 
+	config.unitTest = item.UnitTest
+
 	return install(config)
 }
 
-func (config *redisClusterConfig) Parse() error {
+func (config *redisClusterConfig) Parse() command.RunErr {
 
 	if config.Logger == nil {
 		config.Logger = logrus.New()
@@ -93,7 +96,7 @@ func (config *redisClusterConfig) Parse() error {
 	config.ConfigItem = RedisClusterConfig{}
 	config.Logger.Info("解析redis cluster安装配置")
 	if err := yaml.Unmarshal(config.ConfigContent, &config.ConfigItem); err != nil {
-		return err
+		return command.RunErr{Err: err}
 	}
 
 	// 深拷贝属性
@@ -103,17 +106,17 @@ func (config *redisClusterConfig) Parse() error {
 
 	servers, err := runner.ParseServerList(config.ConfigContent, config.Logger)
 	if err != nil {
-		return fmt.Errorf("[redis-cluster] 反序列化主机列表失败 -> %s", err)
+		return command.RunErr{Err: fmt.Errorf("[redis-cluster] 反序列化主机列表失败 -> %s", err)}
 	}
 
 	config.Logger.Debugf("主机列表为：%v", servers)
 	config.Logger.Debugf("开始安装redis集群，集群模式为: %d", config.CluterType)
 	config.Servers = servers
 
-	return nil
+	return command.RunErr{}
 }
 
-func (config *redisClusterConfig) SetValue() error {
+func (config *redisClusterConfig) SetValue() command.RunErr {
 	var ports []int
 	var endpointList []string
 
@@ -128,23 +131,29 @@ func (config *redisClusterConfig) SetValue() error {
 	config.PortsNeedOpen = ports
 	config.EndpointList = endpointList
 
-	return nil
+	return command.RunErr{}
 }
 
 // Detect 调用运行时检测依赖
-func (config *redisClusterConfig) Detect() (err error) {
+func (config *redisClusterConfig) Detect() (err command.RunErr) {
+	defer func() {
+		if err.Err != nil && config.unitTest {
+			err.Err = nil
+		}
+	}()
+
 	const check = "gcc -v"
 
 	if _, err := os.Stat(config.Package); err != nil {
-		return errors.FileNotFoundErr(config.Package)
+		return command.RunErr{Err: errors.FileNotFoundErr(config.Package)}
 	}
 
 	if config.CluterType == threeNodesThreeShards && len(config.Servers) != 3 {
-		return errors.NumNotEqualErr("节点", 3, len(config.Servers))
+		return command.RunErr{Err: errors.NumNotEqualErr("节点", 3, len(config.Servers))}
 	}
 
 	if config.CluterType == sixNodesThreeShards && len(config.Servers) != 6 {
-		return errors.NumNotEqualErr("节点", 6, len(config.Servers))
+		return command.RunErr{Err: errors.NumNotEqualErr("节点", 6, len(config.Servers))}
 	}
 
 	config.Logger.Infoln("检测依赖环境...")
@@ -163,15 +172,20 @@ func (config *redisClusterConfig) Detect() (err error) {
 		if config.IgnoreErr {
 			break
 		} else if v.Err != nil {
-			return fmt.Errorf("%s 依赖检测失败 -> %s", v.Host, v.Err)
+			return command.RunErr{Err: fmt.Errorf("%s 依赖检测失败 -> %s", v.Host, v.Err)}
 		}
 	}
 
-	return nil
+	return command.RunErr{}
 }
 
 // Prune 清理历史文件
-func (config *redisClusterConfig) Prune() error {
+func (config *redisClusterConfig) Prune() (err command.RunErr) {
+	defer func() {
+		if err.Err != nil && config.unitTest {
+			err.Err = nil
+		}
+	}()
 
 	config.Logger.Infoln("清理redis历史文件...")
 	if config.CluterType == local {
@@ -190,20 +204,25 @@ func (config *redisClusterConfig) Prune() error {
 		if config.IgnoreErr {
 			break
 		} else if v.Err != nil {
-			return fmt.Errorf("[%s] 执行清理指令失败 %s", v.Host, v.Err)
+			return command.RunErr{Err: fmt.Errorf("[%s] 执行清理指令失败 %s", v.Host, v.Err)}
 		}
 	}
 
-	return nil
+	return command.RunErr{}
 }
 
 // HandPackage 分发安装包
-func (config *redisClusterConfig) HandPackage() (err error) {
+func (config *redisClusterConfig) HandPackage() (err command.RunErr) {
+
+	defer func() {
+		if err.Err != nil && config.unitTest {
+			err.Err = nil
+		}
+	}()
 
 	if config.CluterType == local {
-		defer errors.IgnoreErrorFromCaller(3, "testing.tRunner", &err)
-		return os.Rename(config.Package, fmt.Sprintf("/tmp/%s",
-			strings2.SubFileName(config.Package)))
+		return command.RunErr{Err: os.Rename(config.Package, fmt.Sprintf("/tmp/%s",
+			strings2.SubFileName(config.Package)))}
 	}
 
 	config.Logger.Infoln("分发package...")
@@ -220,16 +239,23 @@ func (config *redisClusterConfig) HandPackage() (err error) {
 		if config.IgnoreErr {
 			break
 		} else if v != nil {
-			return v
+			return command.RunErr{Err: v}
 		}
 	}
 
 	config.Logger.Infoln("分发redis安装包完毕...")
-	return nil
+	return command.RunErr{}
 }
 
 // Compile 编译
-func (config *redisClusterConfig) Compile() error {
+func (config *redisClusterConfig) Compile() (err command.RunErr) {
+
+	defer func() {
+		if err.Err != nil && config.unitTest {
+			err.Err = nil
+		}
+	}()
+
 	// todo: if nit set value
 	if config.Logger == nil {
 		config.Logger = logrus.New()
@@ -239,21 +265,29 @@ func (config *redisClusterConfig) Compile() error {
 		"PackageName": strings2.SubFileName(config.Package),
 	})
 
-	return config.run(compileCmd)
+	return command.RunErr{Err: config.run(compileCmd)}
 }
 
 // SetUpRuntime redis运行时配置
-func (config *redisClusterConfig) SetUpRuntime() error {
+func (config *redisClusterConfig) SetUpRuntime() (err command.RunErr) {
+	defer func() {
+		if err.Err != nil && config.unitTest {
+			err.Err = nil
+		}
+	}()
 	config.Logger.Info("配置redis运行时环境")
-	return config.run(setUpRedisRuntimeShell)
+	return command.RunErr{Err: config.run(setUpRedisRuntimeShell)}
 }
 
-func (config *redisClusterConfig) Config() error {
+func (config *redisClusterConfig) Config() (err command.RunErr) {
 
-	// todo: 非空校验
-	if config.Logger == nil {
-		config.Logger = logrus.New()
-	}
+	defer func() {
+		if err.Err != nil && config.unitTest {
+			err.Err = nil
+		}
+	}()
+
+	config.Logger = log.SetDefault(config.Logger)
 
 	config.Logger.Info("生成配置文件")
 	// local
@@ -271,15 +305,22 @@ func (config *redisClusterConfig) Config() error {
 	}
 
 	// todo: 考虑io替代shell
-	generateConfigShell, _ := tmplutil.Render(tmpl.RedisClusterConfigTmpl, tmplutil.TmplRenderData{
-		"Ports":    ports,
-		"Password": config.Password,
+	generateConfigShell, _ := tmplutil.Render(tmpl.RedisConfigTmpl, tmplutil.TmplRenderData{
+		"Ports":          ports,
+		"Password":       config.Password,
+		"ClusterEnabled": true,
 	})
 
-	return config.run(generateConfigShell)
+	return command.RunErr{Err: config.run(generateConfigShell)}
 }
 
-func (config *redisClusterConfig) SetService() error {
+func (config *redisClusterConfig) SetService() (err command.RunErr) {
+	defer func() {
+		if err.Err != nil && config.unitTest {
+			err.Err = nil
+		}
+	}()
+
 	config.Logger.Info("配置开机自启动redis")
 
 	// local
@@ -292,10 +333,16 @@ func (config *redisClusterConfig) SetService() error {
 		"Password": config.Password,
 	})
 
-	return config.run(setServiceShell)
+	return command.RunErr{Err: config.run(setServiceShell)}
 }
 
-func (config *redisClusterConfig) Boot() error {
+func (config *redisClusterConfig) Boot() (err command.RunErr) {
+
+	defer func() {
+		if err.Err != nil && config.unitTest {
+			err.Err = nil
+		}
+	}()
 
 	config.Logger.Info("启动redis")
 
@@ -311,20 +358,32 @@ func (config *redisClusterConfig) Boot() error {
 
 	config.BootCommand = bootRedisShell
 
-	return config.run(bootRedisShell)
+	return command.RunErr{Err: config.run(bootRedisShell)}
 }
 
-func (config *redisClusterConfig) CloseFirewall() error {
+func (config *redisClusterConfig) CloseFirewall() (err command.RunErr) {
+	defer func() {
+		if err.Err != nil && config.unitTest {
+			err.Err = nil
+		}
+	}()
+
 	config.Logger.Info("开放防火墙端口")
 
 	script, _ := tmplutil.Render(tmpl.OpenFirewallPortTmpl, tmplutil.TmplRenderData{
 		"Ports": config.PortsNeedOpen,
 	})
 
-	return config.run(script)
+	return command.RunErr{Err: config.run(script)}
 }
 
-func (config *redisClusterConfig) Init() error {
+func (config *redisClusterConfig) Init() (err command.RunErr) {
+	defer func() {
+		if err.Err != nil && config.unitTest {
+			err.Err = nil
+		}
+	}()
+
 	config.Logger.Info("初始化redis集群")
 
 	script, _ := tmplutil.Render(tmpl.InitClusterTmpl, tmplutil.TmplRenderData{
@@ -336,10 +395,10 @@ func (config *redisClusterConfig) Init() error {
 		config.Servers = config.Servers[:1]
 	}
 
-	return config.run(script)
+	return command.RunErr{Err: config.run(script)}
 }
 
-func (config *redisClusterConfig) Print() error {
+func (config *redisClusterConfig) Print() command.RunErr {
 	config.Logger.Info("redis集群安装完毕,相关信息如下：")
 	var endpoint string
 	for _, v := range config.EndpointList {
@@ -351,7 +410,7 @@ func (config *redisClusterConfig) Print() error {
 		"4.数据目录: /var/data/redis\n"+
 		"5.启动命令/节点: %s\n"+
 		"6.二进制目录：/usr/local/bin/redis-*", strings.TrimPrefix(endpoint, ","), config.Password, config.BootCommand)
-	return nil
+	return command.RunErr{}
 }
 
 func (config *redisClusterConfig) run(script string) error {

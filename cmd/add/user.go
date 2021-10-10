@@ -22,8 +22,8 @@ var addUserCmd = &cobra.Command{
 				Fnc:            add.User,
 				DefaultConfig:  userConfig,
 				ConfigFilePath: configFile,
-			}); err != nil {
-			panic(err)
+			}); err.Err != nil {
+			panic(err.Err)
 		}
 	},
 	Args: cobra.NoArgs,

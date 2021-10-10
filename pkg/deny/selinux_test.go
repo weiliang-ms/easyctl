@@ -14,5 +14,5 @@ func TestSelinux(t *testing.T) {
 		OptionFunc: nil,
 	})
 
-	assert.Equal(t, nil, err)
+	assert.Equal(t, command.RunErr{}, err)
 }
