@@ -52,8 +52,7 @@ const (
 
 var defaultPorts = []int{26379, 26380, 26381, 26382, 26383, 26384}
 
-// todo: io实现
-const pruneRedisShell = `
+const PruneRedisShell = `
 pkill -9 redis || true
 userdel -r redis || true
 rm -rf /etc/redis || true
@@ -62,6 +61,7 @@ rm -rf /usr/local/bin/redis-* || true
 rm -rf /var/lib/redis || true
 rm -rf /var/log/redis || true
 rm -f /var/run/redis* || true
+rm -f /etc/init.d/redis* || true
 `
 
 // todo: io实现
@@ -194,7 +194,7 @@ func (config *redisClusterConfig) Prune() (err command.RunErr) {
 
 	exec := runner.ExecutorInternal{
 		Servers:        config.Servers,
-		Script:         pruneRedisShell,
+		Script:         PruneRedisShell,
 		Logger:         config.Logger,
 		OutPutRealTime: true,
 	}
