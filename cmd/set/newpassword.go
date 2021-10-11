@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/set"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
+	"log"
 )
 
 //go:embed asset/newpassword_config.yaml
@@ -23,6 +24,7 @@ var newPasswordCmd = &cobra.Command{
 			DefaultConfig:  newPasswordConfig,
 			ConfigFilePath: configFile,
 		}); runErr.Err != nil {
+			log.Println(runErr.Msg)
 			panic(runErr.Err)
 		}
 	},

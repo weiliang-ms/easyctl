@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/export"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
+	"log"
 )
 
 //go:embed asset/chart-repo.yaml
@@ -27,6 +28,7 @@ var chartCmd = &cobra.Command{
 			ConfigFilePath: configFile,
 			OptionFunc:     options,
 		}); runErr.Err != nil {
+			log.Println(runErr.Msg)
 			panic(runErr.Err)
 		}
 	},

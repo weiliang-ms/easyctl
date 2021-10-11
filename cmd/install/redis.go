@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/install"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
+	"log"
 )
 
 //go:embed asset/redis.yaml
@@ -24,6 +25,7 @@ var redisCmd = &cobra.Command{
 				DefaultConfig:  redisClusterConfig,
 				ConfigFilePath: configFile,
 			}); runErr.Err != nil {
+			log.Println(runErr.Msg)
 			panic(runErr.Err)
 		}
 	},

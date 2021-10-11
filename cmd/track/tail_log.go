@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/track"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
+	"log"
 )
 
 //go:embed asset/tail_log.yaml
@@ -22,6 +23,7 @@ var tailLogCmd = &cobra.Command{
 			DefaultConfig:  tailLogConfig,
 			ConfigFilePath: configFile,
 		}); err.Err != nil {
+			log.Println(err.Msg)
 			panic(err.Err)
 		}
 	},

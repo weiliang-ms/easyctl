@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/harden"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
+	"log"
 )
 
 // 安全加固命令
@@ -15,6 +16,7 @@ var osHardenCmd = &cobra.Command{
 			Fnc:            harden.OS,
 			ConfigFilePath: configFile,
 		}); runErr.Err != nil {
+			log.Println(runErr.Msg)
 			panic(runErr.Err)
 		}
 	},

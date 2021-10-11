@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/set"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
+	"log"
 )
 
 // host解析
@@ -18,6 +19,7 @@ var hostResolveCmd = &cobra.Command{
 			Fnc:            set.HostResolve,
 			ConfigFilePath: configFile,
 		}); runErr.Err != nil {
+			log.Println(runErr.Msg)
 			panic(runErr.Err)
 		}
 	},

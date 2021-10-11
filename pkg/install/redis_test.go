@@ -4,6 +4,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/constant"
+	"log"
 	"os"
 	"testing"
 )
@@ -30,6 +31,7 @@ redis:
 	runErr := Redis(item)
 
 	if runErr.Err != nil {
+		log.Println(runErr.Msg)
 		panic(runErr.Err)
 	}
 }
