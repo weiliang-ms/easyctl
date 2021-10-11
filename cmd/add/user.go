@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/add"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
+	"log"
 )
 
 //go:embed asset/user.yaml
@@ -23,6 +24,7 @@ var addUserCmd = &cobra.Command{
 				DefaultConfig:  userConfig,
 				ConfigFilePath: configFile,
 			}); err.Err != nil {
+			log.Println(err.Msg)
 			panic(err.Err)
 		}
 	},

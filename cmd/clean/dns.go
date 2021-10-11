@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/clean"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
+	"log"
 )
 
 //go:embed asset/dns_config.yaml
@@ -24,6 +25,7 @@ var cleanDnsCmd = &cobra.Command{
 				DefaultConfig:  dnsDefaultConfig,
 				ConfigFilePath: configFile,
 			}); err.Err != nil {
+			log.Println(err.Msg)
 			panic(err.Err)
 		}
 	},

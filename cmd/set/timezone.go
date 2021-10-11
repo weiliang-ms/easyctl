@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/set"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
+	"log"
 )
 
 // 配置时区子命令
@@ -19,6 +20,7 @@ var timeZoneCmd = &cobra.Command{
 			Fnc:            set.Timezone,
 			ConfigFilePath: configFile,
 		}); err.Err != nil {
+			log.Println(err.Msg)
 			panic(err.Err)
 		}
 	},

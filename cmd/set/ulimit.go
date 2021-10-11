@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/set"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
+	"log"
 )
 
 // 文件描述符
@@ -17,6 +18,7 @@ var ulimitCmd = &cobra.Command{
 			Fnc:            set.Ulimit,
 			ConfigFilePath: configFile,
 		}); err.Err != nil {
+			log.Println(err.Msg)
 			panic(err.Err)
 		}
 	},

@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/set"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
+	"log"
 )
 
 // PasswordLessCmd 主机互信
@@ -20,6 +21,7 @@ var passwordLessCmd = &cobra.Command{
 			Fnc:            set.PasswordLess,
 			ConfigFilePath: configFile,
 		}); err.Err != nil {
+			log.Println(err.Msg)
 			panic(err.Err)
 		}
 	},
