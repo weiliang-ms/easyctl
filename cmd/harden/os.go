@@ -8,8 +8,7 @@ import (
 
 // 安全加固命令
 var osHardenCmd = &cobra.Command{
-	Use:  "os [flags]",
-	Args: cobra.ExactValidArgs(1),
+	Use: "os [flags]",
 	Run: func(cmd *cobra.Command, args []string) {
 		if runErr := command.SetExecutorDefault(command.Item{
 			Cmd:            cmd,
