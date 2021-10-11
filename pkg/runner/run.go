@@ -57,6 +57,9 @@ func RemoteRun(b []byte, logger *logrus.Logger, cmd string) error {
 	var data [][]string
 
 	for _, v := range results {
+		if v.Err != nil {
+			return fmt.Errorf("%s -> %s", v.Err, v.StdErrMsg)
+		}
 		data = append(data, []string{v.Host, v.Cmd, fmt.Sprintf("%d", v.Code), v.Status, v.StdOut, v.StdErrMsg})
 	}
 
