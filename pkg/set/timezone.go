@@ -9,5 +9,5 @@ const setTimezoneShell = "ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtim
 
 //Timezone 设置上海时区
 func Timezone(item command.OperationItem) command.RunErr {
-	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, setTimezoneShell)}
+	return runner.RemoteRun(item.B, item.Logger, setTimezoneShell)
 }

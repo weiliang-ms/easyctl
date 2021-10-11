@@ -1,9 +1,11 @@
 package runner
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"os"
+	"runtime"
 	"testing"
 )
 
@@ -64,7 +66,11 @@ excludes:
  - 192.168.235.132
 `
 	err := RemoteRun([]byte(aaa), nil, "")
-	assert.Nil(t, err)
+	_, ok := err.Err.(runtime.Error)
+	if ok {
+		assert.Equal(t, true, ok)
+		fmt.Println(err.Msg)
+	}
 }
 
 // ssh连接异常error

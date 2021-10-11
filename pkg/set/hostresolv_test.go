@@ -8,6 +8,7 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"os"
+	"runtime"
 	"testing"
 )
 
@@ -47,7 +48,8 @@ server:
 	options[GetHostResolveFunc] = GetHostResolve
 	item.OptionFunc = options
 	err := HostResolve(item)
-	assert.Equal(t, command.RunErr{}, err)
+	_, ok := err.Err.(runtime.Error)
+	assert.Equal(t, true, ok)
 
 	// test mock with nil data
 	options[GetHostResolveFunc] = mockHostResolveFuncWithNilData

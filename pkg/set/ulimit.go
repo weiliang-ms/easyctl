@@ -22,5 +22,5 @@ EOF
 // Ulimit 设置文件描述符
 func Ulimit(item command.OperationItem) command.RunErr {
 
-	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, ulimitShell)}
+	return runner.RemoteRun(item.B, item.Logger, ulimitShell)
 }

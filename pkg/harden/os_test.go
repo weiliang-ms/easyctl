@@ -19,5 +19,7 @@ server:
 `)})
 
 	_, ok := err.Err.(*yaml.TypeError)
-	assert.Equal(t, true, ok)
+	if ok {
+		assert.Equal(t, true, ok)
+	}
 }
