@@ -54,7 +54,7 @@ func User(item command.OperationItem) command.RunErr {
 
 	script, _ := config.addUserScript()
 
-	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, script)}
+	return runner.RemoteRun(item.B, item.Logger, script)
 }
 
 // ParseNewUserConfig 解析新用户属性

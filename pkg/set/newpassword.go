@@ -28,7 +28,7 @@ func NewPassword(item command.OperationItem) command.RunErr {
 	if err != nil {
 		return command.RunErr{Err: err}
 	}
-	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, script)}
+	return runner.RemoteRun(item.B, item.Logger, script)
 }
 
 // NewPasswordScript 获取修改用户口令脚本

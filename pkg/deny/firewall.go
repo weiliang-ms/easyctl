@@ -7,5 +7,5 @@ import (
 
 // Firewall 关闭防火墙
 func Firewall(item command.OperationItem) command.RunErr {
-	return command.RunErr{Err: runner.RemoteRun(item.B, item.Logger, disableFirewallShell)}
+	return runner.RemoteRun(item.B, item.Logger, disableFirewallShell)
 }

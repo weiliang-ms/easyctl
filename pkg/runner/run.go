@@ -6,6 +6,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/sftp"
 	"github.com/sirupsen/logrus"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"golang.org/x/crypto/ssh"
 	"net"
@@ -48,17 +49,17 @@ func sftpConnect(user, password, host string, port string) (sftpClient *sftp.Cli
 }
 
 // RemoteRun 远程执行输出结果
-func RemoteRun(b []byte, logger *logrus.Logger, cmd string) error {
+func RemoteRun(b []byte, logger *logrus.Logger, cmd string) command.RunErr {
 
 	results, err := GetResult(b, logger, cmd)
 	if err != nil {
-		return err
+		return command.RunErr{Err: err}
 	}
 	var data [][]string
 
 	for _, v := range results {
 		if v.Err != nil {
-			return fmt.Errorf("%s -> %s", v.Err, v.StdErrMsg)
+			return command.RunErr{Err: v.Err, Msg: v.StdErrMsg}
 		}
 		data = append(data, []string{v.Host, v.Cmd, fmt.Sprintf("%d", v.Code), v.Status, v.StdOut, v.StdErrMsg})
 	}
@@ -72,7 +73,7 @@ func RemoteRun(b []byte, logger *logrus.Logger, cmd string) error {
 	table.AppendBulk(data) // Add Bulk Data
 	table.Render()
 
-	return nil
+	return command.RunErr{}
 }
 
 // GetResult 远程执行，获取结果

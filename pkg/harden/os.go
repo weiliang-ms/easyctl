@@ -143,7 +143,7 @@ sed -i '/easyctl/d' /etc/sudoers
 echo "easyctl        ALL=(ALL)       NOPASSWD: ALL" >> /etc/sudoers
 `)))
 
-type task func() error
+type task func() command.RunErr
 
 func OS(item command.OperationItem) command.RunErr {
 	obj := &Object{}
@@ -173,8 +173,8 @@ func OS(item command.OperationItem) command.RunErr {
 
 	for _, f := range tasks {
 		err := f()
-		if err != nil {
-			return command.RunErr{Err: err}
+		if err.Err != nil {
+			return err
 		}
 	}
 
@@ -182,85 +182,85 @@ func OS(item command.OperationItem) command.RunErr {
 }
 
 // 禁Ping
-func (object *Object) denyPing() error {
+func (object *Object) denyPing() command.RunErr {
 	object.Logger.Info("[step 1] 禁ping")
 	return runner.RemoteRun(object.B, object.Logger, deny.DenyPingShell)
 }
 
 // 关闭ICMP_TIMESTAMP应答
-func (object *Object) denyICMPTimeStamp() error {
+func (object *Object) denyICMPTimeStamp() command.RunErr {
 	object.Logger.Info("[step 2] 关闭ICMP_TIMESTAMP应答")
 	return runner.RemoteRun(object.B, object.Logger, UnsetICMPTimeStampShell)
 }
 
 // 设置系统空闲等待时间
-func (object *Object) setTMOUT() error {
+func (object *Object) setTMOUT() command.RunErr {
 	object.Logger.Info("[step 3] 设置系统空闲等待时间")
 	return runner.RemoteRun(object.B, object.Logger, SetTMOUTShell)
 }
 
 // 隐藏系统版本信息
-func (object *Object) hideOSVersion() error {
+func (object *Object) hideOSVersion() command.RunErr {
 	object.Logger.Info("[step 4] 隐藏系统版本信息")
 	return runner.RemoteRun(object.B, object.Logger, HideOSVersionShell)
 }
 
 // 禁止Control-Alt-Delete 键盘重启系统命令
-func (object *Object) denyRebootByKeyBoard() error {
+func (object *Object) denyRebootByKeyBoard() command.RunErr {
 	object.Logger.Info("[step 5] 禁止Control-Alt-Delete 键盘重启系统命令")
 	return runner.RemoteRun(object.B, object.Logger, UnsetRebootByKeyBoardShell)
 }
 
 // ssh用户密码加固
-func (object *Object) setPasswdPolicy() error {
+func (object *Object) setPasswdPolicy() command.RunErr {
 	object.Logger.Info("[step 6] ssh用户密码加固")
 	return runner.RemoteRun(object.B, object.Logger, SetPasswdPolicyShell)
 }
 
 // 删除系统默认用户
-func (object *Object) delUnusedUser() error {
+func (object *Object) delUnusedUser() command.RunErr {
 	object.Logger.Info("[step 7] 删除系统默认用户")
 	return runner.RemoteRun(object.B, object.Logger, DeleteUnUsedUserShell)
 }
 
 // 修改允许密码错误次数
-func (object *Object) errPasswdRetryCount() error {
+func (object *Object) errPasswdRetryCount() command.RunErr {
 	object.Logger.Info("[step 8] 修改允许密码错误次数")
 	return runner.RemoteRun(object.B, object.Logger, SetErrPasswdRetryShell)
 }
 
 // 关闭ssh UseDNS
-func (object *Object) denySSHUseDns() error {
+func (object *Object) denySSHUseDns() command.RunErr {
 	object.Logger.Info("[step 9] ssh关闭UseDNS")
 	return runner.RemoteRun(object.B, object.Logger, DenySSHUseDnsShell)
 }
 
 // 关闭ssh `AgentForwarding`和`TcpForwarding`
-func (object *Object) denySSHAgentForwarding() error {
+func (object *Object) denySSHAgentForwarding() command.RunErr {
 	object.Logger.Info("[step 10] ssh关闭AgentForwarding")
 	return runner.RemoteRun(object.B, object.Logger, DenySSHdAgentForwardingShell)
 }
 
 // 加固系统日志文件
-func (object *Object) setSysLog() error {
+func (object *Object) setSysLog() command.RunErr {
 	object.Logger.Info("[step 11] 加固系统日志文件")
 	return runner.RemoteRun(object.B, object.Logger, HardenSystemLogShell)
 }
 
 // 删除非root用户定时任务
-func (object *Object) delCommonUserCron() error {
+func (object *Object) delCommonUserCron() command.RunErr {
 	object.Logger.Info("[step 12] 删除非root用户定时任务")
 	return runner.RemoteRun(object.B, object.Logger, DeleteCommonUserCronShell)
 }
 
 // 定时清理僵尸进程
-func (object *Object) delZombieProcessCron() error {
+func (object *Object) delZombieProcessCron() command.RunErr {
 	object.Logger.Info("[step 13] 定时清理僵尸进程")
 	return runner.RemoteRun(object.B, object.Logger, DeleteZombieProcessCronShell)
 }
 
 // 创建sudo用户
-func (object *Object) addSudoUser() error {
+func (object *Object) addSudoUser() command.RunErr {
 	// todo: 重构调用内部指令
 	object.Logger.Infof("[step 14] 添加sudo用户: easyctl 密码: %s", constant.DefaultPassword)
 	cmd, _ := tmplutil.Render(addSudoUserTmpl, tmplutil.TmplRenderData{
@@ -270,21 +270,21 @@ func (object *Object) addSudoUser() error {
 }
 
 // 锁定敏感文件并降权
-func (object *Object) lockKeyFile() error {
+func (object *Object) lockKeyFile() command.RunErr {
 	object.Logger.Info("[step 15] 锁定敏感文件")
 	return runner.RemoteRun(object.B, object.Logger, LockKeyFileShell)
 }
 
 // 修改ssh port & 禁止root登录
-func (object *Object) modifySSHLogin() error {
+func (object *Object) modifySSHLogin() command.RunErr {
 	object.Logger.Info("[step 16] 调整ssh登录端口为: 22122，禁止root直接登录.")
 	return runner.RemoteRun(object.B, object.Logger, ModifySSHLoginShell)
 }
 
-func (object *Object) print() error {
+func (object *Object) print() command.RunErr {
 	object.Logger.Infof("[done] 安全加固完毕，目标主机连方式改为：\n"+
 		"ssh端口: 22122\n"+
 		"ssh用户: easyctl\n"+
 		"ssh密码: %s", constant.DefaultPassword)
-	return nil
+	return command.RunErr{}
 }
