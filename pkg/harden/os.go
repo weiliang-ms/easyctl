@@ -1,10 +1,14 @@
 package harden
 
 import (
+	"github.com/lithammer/dedent"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/deny"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
+	"github.com/weiliang-ms/easyctl/pkg/util/constant"
+	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
+	"text/template"
 )
 
 // Object 加固对象
@@ -51,10 +55,27 @@ if [ $PASS_WARN_AGE -ne 7 ];then
   echo "PASS_WARN_AGE   7" >> /etc/login.defs
 fi
 `
+	ModifySSHLoginShell = `
+sed -i "/PermitRootLogin/d" /etc/ssh/sshd_config
+sed -i "/Port 22/d" /etc/ssh/sshd_config
+echo "Port 22122" >> /etc/ssh/sshd_config
+echo "PermitRootLogin no" >> /etc/ssh/sshd_config
+
+setenforce 0
+firewall-cmd --zone=public --add-port=22122/tcp --permanent || true
+firewall-cmd --zone=public --add-port=22122/tcp --permanent || true
+firewall-cmd --reload || true
+
+iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 22122 -j ACCEPT || true
+/etc/rc.d/init.d/iptables save || ture
+service iptables restart || ture
+
+service sshd restart
+`
 	SetErrPasswdRetryShell = `
 sed -i "/MaxAuthTries/d" /etc/ssh/sshd_config
 echo "MaxAuthTries 3" >> /etc/ssh/sshd_config
-service restart sshd
+service sshd restart
 `
 	HardenSystemLogShell = `
 touch /var/log/secure
@@ -64,14 +85,14 @@ chmod 600 /var/log/secure
 	DenySSHUseDnsShell = `
 sed -i "/UseDNS/d" /etc/ssh/sshd_config
 echo "UseDNS no" >> /etc/ssh/sshd_config
-service restart sshd
+service sshd restart
 `
 	DenySSHdAgentForwardingShell = `
 sed -i "/AgentForwarding/d" /etc/ssh/sshd_config
 sed -i "/TcpForwarding/d" /etc/ssh/sshd_config
 echo "AllowAgentForwarding no" >> /etc/ssh/sshd_config
 echo "AllowTcpForwarding no" >> /etc/ssh/sshd_config
-service restart sshd
+service sshd restart
 `
 	DeleteUnUsedUserShell = `
 users=(adm lp sync shutdown halt mail news uucp operator games gopher ftp)
@@ -105,7 +126,22 @@ rm -rf /usr/lib/systemd/system/ctrl-alt-del.target || true
 iptables -I INPUT -p ICMP --icmp-type timestamp-request -m comment --comment "deny ICMP timestamp" -j DROP || true
 iptables -I INPUT -p ICMP --icmp-type timestamp-reply -m comment --comment "deny ICMP timestamp" -j DROP || true
 `
+	LockKeyFileShell = `
+chown root:root /etc/{passwd,shadow,group}
+chmod 644 /etc/{passwd,group}
+chmod 400 /etc/shadow
+chattr +i /etc/services || true
+chattr +i /etc/passwd /etc/shadow /etc/group /etc/gshadow /etc/inittab
+`
 )
+
+var addSudoUserTmpl = template.Must(template.New("addSudoUserTmpl").Parse(dedent.Dedent(`
+chattr -i /etc/passwd /etc/shadow /etc/group /etc/gshadow /etc/inittab
+useradd -m easyctl &>/dev/null || true
+echo {{ .Password }} | passwd --stdin easyctl || true
+sed -i '/easyctl/d' /etc/sudoers
+echo "easyctl        ALL=(ALL)       NOPASSWD: ALL" >> /etc/sudoers
+`)))
 
 type task func() error
 
@@ -126,8 +162,13 @@ func OS(item command.OperationItem) command.RunErr {
 		obj.errPasswdRetryCount,
 		obj.denySSHUseDns,
 		obj.denySSHAgentForwarding,
+		obj.setSysLog,
 		obj.delCommonUserCron,
 		obj.delZombieProcessCron,
+		obj.addSudoUser,
+		obj.lockKeyFile,
+		obj.modifySSHLogin,
+		obj.print,
 	}
 
 	for _, f := range tasks {
@@ -140,17 +181,10 @@ func OS(item command.OperationItem) command.RunErr {
 	return command.RunErr{}
 }
 
-// 解析主机列表
-func (object *Object) parse() error {
-	servers, err := runner.ParseServerList(object.B, object.Logger)
-	object.Servers = servers
-	return err
-}
-
 // 禁Ping
 func (object *Object) denyPing() error {
 	object.Logger.Info("[step 1] 禁ping")
-	return runner.RemoteRun(object.B, object.Logger, deny.UnsetPingResponseShell)
+	return runner.RemoteRun(object.B, object.Logger, deny.DenyPingShell)
 }
 
 // 关闭ICMP_TIMESTAMP应答
@@ -203,30 +237,54 @@ func (object *Object) denySSHUseDns() error {
 
 // 关闭ssh `AgentForwarding`和`TcpForwarding`
 func (object *Object) denySSHAgentForwarding() error {
-	object.Logger.Info("[step 9] ssh关闭UseDNS")
+	object.Logger.Info("[step 10] ssh关闭AgentForwarding")
 	return runner.RemoteRun(object.B, object.Logger, DenySSHdAgentForwardingShell)
 }
 
 // 加固系统日志文件
 func (object *Object) setSysLog() error {
-	object.Logger.Info("[step 10] 加固系统日志文件")
+	object.Logger.Info("[step 11] 加固系统日志文件")
 	return runner.RemoteRun(object.B, object.Logger, HardenSystemLogShell)
 }
 
 // 删除非root用户定时任务
 func (object *Object) delCommonUserCron() error {
-	object.Logger.Info("[step 11] 删除非root用户定时任务")
+	object.Logger.Info("[step 12] 删除非root用户定时任务")
 	return runner.RemoteRun(object.B, object.Logger, DeleteCommonUserCronShell)
 }
 
 // 定时清理僵尸进程
 func (object *Object) delZombieProcessCron() error {
-	object.Logger.Info("[step 11] 删除非root用户定时任务")
+	object.Logger.Info("[step 13] 定时清理僵尸进程")
 	return runner.RemoteRun(object.B, object.Logger, DeleteZombieProcessCronShell)
 }
 
 // 创建sudo用户
+func (object *Object) addSudoUser() error {
+	// todo: 重构调用内部指令
+	object.Logger.Infof("[step 14] 添加sudo用户: easyctl 密码: %s", constant.DefaultPassword)
+	cmd, _ := tmplutil.Render(addSudoUserTmpl, tmplutil.TmplRenderData{
+		"Password": constant.DefaultPassword,
+	})
+	return runner.RemoteRun(object.B, object.Logger, cmd)
+}
 
 // 锁定敏感文件并降权
+func (object *Object) lockKeyFile() error {
+	object.Logger.Info("[step 15] 锁定敏感文件")
+	return runner.RemoteRun(object.B, object.Logger, LockKeyFileShell)
+}
 
-// 修改ssh port 禁止root登录
+// 修改ssh port & 禁止root登录
+func (object *Object) modifySSHLogin() error {
+	object.Logger.Info("[step 16] 调整ssh登录端口为: 22122，禁止root直接登录.")
+	return runner.RemoteRun(object.B, object.Logger, ModifySSHLoginShell)
+}
+
+func (object *Object) print() error {
+	object.Logger.Infof("[done] 安全加固完毕，目标主机连方式改为：\n"+
+		"ssh端口: 22122\n"+
+		"ssh用户: easyctl\n"+
+		"ssh密码: %s", constant.DefaultPassword)
+	return nil
+}
