@@ -21,6 +21,7 @@ type RedisClusterConfig struct {
 		Password    string           `yaml:"password"`
 		ClusterType RedisClusterType `yaml:"cluster-type"`
 		Package     string           `yaml:"package"`
+		ListenPorts []int            `yaml:"listenPorts"`
 	} `yaml:"redis-cluster"`
 }
 
@@ -29,6 +30,7 @@ type redisClusterConfig struct {
 	Servers       []runner.ServerInternal
 	Password      string
 	CluterType    RedisClusterType
+	ListenPorts   []int
 	Package       string
 	Logger        *logrus.Logger
 	ConfigContent []byte
@@ -103,6 +105,7 @@ func (config *redisClusterConfig) Parse() command.RunErr {
 	config.Package = config.ConfigItem.RedisCluster.Package
 	config.CluterType = config.ConfigItem.RedisCluster.ClusterType
 	config.Password = config.ConfigItem.RedisCluster.Password
+	config.ListenPorts = config.ConfigItem.RedisCluster.ListenPorts
 
 	servers, err := runner.ParseServerList(config.ConfigContent, config.Logger)
 	if err != nil {
@@ -120,7 +123,23 @@ func (config *redisClusterConfig) SetValue() command.RunErr {
 	var ports []int
 	var endpointList []string
 
-	for _, i := range defaultPorts[:config.numPerNode()] {
+	setLocalPorts := config.CluterType == local && len(config.ListenPorts) != 6
+	setThreeNodesPorts := config.CluterType == threeNodesThreeShards && len(config.ListenPorts) != 2
+	setSixNodesPorts := config.CluterType == sixNodesThreeShards && len(config.ListenPorts) != 1
+
+	if setLocalPorts {
+		ports = defaultPorts[:6]
+	}
+
+	if setThreeNodesPorts {
+		ports = defaultPorts[:2]
+	}
+
+	if setSixNodesPorts {
+		ports = defaultPorts[:1]
+	}
+
+	for _, i := range config.ListenPorts {
 		ports = append(ports, i)
 		ports = append(ports, i+10000)
 		for _, v := range config.Servers {
@@ -291,22 +310,10 @@ func (config *redisClusterConfig) Config() (err command.RunErr) {
 
 	config.Logger.Info("生成配置文件")
 	// local
-	var ports []int
-	if config.CluterType == local {
-		ports = defaultPorts[:6]
-	}
-
-	if config.CluterType == threeNodesThreeShards {
-		ports = defaultPorts[:2]
-	}
-
-	if config.CluterType == sixNodesThreeShards {
-		ports = defaultPorts[:1]
-	}
 
 	// todo: 考虑io替代shell
 	generateConfigShell, _ := tmplutil.Render(tmpl.RedisConfigTmpl, tmplutil.TmplRenderData{
-		"Ports":          ports,
+		"Ports":          config.ListenPorts,
 		"Password":       config.Password,
 		"ClusterEnabled": true,
 	})
@@ -323,13 +330,11 @@ func (config *redisClusterConfig) SetService() (err command.RunErr) {
 
 	config.Logger.Info("配置开机自启动redis")
 
-	// local
-	ports := defaultPorts[:config.numPerNode()]
-	config.Logger.Debugf("ports: %v", ports)
+	config.Logger.Debugf("ports: %v", config.ListenPorts)
 
 	// todo: 考虑io替代shell
 	setServiceShell, _ := tmplutil.Render(tmpl.SetRedisServiceTmpl, tmplutil.TmplRenderData{
-		"Ports":    ports,
+		"Ports":    config.ListenPorts,
 		"Password": config.Password,
 	})
 
@@ -346,13 +351,11 @@ func (config *redisClusterConfig) Boot() (err command.RunErr) {
 
 	config.Logger.Info("启动redis")
 
-	// local
-	ports := defaultPorts[:config.numPerNode()]
-	config.Logger.Debugf("ports: %v", ports)
+	config.Logger.Debugf("ports: %v", config.ListenPorts)
 
 	// todo: 考虑io替代shell
 	bootRedisShell, _ := tmplutil.Render(tmpl.RedisBootTmpl, tmplutil.TmplRenderData{
-		"Ports":    ports,
+		"Ports":    config.ListenPorts,
 		"Password": config.Password,
 	})
 

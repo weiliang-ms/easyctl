@@ -186,16 +186,12 @@ func HarborImageList(item command.OperationItem) command.RunErr {
 	}
 
 	for _, v := range task {
-		if err := exec(v); err != nil {
+		if err := v(); err != nil {
 			return command.RunErr{Err: err}
 		}
 	}
 
 	return command.RunErr{}
-}
-
-func exec(fnc func() error) error {
-	return fnc()
 }
 
 // ParseHarborConfig 解析harbor配置
