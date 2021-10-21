@@ -12,7 +12,7 @@
 - [x] 三节点集群（三主三从，每个节点共运行两个服务）
 - [x] 六节点集群（三主三从，每个节点共运行一个服务）
 
-版本支持：[v0.7.9-alpha以上](https://github.com/weiliang-ms/easyctl/releases/tag/v0.7.9-alpha)
+版本支持：[v0.7.13-alpha以上](https://github.com/weiliang-ms/easyctl/releases/tag/v0.7.13-alpha)
 
 ### 单机伪集群
 
@@ -35,7 +35,7 @@ INFO[0000] 生成配置文件样例, 请携带 -c 参数重新执行 -> config.y
 
 ```yaml
 server:
-  - host: 10.10.10.1
+  - host: 10.10.10.[1:3]
     username: root
     password: 123456
     port: 22
@@ -44,7 +44,14 @@ excludes:
 redis-cluster:
   password: ""
   cluster-type: 1 # [0] 本地伪集群 ; [1] 三节点3分片2副本 ; [2] 6节点3分片2副本
-  package: "redis-5.0.14.tar.gz
+  package: "redis-5.0.14.tar.gz"
+  listenPorts: # redis监听端口（集群类型[0]需要6个端口，集群类型[1]需要2个端口, 集群类型[2]需要1个端口）
+    - 26379
+    - 26380
+    - 26381
+    - 26382
+    - 26383
+    - 26384
 ```
 
 > 3.安装
