@@ -9,3 +9,10 @@ redis-cluster:
   password: ""
   cluster-type: 1 # [0] 本地伪集群 ; [1] 三节点3分片2副本 ; [2] 6节点3分片2副本
   package: "redis-5.0.14.tar.gz"
+  listenPorts:
+    - 26379
+    - 26380
+    - 26381
+    - 26382
+    - 26383
+    - 26384

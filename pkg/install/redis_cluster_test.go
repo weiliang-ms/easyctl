@@ -26,6 +26,13 @@ redis-cluster:
   password: "ddd"
   cluster-type: 0 # [0] 本地伪集群 ; [1] 三节点3分片2副本 ; [2] 6节点3分片2副本
   package: /root/redis-5.0.13.tar.gz
+  listenPorts:
+    - 12341
+    - 12342
+    - 12343
+    - 12344
+    - 12345
+    - 12346
 `
 	assert.Equal(t, command.RunErr{},
 		RedisCluster(command.OperationItem{B: []byte(content), Logger: logrus.New(), UnitTest: true}))
