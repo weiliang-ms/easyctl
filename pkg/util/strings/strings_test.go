@@ -37,3 +37,19 @@ func TestSubFileName(t *testing.T) {
 	assert.Equal(t, "aaa.tar.gz", SubFileName("./aaa.tar.gz"))
 	assert.Equal(t, "ddd.tar.gz", SubFileName(".\\ddd.tar.gz"))
 }
+
+func TestGetMemoryBytes(t *testing.T) {
+	var v int64
+	var err error
+	v , err = GetMemoryBytes("1MB")
+	assert.Equal(t, int64(1 * 1024 * 1024), v)
+	assert.Equal(t, nil, err)
+
+	v , err = GetMemoryBytes("1GB")
+	assert.Equal(t, int64(1 * 1024 * 1024 * 1024), v)
+	assert.Equal(t, nil, err)
+
+	v , err = GetMemoryBytes("1Gb")
+	assert.Equal(t, int64(0), v)
+	assert.NotNil(t, err)
+}
