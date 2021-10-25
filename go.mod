@@ -3,6 +3,7 @@ module github.com/weiliang-ms/easyctl
 go 1.16
 
 require (
+	github.com/containerd/cgroups v1.0.1
 	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/docker/docker v20.10.9+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -24,5 +25,5 @@ require (
 	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
-	k8s.io/klog v1.0.0
+	k8s.io/klog v1.0.0 // indirect
 )

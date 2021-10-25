@@ -2,6 +2,8 @@ package strings
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -64,4 +66,23 @@ func SubFileName(s string) string {
 		return nameSplitSlice[len(nameSplitSlice)-1]
 	}
 	return s
+}
+
+// GetMemoryBytes 内存单位转换
+func GetMemoryBytes(memory string) (value int64, err error) {
+
+	if ok, _ := regexp.MatchString("^\\d+MB$", memory); ok {
+		mb := strings.TrimSuffix(memory, "MB")
+		mbValue, _ := strconv.ParseInt(mb, 0, 64)
+		value = mbValue * 1024 * 1024
+	}else if ok, _ := regexp.MatchString("^\\d+GB$", memory); ok {
+		gb := strings.TrimSuffix(memory, "GB")
+		mbValue, _ := strconv.ParseInt(gb, 0, 64)
+		value = mbValue * 1024 * 1024 * 1024
+	}else {
+		value = 0
+		err = fmt.Errorf("%s非法的内存配置", memory)
+	}
+
+	return value, err
 }

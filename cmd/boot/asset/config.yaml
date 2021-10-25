@@ -1,0 +1,7 @@
+boot-app:
+  - app-name: app1
+    boot-cmd: java -jar 1.jar
+    resources:
+      limits:
+        cpu: 1
+        memory: 500m
