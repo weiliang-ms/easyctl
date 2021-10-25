@@ -16,6 +16,7 @@ require (
 	github.com/modood/table v0.0.0-20200225102042-88de94bb9876 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.4
 	github.com/sirupsen/logrus v1.8.1
