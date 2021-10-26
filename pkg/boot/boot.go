@@ -73,6 +73,7 @@ func AppWithCGroups(item command.OperationItem) command.RunErr {
 
 	apps := Apps{}
 
+	// todo: 检测程序名称合法性
 	for _, v := range config.BootApp {
 		mem, _ := strings2.GetMemoryBytes(v.Resources.Limits.Memory)
 		apps.Items = append(apps.Items, AppItem{
