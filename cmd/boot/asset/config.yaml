@@ -1,7 +1,7 @@
 boot-app:
-  - app-name: app1
-    boot-cmd: java -jar 1.jar
+  - app-name: eureka-app
+    boot-cmd: nohup /usr/bin/java -jar eureka.jar &> /dev/null &
     resources:
       limits:
-        cpu: 1
-        memory: 500m
+        cpu: 2
+        memory: 3GB
