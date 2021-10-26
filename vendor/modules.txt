@@ -5,7 +5,7 @@ github.com/Microsoft/go-winio/pkg/guid
 github.com/VividCortex/ewma
 # github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 github.com/acarl005/stripansi
-# github.com/containerd/cgroups v1.0.1
+# github.com/containerd/cgroups v1.0.2
 ## explicit
 github.com/containerd/cgroups
 github.com/containerd/cgroups/stats/v1
@@ -55,8 +55,6 @@ github.com/godbus/dbus/v5
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
-# github.com/golang/mock v1.6.0
-## explicit
 # github.com/golang/protobuf v1.5.2
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
@@ -81,8 +79,6 @@ github.com/mitchellh/go-homedir
 ## explicit
 github.com/mitchellh/mapstructure
 # github.com/moby/term v0.0.0-20210610120745-9d4ed1856297
-## explicit
-# github.com/modood/table v0.0.0-20200225102042-88de94bb9876
 ## explicit
 # github.com/morikuni/aec v1.0.0
 ## explicit
@@ -187,5 +183,3 @@ gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 ## explicit
 gopkg.in/yaml.v3
-# k8s.io/klog v1.0.0
-## explicit
