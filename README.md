@@ -59,6 +59,8 @@ sudo cp easyctl /usr/local/bin
 > `v1`功能列表
 
 - `add`
+- `boot`
+  - [x] [以配额的方式启动程序](https://weiliang-ms.github.io/easyctl/%E5%90%AF%E5%8A%A8%E6%8C%87%E4%BB%A4%E9%9B%86/%E6%B7%BB%E5%8A%A0%E9%85%8D%E9%A2%9D%E5%90%AF%E5%8A%A8%E7%A8%8B%E5%BA%8F.html)
 - `clean`
   - [x] [清理多机redis](https://weiliang-ms.github.io/easyctl/%E6%B8%85%E7%90%86%E6%8C%87%E4%BB%A4%E9%9B%86/01%E5%A4%9A%E4%B8%BB%E6%9C%BAredis%E6%B8%85%E7%90%86.html)
   - [x] [清理主机dns配置](https://weiliang-ms.github.io/easyctl/%E6%B8%85%E7%90%86%E6%8C%87%E4%BB%A4%E9%9B%86/01%E5%A4%9A%E4%B8%BB%E6%9C%BAdns%E9%85%8D%E7%BD%AE%E6%B8%85%E7%90%86.html)
