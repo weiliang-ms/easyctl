@@ -38,7 +38,7 @@ type RedisInternalConfig struct {
 	unitTest      bool
 }
 
-// Redis 部署redis集群
+// Redis 部署redis
 func Redis(item command.OperationItem) (err command.RunErr) {
 	//defer errors.IgnoreErrorFromCaller(3, "testing.tRunner", &err.Err)
 	config := &RedisInternalConfig{

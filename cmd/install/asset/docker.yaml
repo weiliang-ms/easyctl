@@ -1,0 +1,13 @@
+server:
+  - host: 10.10.10.1-3
+    username: root
+    password: 123456
+    port: 22
+excludes:
+  - 192.168.235.132
+docker:
+  package: docker-19.03.15.tgz   # 二进制安装包目录
+  preserveDir: /data/lib/docker  # docker数据持久化目录
+  insecureRegistries: # 非https仓库列表
+    - gcr.azk8s.cn
+    - quay.azk8s.cn
