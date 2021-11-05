@@ -16,6 +16,23 @@ import (
 const PruneDockerShell = `
 systemctl disable docker --now || true
 rm -rf /etc/docker || true
+rm -f /usr/bin/containerd || true
+rm -f /usr/bin/containerd-shim || true
+rm -f /usr/bin/ctr || true
+rm -f /usr/bin/docker || true
+rm -f /usr/bin/docker-init || true
+rm -f /usr/bin/docker-proxy || true
+rm -f /usr/bin/dockerd || true
+rm -f /usr/bin/runc || true
+userdel -r docker || true
+`
+
+const bootDockerShell = `
+setenforce 0
+groupadd docker
+useradd docker -g docker
+systemctl daemon-reload
+systemctl restart docker
 `
 
 type DockerExternalConfig struct {
@@ -30,6 +47,7 @@ type DockerExternalConfig struct {
 		Package            string   `yaml:"package"`
 		PreserveDir        string   `yaml:"preserveDir"`
 		InsecureRegistries []string `yaml:"insecureRegistries"`
+		RegistryMirrors    []string `yaml:"registryMirrors"`
 	} `yaml:"docker"`
 }
 
@@ -43,6 +61,7 @@ type DockerInternalConfig struct {
 	Executor           runner.ExecutorInternal
 	IgnoreErr          bool // UnitTest
 	InsecureRegistries []string
+	Mirrors            []string
 	BootCommand        string
 	unitTest           bool
 }
@@ -73,6 +92,7 @@ func (config *DockerInternalConfig) Parse() command.RunErr {
 	config.Package = obj.Docker.Package
 	config.InsecureRegistries = obj.Docker.InsecureRegistries
 	config.PreserveDir = obj.Docker.PreserveDir
+	config.Mirrors = obj.Docker.RegistryMirrors
 
 	servers, err := runner.ParseServerList(config.ConfigContent, config.Logger)
 	if err != nil {
@@ -163,21 +183,25 @@ func (config *DockerInternalConfig) HandPackage() (err command.RunErr) {
 	return command.RunErr{}
 }
 
-// Compile 编译
-func (config *DockerInternalConfig) Compile() (err command.RunErr) {
+// Install 编译&安装
+func (config *DockerInternalConfig) Install() (err command.RunErr) {
+	shell, _ := tmplutil.Render(tmpl.InstallDockerTmpl, tmplutil.TmplRenderData{
+		"Package": config.Package,
+	})
 
-	return command.RunErr{}
+	return command.RunErr{Err: config.run(shell)}
 }
 
 // SetUpRuntime docker运行时配置
 func (config *DockerInternalConfig) SetUpRuntime() (err command.RunErr) {
-	return command.RunErr{}
+	return command.RunErr{Err: config.run(fmt.Sprintf("mkdir -p %s", config.PreserveDir))}
 }
 
-func (config *RedisInternalConfig) Config() (err command.RunErr) {
+// Config 配置/etc/docker/daemon.json
+func (config *DockerInternalConfig) Config() (err command.RunErr) {
 	defer func() {
 		if err.Err != nil {
-			err.Msg = "配置redis异常"
+			err.Msg = "配置docker异常"
 			if config.unitTest {
 				err.Err = nil
 			}
@@ -188,106 +212,78 @@ func (config *RedisInternalConfig) Config() (err command.RunErr) {
 
 	config.Logger.Info("生成配置文件")
 
-	// todo: 考虑io替代shell
-	generateConfigShell, _ := tmplutil.Render(tmpl.RedisConfigTmpl, tmplutil.TmplRenderData{
-		"Ports":    config.Ports,
-		"Password": config.Password,
+	var Mirrors, InsecureRegistries string
+	if config.Mirrors != nil {
+		var mirrors []string
+		for _, mirror := range config.Mirrors {
+			mirrors = append(mirrors, fmt.Sprintf("\"%s\"", mirror))
+		}
+		Mirrors = strings.Join(mirrors, ", ")
+	}
+	if config.InsecureRegistries != nil {
+		var registries []string
+		for _, repostry := range config.InsecureRegistries {
+			registries = append(registries, fmt.Sprintf("\"%s\"", repostry))
+		}
+		InsecureRegistries = strings.Join(registries, ", ")
+	}
+	generateConfigShell, _ := tmplutil.Render(tmpl.DockerConfigTmpl, tmplutil.TmplRenderData{
+		"Mirrors":            Mirrors,
+		"InsecureRegistries": InsecureRegistries,
+		"DataPath":           config.PreserveDir,
 	})
 
 	return command.RunErr{Err: config.run(generateConfigShell)}
 }
 
-func (config *RedisInternalConfig) SetService() (err command.RunErr) {
+func (config *DockerInternalConfig) SetService() (err command.RunErr) {
 	defer func() {
 		if err.Err != nil {
-			err.Msg = "配置redis开机启动异常"
+			err.Msg = "配置docker开机启动异常"
 			if config.unitTest {
 				err.Err = nil
 			}
 		}
 	}()
 
-	config.Logger.Info("配置开机自启动redis")
-
-	// local
-	config.Logger.Debugf("ports: %v", config.Ports)
+	config.Logger.Info("配置开机自启动docker")
 
 	// todo: 考虑io替代shell
-	setServiceShell, _ := tmplutil.Render(tmpl.SetRedisServiceTmpl, tmplutil.TmplRenderData{
-		"Ports":    config.Ports,
-		"Password": config.Password,
-	})
+	setServiceShell, _ := tmplutil.Render(tmpl.SetDockerServiceTmpl, tmplutil.TmplRenderData{})
 
 	return command.RunErr{Err: config.run(setServiceShell)}
 }
 
-func (config *RedisInternalConfig) Boot() (err command.RunErr) {
+func (config *DockerInternalConfig) Boot() (err command.RunErr) {
 
 	defer func() {
 		if err.Err != nil {
-			err.Msg = "启动redis异常"
+			err.Msg = "启动docker异常"
 			if config.unitTest {
 				err.Err = nil
 			}
 		}
 	}()
 
-	config.Logger.Info("启动redis")
+	config.Logger.Info("启动docker")
 
-	// local
-	ports := config.Ports
-	config.Logger.Debugf("ports: %v", ports)
-
-	// todo: 考虑io替代shell
-	bootRedisShell, _ := tmplutil.Render(tmpl.RedisBootTmpl, tmplutil.TmplRenderData{
-		"Ports":    ports,
-		"Password": config.Password,
-	})
-
-	config.BootCommand = bootRedisShell
-
-	return command.RunErr{Err: config.run(bootRedisShell)}
+	return command.RunErr{Err: config.run(bootDockerShell)}
 }
 
-func (config *RedisInternalConfig) CloseFirewall() (err command.RunErr) {
-	defer func() {
-		if err.Err != nil {
-			err.Msg = "开放防火墙端口失败"
-			if config.unitTest {
-				err.Err = nil
-			}
-		}
-	}()
-
-	config.Logger.Info("开放防火墙端口")
-
-	script, _ := tmplutil.Render(tmpl.OpenFirewallPortTmpl, tmplutil.TmplRenderData{
-		"Ports": config.PortsNeedOpen,
-	})
-
-	return command.RunErr{Err: config.run(script)}
-}
-
-func (config *RedisInternalConfig) Init() (err command.RunErr) {
+func (config *DockerInternalConfig) CloseFirewall() (err command.RunErr) {
 	return command.RunErr{}
 }
 
-func (config *RedisInternalConfig) Print() command.RunErr {
-	config.Logger.Info("redis安装完毕,相关信息如下：")
-	var endpoint string
-	for _, v := range config.EndpointList {
-		endpoint = fmt.Sprintf("%s,%s", endpoint, v)
-	}
-	fmt.Printf("1.节点列表: %s\n"+
-		"2.密码: %s\n"+
-		"3.日志目录: /var/log/redis\n"+
-		"4.数据目录: /var/data/redis\n"+
-		"5.启动命令/节点: %s\n"+
-		"6.二进制目录：/usr/local/bin/redis-*", strings.TrimPrefix(endpoint, ","), config.Password, config.BootCommand)
+func (config *DockerInternalConfig) Init() (err command.RunErr) {
 	return command.RunErr{}
 }
 
-func (config *RedisInternalConfig) run(script string) error {
+func (config *DockerInternalConfig) Print() command.RunErr {
+	config.Logger.Info("docker安装完毕")
+	return command.RunErr{}
+}
+
+func (config *DockerInternalConfig) run(script string) error {
 
 	exec := runner.ExecutorInternal{
 		Servers:        config.Servers,

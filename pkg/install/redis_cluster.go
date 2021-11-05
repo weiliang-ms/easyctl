@@ -266,8 +266,8 @@ func (config *redisClusterConfig) HandPackage() (err command.RunErr) {
 	return command.RunErr{}
 }
 
-// Compile 编译
-func (config *redisClusterConfig) Compile() (err command.RunErr) {
+// Install 编译安装
+func (config *redisClusterConfig) Install() (err command.RunErr) {
 
 	defer func() {
 		if err.Err != nil && config.unitTest {
