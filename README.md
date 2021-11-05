@@ -74,6 +74,7 @@ sudo cp easyctl /usr/local/bin
 - `harden`
   - [x] [操作系统加固](https://weiliang-ms.github.io/easyctl/%E5%8A%A0%E5%9B%BA%E6%8C%87%E4%BB%A4%E9%9B%86/%E5%8A%A0%E5%9B%BA%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F.html)
 - `install`
+  - [x] [二进制方式安装docker](book/安装指令集/03安装docker.md)
   - [x] [单机redis](https://weiliang-ms.github.io/easyctl/%E5%AE%89%E8%A3%85%E6%8C%87%E4%BB%A4%E9%9B%86/01%E5%AE%89%E8%A3%85%E5%8D%95%E6%9C%BAredis.html)
   - [x] [redis集群](https://weiliang-ms.github.io/easyctl/%E5%AE%89%E8%A3%85%E6%8C%87%E4%BB%A4%E9%9B%86/02%E5%AE%89%E8%A3%85redis%E9%9B%86%E7%BE%A4.html)
 - `set`
