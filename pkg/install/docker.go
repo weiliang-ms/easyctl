@@ -14,6 +14,7 @@ import (
 )
 
 const PruneDockerShell = `
+systemctl stop docker.socket
 systemctl disable docker --now || true
 rm -rf /etc/docker || true
 rm -f /usr/bin/containerd || true
@@ -112,6 +113,7 @@ func (config *DockerInternalConfig) SetValue() command.RunErr {
 // Detect 调用运行时检测依赖
 func (config *DockerInternalConfig) Detect() (err command.RunErr) {
 	// todo:检测目录合法性
+	// todo:检测内核版本
 	return command.RunErr{}
 }
 
@@ -129,23 +131,8 @@ func (config *DockerInternalConfig) Prune() (err command.RunErr) {
 
 	config.Logger = log.SetDefault(config.Logger)
 	config.Logger.Infoln("清理docker历史文件...")
-	exec := runner.ExecutorInternal{
-		Servers:        config.Servers,
-		Script:         PruneDockerShell,
-		Logger:         config.Logger,
-		OutPutRealTime: true,
-	}
 
-	ch := exec.ParallelRun()
-	for v := range ch {
-		if config.IgnoreErr {
-			break
-		} else if v.Err != nil {
-			return command.RunErr{Err: fmt.Errorf("[%s] 执行清理指令失败 %s", v.Host, v.Err), Msg: "执行清理指令失败"}
-		}
-	}
-
-	return command.RunErr{}
+	return command.RunErr{Err: config.run(PruneDockerShell)}
 }
 
 // HandPackage 分发安装包
@@ -162,20 +149,28 @@ func (config *DockerInternalConfig) HandPackage() (err command.RunErr) {
 
 	config.Logger = log.SetDefault(config.Logger)
 	config.Logger.Infoln("分发package...")
-	ch := runner.ParallelScp(runner.ScpItem{
-		Servers: config.Servers,
-		SrcPath: config.Package,
-		DstPath: fmt.Sprintf("/tmp/%s",
-			strings2.SubFileName(config.Package)),
-		Mode:   0755,
-		Logger: config.Logger,
-	})
+	if len(config.Servers) < 1 {
+		re := runner.LocalRun(fmt.Sprintf("cp %s /tmp/%s", config.Package, config.Package), config.Logger)
+		if re.Err != nil {
+			fmt.Printf("%v", re)
+			return command.RunErr{Err: err}
+		}
+	} else {
+		ch := runner.ParallelScp(runner.ScpItem{
+			Servers: config.Servers,
+			SrcPath: config.Package,
+			DstPath: fmt.Sprintf("/tmp/%s",
+				strings2.SubFileName(config.Package)),
+			Mode:   0755,
+			Logger: config.Logger,
+		})
 
-	for v := range ch {
-		if config.IgnoreErr {
-			break
-		} else if v != nil {
-			return command.RunErr{Err: v}
+		for v := range ch {
+			if config.IgnoreErr {
+				break
+			} else if v != nil {
+				return command.RunErr{Err: v}
+			}
 		}
 	}
 
@@ -285,17 +280,21 @@ func (config *DockerInternalConfig) Print() command.RunErr {
 
 func (config *DockerInternalConfig) run(script string) error {
 
-	exec := runner.ExecutorInternal{
-		Servers:        config.Servers,
-		Script:         script,
-		Logger:         config.Logger,
-		OutPutRealTime: true,
-	}
+	if len(config.Servers) < 1 {
+		runner.LocalRun(script, config.Logger)
+	} else {
+		exec := runner.ExecutorInternal{
+			Servers:        config.Servers,
+			Script:         script,
+			Logger:         config.Logger,
+			OutPutRealTime: true,
+		}
 
-	ch := exec.ParallelRun()
-	for v := range ch {
-		if v.Err != nil {
-			return v.Err
+		ch := exec.ParallelRun()
+		for v := range ch {
+			if v.Err != nil {
+				return v.Err
+			}
 		}
 	}
 

@@ -64,7 +64,7 @@ func LocalRun(shell string, logger *logrus.Logger) ShellResult {
 	}
 
 	logger.Debugf("执行指令: %s", shell)
-	cmd := exec.Command(shell)
+	cmd := exec.Command("/bin/bash", "-c", shell)
 	b, err := cmd.CombinedOutput()
 
 	if err != nil {
