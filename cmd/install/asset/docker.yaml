@@ -11,3 +11,4 @@ docker:
   insecureRegistries: # 非https仓库列表
     - gcr.azk8s.cn
     - quay.azk8s.cn
+  registryMirrors:               # 镜像源

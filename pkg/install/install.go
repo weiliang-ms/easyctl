@@ -9,7 +9,7 @@ type Interface interface {
 	Detect() command.RunErr
 	Prune() command.RunErr
 	HandPackage() command.RunErr
-	Compile() command.RunErr
+	Install() command.RunErr
 	SetUpRuntime() command.RunErr
 	Config() command.RunErr
 	SetService() command.RunErr // 开机自启动
@@ -30,7 +30,7 @@ func install(i Interface) command.RunErr {
 		i.Detect,
 		i.Prune,
 		i.HandPackage,
-		i.Compile,
+		i.Install,
 		i.SetUpRuntime,
 		i.Config,
 		i.SetService,

@@ -20,8 +20,8 @@ var dockerCmd = &cobra.Command{
 		if runErr := command.SetExecutorDefault(
 			command.Item{
 				Cmd:            cmd,
-				Fnc:            install.Redis,
-				DefaultConfig:  redisClusterConfig,
+				Fnc:            install.Docker,
+				DefaultConfig:  dockerConfig,
 				ConfigFilePath: configFile,
 			}); runErr.Err != nil {
 			log.Println(runErr.Msg)

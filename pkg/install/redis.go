@@ -210,8 +210,8 @@ func (config *RedisInternalConfig) HandPackage() (err command.RunErr) {
 	return command.RunErr{}
 }
 
-// Compile 编译
-func (config *RedisInternalConfig) Compile() (err command.RunErr) {
+// Install 编译
+func (config *RedisInternalConfig) Install() (err command.RunErr) {
 	defer func() {
 		if err.Err != nil && config.unitTest {
 			err.Err = nil

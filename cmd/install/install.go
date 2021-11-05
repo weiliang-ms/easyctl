@@ -11,7 +11,7 @@ func init() {
 
 	//RootCmd.AddCommand(keepaliveCmd)
 	//RootCmd.AddCommand(haproxyCmd)
-	//RootCmd.AddCommand(dockerCmd)
+	RootCmd.AddCommand(dockerCmd)
 	//RootCmd.AddCommand(dockerComposeCmd)
 	//RootCmd.AddCommand(harborCmd)
 	RootCmd.AddCommand(redisClusterCmd)
