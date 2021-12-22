@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/containerd/cgroups v1.0.2
 	github.com/containerd/containerd v1.5.7 // indirect
-	github.com/docker/docker v20.10.9+incompatible
+	github.com/docker/docker v20.10.12+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/lithammer/dedent v1.1.0
