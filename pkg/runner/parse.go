@@ -25,6 +25,8 @@ SOFTWARE.
 package runner
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util/slice"
@@ -123,6 +125,13 @@ func ParseExecutor(b []byte, logger *logrus.Logger) (ExecutorInternal, error) {
 	}
 
 	executorInternal.Servers = filter.Servers
+
+	// 格式化输出结构体
+	bs, _ := json.Marshal(executorInternal.Servers)
+	var out bytes.Buffer
+	_ = json.Indent(&out, bs, "", "\t")
+	logger.Debugf("主机列表：\n%v", out.String())
+
 	return executorInternal, nil
 }
 

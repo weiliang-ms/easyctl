@@ -41,6 +41,14 @@ type OperationItem struct {
 	UnitTest   bool
 }
 
+var DefaultLogger *logrus.Logger
+
+func init() {
+	DefaultLogger = logrus.New()
+	DefaultLogger.SetLevel(logrus.InfoLevel)
+	DefaultLogger.SetFormatter(&log.CustomFormatter{})
+}
+
 // SetExecutorDefault executor赋值
 func SetExecutorDefault(item Item) (runErr RunErr) {
 

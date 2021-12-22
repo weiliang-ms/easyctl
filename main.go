@@ -9,6 +9,7 @@ import (
 	"github.com/weiliang-ms/easyctl/cmd/boot"
 	"github.com/weiliang-ms/easyctl/cmd/clean"
 	"github.com/weiliang-ms/easyctl/cmd/deny"
+	"github.com/weiliang-ms/easyctl/cmd/exec"
 	"github.com/weiliang-ms/easyctl/cmd/export"
 	"github.com/weiliang-ms/easyctl/cmd/harden"
 	"github.com/weiliang-ms/easyctl/cmd/install"
@@ -50,6 +51,7 @@ func init() {
 		boot.RootCmd,
 		clean.RootCmd,
 		deny.RootCmd,
+		exec.RootCmd,
 		set.RootCmd,
 		install.RootCmd,
 		upgrade.Cmd,
@@ -64,15 +66,6 @@ func init() {
 	for _, cmd := range subCmds {
 		RootCmd.AddCommand(cmd)
 	}
-
-	//header := &doc.GenManHeader{
-	//	Title: "MINE",
-	//	Section: "3",
-	//}
-	//err := doc.GenManTree(RootCmd, header, "/tmp")
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
 
 }
 

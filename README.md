@@ -6,9 +6,12 @@
 [![codecov](https://codecov.io/gh/weiliang-ms/easyctl/branch/master/graph/badge.svg?token=7RGD5V5L9Y)](https://codecov.io/gh/weiliang-ms/easyctl)
 ![GitHub](https://img.shields.io/github/license/weiliang-ms/easyctl?style=flat-square)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fweiliang-ms%2Feasyctl.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fweiliang-ms%2Feasyctl?ref=badge_shield)
-# easyctl 
+
+# easyctl
 
 `easyctl`是一款基于`golang`轻量级运维工具集，详情使用请移步[使用文档](https://weiliang-ms.github.io/easyctl/)
+
+[CHANGELOG](changelog/CHANGELOG.md)
 
 兼容性：
 
@@ -41,8 +44,6 @@ sudo tar zxvf easyctl-latest-linux-amd64.tar.gz
 sudo cp easyctl /usr/local/bin
 ```
 
-- [Windows](https://github.com/weiliang-ms/easyctl/releases/download/latest/easyctl-latest-windows-amd64.zip)
-
 > 下载[tag版本](https://github.com/weiliang-ms/easyctl/tags)
 
 ## 迭代计划
@@ -68,6 +69,8 @@ sudo cp easyctl /usr/local/bin
   - [x] [防火墙](https://weiliang-ms.github.io/easyctl/%E7%A6%81%E7%94%A8%E6%8C%87%E4%BB%A4%E9%9B%86/03%E4%B8%BB%E6%9C%BA%E7%A6%81%E7%94%A8%E9%98%B2%E7%81%AB%E5%A2%99.html)
   - [x] [ping](https://weiliang-ms.github.io/easyctl/%E7%A6%81%E7%94%A8%E6%8C%87%E4%BB%A4%E9%9B%86/01%E4%B8%BB%E6%9C%BA%E7%A6%81Ping.html)
   - [x] [selinux](https://weiliang-ms.github.io/easyctl/%E7%A6%81%E7%94%A8%E6%8C%87%E4%BB%A4%E9%9B%86/02%E4%B8%BB%E6%9C%BA%E7%A6%81%E7%94%A8selinux.html)
+- `exec`
+  - [x] [跨主机并行执行shell]()
 - `export`
   - [x] [从harbor批量下载chart](https://weiliang-ms.github.io/easyctl/%E5%AF%BC%E5%87%BA%E6%8C%87%E4%BB%A4%E9%9B%86/01%E4%BB%8Eharbor%E5%BA%93%E4%B8%AD%E5%AF%BC%E5%87%BAchart.html)
   - [x] [从harbor导出镜像tag列表](https://weiliang-ms.github.io/easyctl/%E5%AF%BC%E5%87%BA%E6%8C%87%E4%BB%A4%E9%9B%86/02%E4%BB%8Eharbor%E5%BA%93%E4%B8%AD%E5%AF%BC%E5%87%BA%E9%95%9C%E5%83%8Ftag%E5%88%97%E8%A1%A8.html)

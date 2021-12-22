@@ -11,18 +11,17 @@ var (
 )
 
 //go:embed asset/executor.yaml
-var config []byte
-
-func init() {
-	RootCmd.Flags().StringVarP(&configFile, "config", "c", "", "配置文件")
-}
+var configByte []byte
 
 // RootCmd close命令
 var RootCmd = &cobra.Command{
 	Use:     "exec [flags]",
 	Short:   "执行命令指令集",
 	Example: "\neasyctl exec -c config.yaml",
-	Run: func(cmd *cobra.Command, args []string) {
+	Args:    cobra.ExactValidArgs(1),
+}
 
-	},
+func init() {
+	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "配置文件")
+	RootCmd.AddCommand(shellCmd)
 }

@@ -93,6 +93,7 @@ func (executor ExecutorInternal) ParallelRun() chan ShellResult {
 	if _, err := os.Stat(executor.Script); err == nil {
 		b, _ := os.ReadFile(executor.Script)
 		executor.Script = string(b)
+		executor.Logger.Debug("解析出执行指令为脚本")
 	}
 
 	for _, v := range executor.Servers {
@@ -109,29 +110,15 @@ func (executor ExecutorInternal) ParallelRun() chan ShellResult {
 }
 
 func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResult) {
-	var shell string
 	defer handleErr(&re.Err)
 
-	if executor.Logger.Level == logrus.DebugLevel {
-		shell = executor.Script
-	} else {
-		shell = "shell content"
-	}
-
-	// 截取cmd output 长度
-	var subCmd string
-	if len(executor.Script) > 10 {
-		subCmd = "******"
-	} else {
-		subCmd = executor.Script
-	}
-
-	executor.Logger.Infof("[%s] 开始执行指令 -> %s", server.Host, shell)
+	executor.Logger.Infof("[%s] 开始执行指令 -> start", server.Host)
+	executor.Logger.Debugf("\n# 指令开始\n%s\n# 指令结束\n", executor.Script)
 	session, err := server.sshConnect()
 	defer session.Close()
 
 	if err != nil {
-		errMsg := fmt.Sprintf("ssh会话建立失败->%s", err.(*net.OpError).Error())
+		errMsg := fmt.Sprintf("ssh会话建立失败->%s", err.Error())
 		return ShellResult{
 			Host:      server.Host,
 			Err:       err,
@@ -167,8 +154,8 @@ func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResul
 				StdErrMsg: err.(*ssh.ExitError).String()}
 		}
 
-		executor.Logger.Infof("<- %s执行命令成功...", server.Host)
-		executor.Logger.Debugf("%s -> 返回值: %s", server.Host, string(out))
+		executor.Logger.Infof("<- end %s执行命令成功...", server.Host)
+		executor.Logger.Debugf("%s -> 返回值: \n%s", server.Host, string(out))
 
 		var subOut string
 
@@ -179,7 +166,7 @@ func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResul
 		}
 
 		return ShellResult{Host: server.Host, StdOut: subOut,
-			Cmd: strings.TrimPrefix(subCmd, "\n"), Status: constant.Success}
+			Cmd: strings.TrimPrefix(executor.Script, "\n"), Status: constant.Success}
 	}
 
 	return ShellResult{}
@@ -262,7 +249,9 @@ func (server ServerInternal) sshConnect() (*ssh.Session, error) {
 }
 
 func publicKeyAuthFunc(kPath string) (ssh.AuthMethod, error) {
+	// ~/.ssh/id_rsa
 	keyPath, err := homedir.Expand(kPath)
+	// /root/.ssh/id_rsa
 	if err != nil {
 		return nil, fmt.Errorf("find key's home dir failed %s", err)
 	}
