@@ -44,7 +44,12 @@ func Scp(item command.OperationItem) command.RunErr {
 	if err != nil {
 		return command.RunErr{Err: err}
 	}
-	return runner.RemoteRun(item.B, item.Logger, executor.Script)
+	return runner.RemoteRun(runner.RemoteRunItem{
+		B:                   item.B,
+		Logger:              item.Logger,
+		Cmd:                 executor.Script,
+		RecordErrServerList: false,
+	})
 }
 
 func parseScpItem(b []byte) (scpItem, command.RunErr) {

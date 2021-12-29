@@ -32,7 +32,12 @@ chmod 600 ~/.ssh -R
 // PasswordLess 设置主机互信
 func PasswordLess(item command.OperationItem) command.RunErr {
 	script, _ := MakeKeyPairScript(PasswordLessTmpl)
-	return runner.RemoteRun(item.B, item.Logger, script)
+	return runner.RemoteRun(runner.RemoteRunItem{
+		B:                   item.B,
+		Logger:              item.Logger,
+		Cmd:                 script,
+		RecordErrServerList: false,
+	})
 }
 
 // MakeKeyPairScript 生成密钥对

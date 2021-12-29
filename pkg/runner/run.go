@@ -39,6 +39,13 @@ import (
 	"time"
 )
 
+type RemoteRunItem struct {
+	B                   []byte
+	Logger              *logrus.Logger
+	Cmd                 string
+	RecordErrServerList bool
+}
+
 func sftpConnect(user, password, host string, port string) (sftpClient *sftp.Client, err error) { //参数: 远程服务器用户名, 密码, ip, 端口
 	auth := make([]ssh.AuthMethod, 0)
 	auth = append(auth, ssh.Password(password))
@@ -73,25 +80,28 @@ func sftpConnect(user, password, host string, port string) (sftpClient *sftp.Cli
 }
 
 // RemoteRun 远程执行输出结果
-func RemoteRun(b []byte, logger *logrus.Logger, cmd string) command.RunErr {
+func RemoteRun(item RemoteRunItem) command.RunErr {
 
-	results, err := GetResult(b, logger, cmd)
+	var f *os.File
+
+	results, err := GetResult(item.B, item.Logger, item.Cmd)
 	if err != nil {
 		return command.RunErr{Err: err}
 	}
 	var data [][]string
 
-	f, err := os.Create("error-server-list.txt")
-	defer f.Close()
-
-	if err != nil {
-		panic(err)
+	if item.RecordErrServerList {
+		f, err = os.Create("error-server-list.txt")
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
 	}
 
 	var errServerList []ShellResult
 
 	for _, v := range results {
-		if v.Err != nil {
+		if v.Err != nil && item.RecordErrServerList {
 			f.Write([]byte(fmt.Sprintf("%s\n", v.Host)))
 		}
 		data = append(data, []string{v.Host, v.Cmd, fmt.Sprintf("%d", v.Code), v.Status, v.StdOut, v.StdErrMsg})

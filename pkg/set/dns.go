@@ -30,7 +30,12 @@ func Dns(item command.OperationItem) command.RunErr {
 	if err != nil {
 		return command.RunErr{Err: err}
 	}
-	return runner.RemoteRun(item.B, item.Logger, script)
+	return runner.RemoteRun(runner.RemoteRunItem{
+		B:                   item.B,
+		Logger:              item.Logger,
+		Cmd:                 script,
+		RecordErrServerList: false,
+	})
 }
 
 // AddDnsScript 获取添加dns脚本

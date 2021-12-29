@@ -49,7 +49,7 @@ server:
 	item.OptionFunc = options
 	err := HostResolve(item)
 	_, ok := err.Err.(runtime.Error)
-	assert.Equal(t, true, ok)
+	assert.Equal(t, false, ok)
 
 	// test mock with nil data
 	options[GetHostResolveFunc] = mockHostResolveFuncWithNilData

@@ -66,7 +66,12 @@ func HostResolve(item command.OperationItem) command.RunErr {
 		"HostResolveList": addresses,
 	})
 
-	return runner.RemoteRun(item.B, item.Logger, shell)
+	return runner.RemoteRun(runner.RemoteRunItem{
+		B:                   item.B,
+		Logger:              item.Logger,
+		Cmd:                 shell,
+		RecordErrServerList: false,
+	})
 
 }
 

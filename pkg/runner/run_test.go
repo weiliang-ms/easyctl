@@ -78,7 +78,7 @@ excludes:
 `
 	//assert.Nil(t, RemoteRun([]byte(aaa), nil, ""))
 	os.Setenv(constant.SshNoTimeout, "true")
-	assert.NotEqual(t, nil, RemoteRun([]byte(aaa), nil, ""))
+	assert.NotEqual(t, nil, RemoteRun(RemoteRunItem{B: []byte(aaa)}))
 
 	aaa = `
 server:
@@ -89,7 +89,7 @@ server:
 excludes:
  - 192.168.235.132
 `
-	err := RemoteRun([]byte(aaa), nil, "")
+	err := RemoteRun(RemoteRunItem{B: []byte(aaa)})
 	_, ok := err.Err.(runtime.Error)
 	if ok {
 		assert.Equal(t, true, ok)
