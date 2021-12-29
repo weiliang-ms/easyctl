@@ -10,9 +10,6 @@ var (
 	configFile string
 )
 
-//go:embed asset/executor.yaml
-var configByte []byte
-
 // RootCmd close命令
 var RootCmd = &cobra.Command{
 	Use:     "exec [flags]",
@@ -24,4 +21,6 @@ var RootCmd = &cobra.Command{
 func init() {
 	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "配置文件")
 	RootCmd.AddCommand(shellCmd)
+	RootCmd.AddCommand(scpCmd)
+	RootCmd.AddCommand(pingCmd)
 }

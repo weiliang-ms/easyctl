@@ -63,8 +63,19 @@ func LocalRun(shell string, logger *logrus.Logger) ShellResult {
 		logger = logrus.New()
 	}
 
-	logger.Debugf("执行指令: %s", shell)
-	cmd := exec.Command("/bin/bash", "-c", shell)
+	var cmd *exec.Cmd
+
+	logger.Debugf("执行r指令: %s", shell)
+
+	switch runtime.GOOS {
+	case "windows":
+		return ShellResult{Err: fmt.Errorf("不支持windows平台")}
+	case "linux":
+		cmd = exec.Command("/bin/bash", "-c", shell)
+	default:
+		cmd = exec.Command("/bin/bash", "-c", shell)
+	}
+
 	b, err := cmd.CombinedOutput()
 
 	if err != nil {
@@ -118,7 +129,7 @@ func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResul
 	defer session.Close()
 
 	if err != nil {
-		errMsg := fmt.Sprintf("ssh会话建立失败->%s", err.Error())
+		errMsg := fmt.Sprintf("%s ssh会话建立失败->%s", server.Host, err.Error())
 		return ShellResult{
 			Host:      server.Host,
 			Err:       err,
@@ -139,7 +150,7 @@ func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResul
 				Cmd:       executor.Script,
 				Status:    constant.Fail,
 				Code:      err.(*ssh.ExitError).ExitStatus(),
-				StdErrMsg: err.(*ssh.ExitError).String()}
+				StdErrMsg: fmt.Sprintf("[%s] err.(*ssh.ExitError).String()", server.Host)}
 		}
 
 	} else {
@@ -151,7 +162,7 @@ func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResul
 				Cmd:       executor.Script,
 				Status:    constant.Fail,
 				Code:      err.(*ssh.ExitError).ExitStatus(),
-				StdErrMsg: err.(*ssh.ExitError).String()}
+				StdErrMsg: fmt.Sprintf("[%s] err.(*ssh.ExitError).String()", server.Host)}
 		}
 
 		executor.Logger.Infof("<- end %s执行命令成功...", server.Host)
@@ -182,7 +193,6 @@ func (server ServerInternal) ReturnRunResult(cmd string) ShellResult {
 
 	combo, err := session.CombinedOutput(cmd)
 	if err != nil {
-		//klog.Fatal("远程执行cmd 失败",err)
 		return ShellResult{Err: fmt.Errorf("%s执行失败, %s", server.Host, combo)}
 	}
 	log.Printf("<- %s执行命令成功，返回结果 => %s...\n", server.Host, string(combo))

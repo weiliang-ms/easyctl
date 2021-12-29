@@ -1,0 +1,6 @@
+server:
+  username: root
+  privateKeyPath: ~/.ssh/id_rsa
+  password: ""
+  port: 22
+server-list-file: "server-list.txt"

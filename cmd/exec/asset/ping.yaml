@@ -1,0 +1,9 @@
+ping:
+  - address: 192.168.1
+    start: 1
+    end: 255
+    #port: 22
+  - address: 192.168.2
+    start: 1
+    end: 255
+    #port: 22

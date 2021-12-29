@@ -25,6 +25,7 @@ SOFTWARE.
 package runner
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -32,7 +33,9 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/slice"
 	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
 	"gopkg.in/yaml.v2"
+	"io"
 	"net"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -109,10 +112,15 @@ func ParseExecutor(b []byte, logger *logrus.Logger) (ExecutorInternal, error) {
 	}
 
 	executor := ExecutorExternal{}
+
+	logger.Debugf("执行器反序列化内容为: %s", string(b))
 	err := yaml.Unmarshal(b, &executor)
 	if err != nil {
 		return ExecutorInternal{}, err
 	}
+
+	logger.Debugf("执行器配置为: %#v", executor)
+
 	// 类型转换
 	executorInternal := executorDeepCopy(executor)
 
@@ -123,7 +131,6 @@ func ParseExecutor(b []byte, logger *logrus.Logger) (ExecutorInternal, error) {
 			return ExecutorInternal{}, err
 		}
 	}
-
 	executorInternal.Servers = filter.Servers
 
 	// 格式化输出结构体
@@ -175,6 +182,38 @@ func serverDeepCopy(serverExternal ServerExternal) ServerInternal {
 
 // ServerFilter 解析ip地址区间类型，排除excludes数组内的主机
 func (server ServerInternal) parseIPRangeServer(filter *serverFilter, logger *logrus.Logger) error {
+
+	logger.Info("分析host是否为地址段/地址列表")
+	// host入参为文件类型(主机列表)
+	if _, err := os.Stat(server.Host); err == nil {
+
+		logger.Info("解析到Host类型为文件列表")
+		file, _ := os.OpenFile(server.Host, os.O_RDWR, 0666)
+		defer file.Close()
+
+		buf := bufio.NewReader(file)
+		for {
+			line, err := buf.ReadString('\n')
+			line = strings.TrimSpace(line)
+
+			if ok := net.ParseIP(line); ok != nil {
+				filter.Servers = append(filter.Servers, ServerInternal{
+					Host:           line,
+					Port:           server.Port,
+					Username:       server.Username,
+					Password:       server.Password,
+					PrivateKeyPath: server.PrivateKeyPath,
+				})
+			}
+
+			if err != nil {
+				if err == io.EOF {
+					logger.Debug("File read ok!")
+					return nil
+				}
+			}
+		}
+	}
 
 	if ok := net.ParseIP(server.Host); ok != nil {
 		filter.Servers = append(filter.Servers, server)

@@ -81,11 +81,24 @@ func RemoteRun(b []byte, logger *logrus.Logger, cmd string) command.RunErr {
 	}
 	var data [][]string
 
+	f, err := os.Create("error-server-list.txt")
+	defer f.Close()
+
+	if err != nil {
+		panic(err)
+	}
+
+	var errServerList []ShellResult
+
 	for _, v := range results {
 		if v.Err != nil {
-			return command.RunErr{Err: v.Err, Msg: v.StdErrMsg}
+			f.Write([]byte(fmt.Sprintf("%s\n", v.Host)))
 		}
 		data = append(data, []string{v.Host, v.Cmd, fmt.Sprintf("%d", v.Code), v.Status, v.StdOut, v.StdErrMsg})
+	}
+
+	if len(errServerList) > 0 {
+		return command.RunErr{Err: errServerList[0].Err, Msg: errServerList[0].StdErrMsg}
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
