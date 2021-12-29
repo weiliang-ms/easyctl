@@ -61,7 +61,7 @@ excludes:
 	re, err := GetResult([]byte(aaa), nil, "")
 	assert.Nil(t, err)
 	for _, v := range re {
-		assert.Equal(t, "ssh会话建立失败->dial tcp 10.10.10.1:22: i/o timeout", v.StdErrMsg)
+		assert.Equal(t, "10.10.10.1 ssh会话建立失败->dial tcp 10.10.10.1:22: i/o timeout", v.StdErrMsg)
 	}
 }
 
