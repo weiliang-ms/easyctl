@@ -70,7 +70,8 @@ sudo cp easyctl /usr/local/bin
   - [x] [ping](https://weiliang-ms.github.io/easyctl/%E7%A6%81%E7%94%A8%E6%8C%87%E4%BB%A4%E9%9B%86/01%E4%B8%BB%E6%9C%BA%E7%A6%81Ping.html)
   - [x] [selinux](https://weiliang-ms.github.io/easyctl/%E7%A6%81%E7%94%A8%E6%8C%87%E4%BB%A4%E9%9B%86/02%E4%B8%BB%E6%9C%BA%E7%A6%81%E7%94%A8selinux.html)
 - `exec`
-  - [x] [跨主机并行执行shell]()
+  - [x] [跨主机并行执行shell](https://weiliang-ms.github.io/easyctl/%E6%89%A7%E8%A1%8C%E6%8C%87%E4%BB%A4%E9%9B%86/01%E8%B7%A8%E4%B8%BB%E6%9C%BA%E5%B9%B6%E8%A1%8C%E6%89%A7%E8%A1%8Cshell.html)
+  - [x] [多主机ping检测](https://weiliang-ms.github.io/easyctl/%E6%89%A7%E8%A1%8C%E6%8C%87%E4%BB%A4%E9%9B%86/02%E5%A4%9A%E6%9C%BAping.html)
 - `export`
   - [x] [从harbor批量下载chart](https://weiliang-ms.github.io/easyctl/%E5%AF%BC%E5%87%BA%E6%8C%87%E4%BB%A4%E9%9B%86/01%E4%BB%8Eharbor%E5%BA%93%E4%B8%AD%E5%AF%BC%E5%87%BAchart.html)
   - [x] [从harbor导出镜像tag列表](https://weiliang-ms.github.io/easyctl/%E5%AF%BC%E5%87%BA%E6%8C%87%E4%BB%A4%E9%9B%86/02%E4%BB%8Eharbor%E5%BA%93%E4%B8%AD%E5%AF%BC%E5%87%BA%E9%95%9C%E5%83%8Ftag%E5%88%97%E8%A1%A8.html)
