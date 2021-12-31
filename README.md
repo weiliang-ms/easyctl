@@ -30,6 +30,8 @@ go build -ldflags "-w -s" -o /usr/local/bin/easyctl
 
 ### 下载release版本
 
+> [latest release](https://github.com/weiliang-ms/easyctl/releases)
+
 - [Mac OS v0.7.13-alpha](https://github.com/weiliang-ms/easyctl/releases/download/v0.7.13-alpha/easyctl-v0.7.13-alpha-darwin-amd64.tar.gz)
 ```shell
 tar zxvf easyctl-v0.7.13-alpha-darwin-amd64.tar.gz
