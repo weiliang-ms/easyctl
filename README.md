@@ -30,13 +30,12 @@ go build -ldflags "-w -s" -o /usr/local/bin/easyctl
 
 ### 下载release版本
 
-> [latest release](https://github.com/weiliang-ms/easyctl/releases/tag/latest)
-
-- [Mac OS](https://github.com/weiliang-ms/easyctl/releases/download/latest/easyctl-latest-darwin-amd64.tar.gz)
+- [Mac OS v0.7.13-alpha](https://github.com/weiliang-ms/easyctl/releases/download/v0.7.13-alpha/easyctl-v0.7.13-alpha-darwin-amd64.tar.gz)
 ```shell
-sudo tar zxvf easyctl-latest-darwin-amd64.tar.gz
-sudo cp easyctl /usr/local/bin
+tar zxvf easyctl-v0.7.13-alpha-darwin-amd64.tar.gz
+cp easyctl /usr/local/bin
 ```
+系统偏好设置 => 安全性与隐私 => 通用 => 仍然允许
 
 - [linux-amd64](https://github.com/weiliang-ms/easyctl/releases/download/latest/easyctl-latest-linux-amd64.tar.gz)
 ```shell
