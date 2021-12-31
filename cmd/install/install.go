@@ -5,9 +5,11 @@ import (
 )
 
 var configFile string
+var local bool
 
 func init() {
 	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "配置文件")
+	RootCmd.PersistentFlags().BoolVarP(&local, "local", "", false, "本地安装")
 
 	//RootCmd.AddCommand(keepaliveCmd)
 	//RootCmd.AddCommand(haproxyCmd)

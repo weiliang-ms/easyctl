@@ -65,6 +65,7 @@ type DockerInternalConfig struct {
 	Mirrors            []string
 	BootCommand        string
 	unitTest           bool
+	Local              bool // 本地安装
 }
 
 // Docker 安装部署docker-ce
@@ -74,6 +75,7 @@ func Docker(item command.OperationItem) (err command.RunErr) {
 		Logger:        item.Logger,
 		ConfigContent: item.B,
 		unitTest:      item.UnitTest,
+		Local:         item.Local,
 	}
 
 	return install(config)
@@ -149,10 +151,11 @@ func (config *DockerInternalConfig) HandPackage() (err command.RunErr) {
 
 	config.Logger = log.SetDefault(config.Logger)
 	config.Logger.Infoln("分发package...")
-	if len(config.Servers) < 1 {
-		re := runner.LocalRun(fmt.Sprintf("cp %s /tmp/%s", config.Package, config.Package), config.Logger)
+	if len(config.Servers) < 1 || config.Local {
+		shell := fmt.Sprintf("cp %s /tmp/%s", config.Package, config.Package)
+		config.Logger.Infof("分发包至本地: %s", shell)
+		re := runner.LocalRun(shell, config.Logger)
 		if re.Err != nil {
-			fmt.Printf("%v", re)
 			return command.RunErr{Err: err}
 		}
 	} else {
@@ -280,7 +283,7 @@ func (config *DockerInternalConfig) Print() command.RunErr {
 
 func (config *DockerInternalConfig) run(script string) error {
 
-	if len(config.Servers) < 1 {
+	if len(config.Servers) < 1 || config.Local {
 		runner.LocalRun(script, config.Logger)
 	} else {
 		exec := runner.ExecutorInternal{

@@ -4,12 +4,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RootCmd scan命令
+var (
+	configFile string
+)
+
+// RootCmd 扫描命令
 var RootCmd = &cobra.Command{
-	Use:   "scan [OPTIONS]",
-	Short: "scan something through easyctl",
+	Use:   "scan [flags]",
+	Short: "扫描命令指令集",
+	Args:  cobra.ExactValidArgs(1),
 }
 
 func init() {
-	RootCmd.AddCommand(scanOSCmd)
+	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "配置文件")
+	RootCmd.AddCommand(osCmd)
 }

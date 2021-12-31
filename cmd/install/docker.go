@@ -12,6 +12,9 @@ import (
 //go:embed asset/docker.yaml
 var dockerConfig []byte
 
+//go:embed asset/docker-local.yaml
+var dockerLocalConfig []byte
+
 // install docker
 var dockerCmd = &cobra.Command{
 	Use:   "docker-ce [flags]",
@@ -21,11 +24,19 @@ var dockerCmd = &cobra.Command{
 			command.Item{
 				Cmd:            cmd,
 				Fnc:            install.Docker,
-				DefaultConfig:  dockerConfig,
+				DefaultConfig:  dockerConfigContent(),
 				ConfigFilePath: configFile,
+				Local:          local,
 			}); runErr.Err != nil {
 			log.Println(runErr.Msg)
 			panic(runErr.Err)
 		}
 	},
+}
+
+func dockerConfigContent() []byte {
+	if local {
+		return dockerLocalConfig
+	}
+	return dockerConfig
 }

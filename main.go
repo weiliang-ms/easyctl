@@ -13,6 +13,7 @@ import (
 	"github.com/weiliang-ms/easyctl/cmd/export"
 	"github.com/weiliang-ms/easyctl/cmd/harden"
 	"github.com/weiliang-ms/easyctl/cmd/install"
+	"github.com/weiliang-ms/easyctl/cmd/scan"
 	"github.com/weiliang-ms/easyctl/cmd/set"
 	"github.com/weiliang-ms/easyctl/cmd/track"
 	"github.com/weiliang-ms/easyctl/cmd/upgrade"
@@ -52,6 +53,7 @@ func init() {
 		clean.RootCmd,
 		deny.RootCmd,
 		exec.RootCmd,
+		scan.RootCmd,
 		set.RootCmd,
 		install.RootCmd,
 		upgrade.Cmd,
