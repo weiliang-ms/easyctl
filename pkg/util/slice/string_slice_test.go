@@ -16,3 +16,13 @@ func TestStringSliceRemove(t *testing.T) {
 	subSlice := []string{"bbb", "ccc"}
 	assert.Equal(t, []string{"aaa", "ddd"}, StringSliceRemove(slice, subSlice))
 }
+
+func TestStringSliceFilter(t *testing.T) {
+	source1 := []string{"1", "", "2", "", "", "3"}
+	expect1 := []string{"1", "2", "3"}
+	assert.Equal(t, expect1, StringSliceFilter(source1, ""))
+
+	source2 := []string{"1", "c", "2", "b", "c", "3"}
+	expect2 := []string{"1", "2", "b", "3"}
+	assert.Equal(t, expect2, StringSliceFilter(source2, "c"))
+}

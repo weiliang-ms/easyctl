@@ -1,12 +1,4 @@
 server:
-  #  - host: 10.79.165.[11:13]
-  #    username: root
-  #    password: neusoft
-  #    port: 22
-  #  - host: 10.79.164.[61:63]
-  #    username: root
-  #    password: neusoft
-  #    port: 22
   - host: 10.10.10.[1:3]
     username: root
     privateKeyPath: ~/.ssh/id_rsa

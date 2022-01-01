@@ -1,7 +1,6 @@
 package scan
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -129,7 +128,7 @@ power management:
 `
 	c := NewCPUInfoItem(content)
 
-	assert.Equal(t, "4", c.CPUThreadCount)
+	assert.Equal(t, 4, c.CPUThreadCount)
 	assert.Equal(t, "Intel(R) Xeon(R) Silver 4214 CPU", c.CPUModeNum)
 	assert.Equal(t, "2.20GHz", c.CPUClockSpeed)
 
@@ -182,5 +181,54 @@ DirectMap4k:       61312 kB
 DirectMap2M:     3084288 kB
 DirectMap1G:     7340032 kB
 `
-	fmt.Printf("#%v", b)
+	//fmt.Printf("#%v", b)
+
+	m := NewMemInfoItem(b)
+	assert.Equal(t, 0.66, m.MemUsed)
+	assert.Equal(t, 8.64, m.MemUsePercent)
+	assert.Equal(t, 7.64, m.MemTotal)
+}
+
+func TestNewDiskInfoMeta(t *testing.T) {
+	content := "/dev/vda1        40G  3.4G   34G   9% /"
+	d := NewDiskInfoMetaItem(content)
+
+	assert.Equal(t, "/dev/vda1", d.Filesystem)
+	assert.Equal(t, "40G", d.Size)
+	assert.Equal(t, "3.4G", d.Used)
+	assert.Equal(t, "34G", d.Avail)
+	assert.Equal(t, "9%", d.UsedPercent)
+	assert.Equal(t, "/", d.MountedPoint)
+}
+
+func TestNewDiskInfoItem(t *testing.T) {
+	content := `/dev/vda1        40G  3.4G   34G   98% /
+devtmpfs        3.9G     0  3.9G   0% /dev
+tmpfs           3.9G     0  3.9G   91% /dev/shm
+`
+	d := NewDiskInfoItem(content)
+	assert.Equal(t, 98, d.RootMountUsedPercent)
+	assert.Equal(t, "/,/dev/shm", d.HighUsedPercentMountPoint)
+}
+
+func TestSaveAsExcel(t *testing.T) {
+	data := []OSInfo{{
+		BaseOSInfo: BaseOSInfo{
+			Address:  "192.168.11.1",
+			Hostname: "node1",
+			KernelV:  "5.15.11-1.el7.elrepo.x86_64",
+			OSV:      "CentOS Linux release 7.9.2009 (Core)",
+		},
+	}, {
+		BaseOSInfo: BaseOSInfo{
+			Address:  "192.168.11.2",
+			Hostname: "node2",
+			KernelV:  "5.15.11-1.el7.elrepo.x86_64",
+			OSV:      "CentOS Linux release 7.9.2009 (Core)",
+		},
+	}}
+
+	if err := SaveAsExcel(data); err != nil {
+		panic(err)
+	}
 }

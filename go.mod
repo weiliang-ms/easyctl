@@ -22,6 +22,7 @@ require (
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
 	github.com/vbauerster/mpb/v6 v6.0.4
+	github.com/xuri/excelize/v2 v2.4.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
 	gopkg.in/yaml.v2 v2.4.0

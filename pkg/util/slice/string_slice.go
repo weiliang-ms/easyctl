@@ -20,3 +20,14 @@ func StringSliceContain(sup []string, element string) bool {
 	}
 	return false
 }
+
+// StringSliceFilter 过滤字符串数组元素
+func StringSliceFilter(s []string, filterChar string) []string {
+	var r []string
+	for _, v := range s {
+		if v != filterChar {
+			r = append(r, v)
+		}
+	}
+	return r
+}

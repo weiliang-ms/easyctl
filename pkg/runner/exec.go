@@ -25,6 +25,7 @@ SOFTWARE.
 package runner
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/mitchellh/go-homedir"
@@ -190,15 +191,19 @@ func (server ServerInternal) ReturnRunResult(item RunItem) ShellResult {
 		return ShellResult{Err: fmt.Errorf("%s建立ssh会话失败 -> %s", server.Host, err.Error())}
 	}
 
-	combo, err := session.CombinedOutput(item.Cmd)
-	if err != nil {
-		return ShellResult{Err: fmt.Errorf("%s执行失败, %s", server.Host, combo)}
-	}
-	item.Logger.Infof("<- %s执行命令成功", server.Host)
-	item.Logger.Debugf("[%s] 执行结果 => %s...\n", server.Host, string(combo))
-	defer session.Close()
+	var out, errOut bytes.Buffer
+	session.Stdout = &out
+	session.Stderr = &errOut
 
-	return ShellResult{StdOut: string(combo)}
+	if err := session.Run(item.Cmd); err != nil {
+		code := err.(*ssh.ExitError).ExitStatus()
+		return ShellResult{Code: code, Err: err, StdErrMsg: fmt.Sprintf("%s执行失败, %s", server.Host, string(errOut.Bytes()))}
+	}
+
+	item.Logger.Infof("<- %s执行命令成功", server.Host)
+	item.Logger.Debugf("[%s] 执行结果 => %s...\n", server.Host, string(out.Bytes()))
+	defer session.Close()
+	return ShellResult{StdOut: string(out.Bytes())}
 }
 
 func (server ServerInternal) sshConnect() (*ssh.Session, error) {

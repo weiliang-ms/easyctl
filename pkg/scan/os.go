@@ -1,11 +1,20 @@
 package scan
 
 import (
+	"bytes"
+	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
+	"io"
+	"os"
+
+	//
+	_ "embed"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/format"
+	slice2 "github.com/weiliang-ms/easyctl/pkg/util/slice"
+	"github.com/xuri/excelize/v2"
 	"regexp"
 	"sort"
 	"strconv"
@@ -16,8 +25,11 @@ import (
 type OSInfo struct {
 	BaseOSInfo
 	CPUInfo
+	DiskInfo
 	MemoryInfo
 }
+
+const MountHighUsedValue = 90
 
 type OSInfoSlice []OSInfo
 
@@ -29,7 +41,7 @@ type BaseOSInfo struct {
 }
 
 type CPUInfo struct {
-	CPUThreadCount string // cpu线程数
+	CPUThreadCount int    // cpu线程数
 	CPUClockSpeed  string // cpu主频
 	CPUModeNum     string // CPU版本号
 	CPULoadAverage string // CPU版本号
@@ -39,6 +51,21 @@ type MemoryInfo struct {
 	MemUsed       float64 // 内存使用量
 	MemUsePercent float64 // 内存使用占比
 	MemTotal      float64 // 内存总量
+}
+
+type DiskInfoMeta struct {
+	Filesystem   string
+	Size         string
+	Used         string
+	Avail        string
+	UsedPercent  string
+	MountedPoint string
+}
+
+type DiskInfo struct {
+	RootMountUsedPercent      int    // 根路径使用率
+	HighUsedPercentMountPoint string // 90%使用率挂载点
+	OSDriveLetter             string // 系统分区
 }
 
 // OS 扫描系统信息
@@ -77,6 +104,8 @@ func OS(item command.OperationItem) command.RunErr {
 	}
 	item.Logger.Infof("系统信息：\n%v", out.String())
 
+	SaveAsExcel(result)
+
 	return command.RunErr{}
 }
 
@@ -84,6 +113,9 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 
 	var osInfo OSInfo
 	var cpuInfo CPUInfo
+	var memInfo MemoryInfo
+	var diskInfo DiskInfo
+
 	baseInfo := BaseOSInfo{Address: s.Host}
 
 	if re := s.ReturnRunResult(runner.RunItem{
@@ -131,8 +163,37 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 		cpuInfo.CPULoadAverage = strings.TrimSpace(re.StdOut)
 	}
 
+	if re := s.ReturnRunResult(runner.RunItem{
+		Logger: logger,
+		Cmd:    "cat /proc/meminfo",
+	}); re.Err != nil {
+		panic(re.Err)
+	} else {
+		memInfo = NewMemInfoItem(strings.TrimSpace(re.StdOut))
+	}
+
+	if re := s.ReturnRunResult(runner.RunItem{
+		Logger: logger,
+		Cmd:    "cat /proc/meminfo",
+	}); re.Err != nil {
+		panic(re.Err)
+	} else {
+		memInfo = NewMemInfoItem(strings.TrimSpace(re.StdOut))
+	}
+
+	if re := s.ReturnRunResult(runner.RunItem{
+		Logger: logger,
+		Cmd:    "df -h|grep -v Filesystem",
+	}); re.Err != nil {
+		panic(re.Err)
+	} else {
+		diskInfo = NewDiskInfoItem(strings.TrimSpace(re.StdOut))
+	}
+
 	osInfo.BaseOSInfo = baseInfo
 	osInfo.CPUInfo = cpuInfo
+	osInfo.MemoryInfo = memInfo
+	osInfo.DiskInfo = diskInfo
 	return osInfo
 }
 
@@ -173,7 +234,7 @@ func NewCPUInfoItem(content string) CPUInfo {
 		}
 	}
 
-	c.CPUThreadCount = fmt.Sprintf("%d", count)
+	c.CPUThreadCount = count
 	return c
 }
 
@@ -184,20 +245,129 @@ func NewMemInfoItem(content string) MemoryInfo {
 	for _, v := range strings.Split(content, "\n") {
 
 		if strings.Contains(v, "MemTotal") {
-			s := strings.Split(v, " ")[1]
-			total, _ = strconv.ParseFloat(s, 64)
+			slice := strings.Split(v, " ")
+			total, _ = strconv.ParseFloat(slice[len(slice)-2], 64)
 		}
 
 		if strings.Contains(v, "MemAvailable") {
-			s := strings.Split(v, " ")[1]
-			available, _ = strconv.ParseFloat(s, 64)
+			slice := strings.Split(v, " ")
+			available, _ = strconv.ParseFloat(slice[len(slice)-2], 64)
 		}
 
 	}
 
 	used := total - available
-	c.MemTotal = total / (1024 * 1024)
-	c.MemUsed = used / (1024 * 1024)
-	c.MemUsePercent = used / total * 100
+
+	floatTotal, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", total/(1024*1024)), 64)
+	floatUsed, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", used/(1024*1024)), 64)
+	percent, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", (floatUsed/floatTotal)*100), 64)
+	c.MemUsePercent = percent
+	c.MemTotal = floatTotal
+	c.MemUsed = floatUsed
+
 	return c
+}
+
+func NewDiskInfoItem(content string) DiskInfo {
+	var metas []DiskInfoMeta
+	var disk DiskInfo
+
+	for _, v := range strings.Split(content, "\n") {
+		if v != "" {
+			metas = append(metas, NewDiskInfoMetaItem(v))
+		}
+	}
+
+	for _, v := range metas {
+
+		percent, _ := strconv.Atoi(strings.TrimSuffix(v.UsedPercent, "%"))
+
+		if v.MountedPoint == "/" {
+			disk.RootMountUsedPercent = percent
+			disk.OSDriveLetter = strings2.TrimNumSuffix(v.Filesystem)
+		}
+
+		if percent > MountHighUsedValue {
+			disk.HighUsedPercentMountPoint += fmt.Sprintf("%s,", v.MountedPoint)
+		}
+	}
+
+	disk.HighUsedPercentMountPoint = strings.TrimSuffix(disk.HighUsedPercentMountPoint, ",")
+
+	return disk
+}
+
+/*
+	数据结构
+	/dev/vda1        40G  3.4G   34G   9% /
+*/
+func NewDiskInfoMetaItem(content string) (diskInfoMeta DiskInfoMeta) {
+
+	slice := slice2.StringSliceFilter(strings.Split(content, " "), "")
+
+	if len(slice) != 6 {
+		return
+	}
+
+	diskInfoMeta.Filesystem = slice[0]
+	diskInfoMeta.Size = slice[1]
+	diskInfoMeta.Used = slice[2]
+	diskInfoMeta.Avail = slice[3]
+	diskInfoMeta.UsedPercent = slice[4]
+	diskInfoMeta.MountedPoint = slice[5]
+
+	return
+}
+
+//go:embed system-tmpl.xlsx
+var excelTmpl []byte
+
+func SaveAsExcel(data []OSInfo) error {
+
+	sheet := "Sheet1"
+
+	excel, err := os.Create("system.xlsx")
+	defer excel.Close()
+
+	if err != nil {
+		return err
+	}
+
+	if _, err = io.Copy(excel, bytes.NewReader(excelTmpl)); err != nil {
+		return err
+	}
+
+	f, err := excelize.OpenFile("system.xlsx")
+	if err != nil {
+		return err
+	}
+
+	row := 3
+
+	maps := make(map[string]interface{})
+	for _, v := range data {
+		maps[fmt.Sprintf("A%d", row)] = v.Address
+		maps[fmt.Sprintf("B%d", row)] = v.Hostname
+		maps[fmt.Sprintf("C%d", row)] = v.OSV
+		maps[fmt.Sprintf("D%d", row)] = v.KernelV
+		maps[fmt.Sprintf("E%d", row)] = v.CPUThreadCount
+		maps[fmt.Sprintf("F%d", row)] = v.CPUClockSpeed
+		maps[fmt.Sprintf("G%d", row)] = v.CPUModeNum
+		maps[fmt.Sprintf("H%d", row)] = v.CPULoadAverage
+		maps[fmt.Sprintf("I%d", row)] = v.MemTotal
+		maps[fmt.Sprintf("J%d", row)] = v.MemUsed
+		maps[fmt.Sprintf("K%d", row)] = v.MemUsePercent
+		maps[fmt.Sprintf("L%d", row)] = v.RootMountUsedPercent
+		maps[fmt.Sprintf("M%d", row)] = v.OSDriveLetter
+		maps[fmt.Sprintf("N%d", row)] = v.HighUsedPercentMountPoint
+		row++
+	}
+
+	for k, v := range maps {
+		f.SetSheetRow(sheet, k, &[]interface{}{
+			v,
+		})
+	}
+
+	return f.Save()
 }

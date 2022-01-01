@@ -104,3 +104,19 @@ func TestPublicKeyAuthFunc(t *testing.T) {
 	assert.NotNil(t, err)
 
 }
+
+//func TestServerInternal_ReturnRunResult(t *testing.T) {
+//	server := ServerInternal{
+//		Host:     "192.168.109.160",
+//		Port:     "22",
+//		Password: "1",
+//		Username: "root",
+//	}
+//
+//	re := server.ReturnRunResult(RunItem{
+//		Logger: logrus.New(),
+//		Cmd:    "date",
+//	})
+//
+//	fmt.Printf("#%v", re)
+//}
