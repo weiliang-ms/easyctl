@@ -192,7 +192,13 @@ func (server ServerInternal) parseIPRangeServer(filter *serverFilter, logger *lo
 			return err
 		}
 	}
-	return server.parseHost(filter, logger)
+	if len(server.Host) > 0 {
+		err := server.parseHost(filter, logger)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (server ServerInternal) parseHosts(filter *serverFilter, logger *logrus.Logger) error {
