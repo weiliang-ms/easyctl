@@ -446,6 +446,6 @@ server:
      port: 22
 `
 	executor, err := ParseExecutor([]byte(b), nil)
-	assert.NotNil(t, err)
-	assert.Equal(t, 0, len(executor.Servers))
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(executor.Servers))
 }
