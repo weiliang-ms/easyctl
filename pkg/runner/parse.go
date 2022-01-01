@@ -173,6 +173,7 @@ func serversDeepCopy(external []ServerExternal) []ServerInternal {
 func serverDeepCopy(serverExternal ServerExternal) ServerInternal {
 	return ServerInternal{
 		serverExternal.Host,
+		serverExternal.Hosts,
 		serverExternal.Port,
 		serverExternal.Username,
 		serverExternal.Password,
@@ -184,6 +185,20 @@ func serverDeepCopy(serverExternal ServerExternal) ServerInternal {
 func (server ServerInternal) parseIPRangeServer(filter *serverFilter, logger *logrus.Logger) error {
 
 	logger.Info("分析host是否为地址段/地址列表")
+
+	if server.Hosts != nil {
+		for _, host := range server.Hosts {
+			filter.Servers = append(filter.Servers, ServerInternal{
+				Host:           host,
+				Port:           server.Port,
+				Username:       server.Username,
+				Password:       server.Password,
+				PrivateKeyPath: server.PrivateKeyPath,
+			})
+		}
+		return nil
+	}
+
 	// host入参为文件类型(主机列表)
 	if _, err := os.Stat(server.Host); err == nil {
 

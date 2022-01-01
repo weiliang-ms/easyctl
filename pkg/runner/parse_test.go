@@ -433,3 +433,19 @@ excludes:
 	assert.NotNil(t, err)
 	assert.Equal(t, 0, len(executor.Servers))
 }
+
+func TestParseHostsArray(t *testing.T) {
+	// a.测试异常元数据类型
+	const b = `
+server:
+   - hosts:
+       - 10.58.69.175
+       - 10.58.71.159
+     username: root
+     password: 123456
+     port: 22
+`
+	executor, err := ParseExecutor([]byte(b), nil)
+	assert.NotNil(t, err)
+	assert.Equal(t, 0, len(executor.Servers))
+}
