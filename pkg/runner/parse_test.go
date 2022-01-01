@@ -438,8 +438,8 @@ func TestParseHostsArray(t *testing.T) {
 	const b = `
 server:
    - hosts:
-       - 10.58.69.175
-       - 10.58.71.159:162
+       - 192.168.69.175
+       - 192.168.71.[159-162]
      username: root
      password: 123456
      port: 22
