@@ -22,21 +22,43 @@
 
 ### 编译安装最新版
 
+> Go 版本不得低于 v1.16
+
+> 需要设置代理时，可参照 https://goproxy.cn/
+
 ```shell
 git clone https://github.com/weiliang-ms/easyctl.git
 cd easyctl
 go build -ldflags "-w -s" -o /usr/local/bin/easyctl
 ```
 
+> [关于 -ldflags "-w -s"](https://stackoverflow.com/questions/44148449/how-to-check-whether-golang-binary-is-compiled-with-ldflags-s-w)
+
+#### Mac 编译
+
+Mac 下编译时会有如下提示：
+
+```bash
+$ go build
+# github.com/containerd/cgroups
+vendor/github.com/containerd/cgroups/memory.go:463:14: undefined: unix.Eventfd
+vendor/github.com/containerd/cgroups/memory.go:463:30: undefined: unix.EFD_CLOEXEC
+vendor/github.com/containerd/cgroups/utils.go:70:8: undefined: unix.CGROUP2_SUPER_MAGIC
+vendor/github.com/containerd/cgroups/utils.go:77:18: undefined: unix.CGROUP2_SUPER_MAGIC
+```
+
+因为 Mac 下无法使用 containerd，可将 [启动指令集](https://weiliang-ms.github.io/easyctl/%E5%90%AF%E5%8A%A8%E6%8C%87%E4%BB%A4%E9%9B%86/%E6%B7%BB%E5%8A%A0%E9%85%8D%E9%A2%9D%E5%90%AF%E5%8A%A8%E7%A8%8B%E5%BA%8F.html) 相关内容 [注释](https://github.com/AlphaHinex/easyctl/compare/master...AlphaHinex:mac-build)，即可成功编译。
+
 ### 下载release版本
 
-> [latest release](https://github.com/weiliang-ms/easyctl/releases/tag/latest)
+> [latest release](https://github.com/weiliang-ms/easyctl/releases)
 
-- [Mac OS](https://github.com/weiliang-ms/easyctl/releases/download/latest/easyctl-latest-darwin-amd64.tar.gz)
+- [Mac OS v0.7.13-alpha](https://github.com/weiliang-ms/easyctl/releases/download/v0.7.13-alpha/easyctl-v0.7.13-alpha-darwin-amd64.tar.gz)
 ```shell
-sudo tar zxvf easyctl-latest-darwin-amd64.tar.gz
-sudo cp easyctl /usr/local/bin
+tar zxvf easyctl-v0.7.13-alpha-darwin-amd64.tar.gz
+cp easyctl /usr/local/bin
 ```
+系统偏好设置 => 安全性与隐私 => 通用 => 仍然允许
 
 - [linux-amd64](https://github.com/weiliang-ms/easyctl/releases/download/latest/easyctl-latest-linux-amd64.tar.gz)
 ```shell
