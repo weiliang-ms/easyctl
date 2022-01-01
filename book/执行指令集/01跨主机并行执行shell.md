@@ -30,14 +30,6 @@ INFO[0000] 生成配置文件样例, 请携带 -c 参数重新执行 -> config.y
 
 ```yaml
 server:
-  #  - host: 10.79.165.[11:13]
-  #    username: root
-  #    password: neusoft
-  #    port: 22
-  #  - host: 10.79.164.[61:63]
-  #    username: root
-  #    password: neusoft
-  #    port: 22
   - host: 10.10.10.[1:3]
     username: root
     privateKeyPath: ~/.ssh/id_rsa
@@ -73,14 +65,6 @@ $ easyctl exec shell -c config.yaml --debug
 
 ```yaml
 server:
-  #  - host: 10.79.165.[11:13]
-  #    username: root
-  #    password: neusoft
-  #    port: 22
-  #  - host: 10.79.164.[61:63]
-  #    username: root
-  #    password: neusoft
-  #    port: 22
   - host: 10.10.10.[1:3]
     username: root
     privateKeyPath: ~/.ssh/id_rsa

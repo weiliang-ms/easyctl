@@ -1,12 +1,4 @@
 server:
-  #  - host: 10.79.165.[11:13]
-  #    username: root
-  #    password: neusoft
-  #    port: 22
-  #  - host: 10.79.164.[61:63]
-  #    username: root
-  #    password: neusoft
-  #    port: 22
   - host: 10.79.166.[1:45]
     username: root
     privateKeyPath: D:\github\easyctl\asset\id_rsa
