@@ -440,13 +440,14 @@ server:
    - hosts:
        - 192.168.69.175
        - 192.168.71.[159-162]
+     host: 10.10.10.1-3
      username: root
      password: 123456
      port: 22
 `
 	executor, err := ParseExecutor([]byte(b), nil)
 	assert.Nil(t, err)
-	assert.Equal(t, 5, len(executor.Servers))
+	assert.Equal(t, 8, len(executor.Servers))
 }
 
 func TestParseHostsArrayWithErr(t *testing.T) {

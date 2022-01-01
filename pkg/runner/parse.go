@@ -187,10 +187,12 @@ func (server ServerInternal) parseIPRangeServer(filter *serverFilter, logger *lo
 	logger.Info("分析host是否为地址段/地址列表")
 	
 	if server.Hosts != nil {
-		return server.parseHosts(filter, logger)
-	} else {
-		return server.parseHost(filter, logger)
+		err := server.parseHosts(filter, logger)
+		if err != nil {
+			return err
+		}
 	}
+	return server.parseHost(filter, logger)
 }
 
 func (server ServerInternal) parseHosts(filter *serverFilter, logger *logrus.Logger) error {
@@ -206,6 +208,7 @@ func (server ServerInternal) parseHosts(filter *serverFilter, logger *logrus.Log
 			return err
 		}
 	}
+	server.Hosts = nil
 	return nil
 }
 
