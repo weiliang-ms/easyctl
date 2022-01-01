@@ -127,7 +127,7 @@ func ParseExecutor(b []byte, logger *logrus.Logger) (ExecutorInternal, error) {
 	filter := &serverFilter{}
 	for _, v := range executorInternal.Servers {
 		if err := v.parseIPRangeServer(filter, logger); err != nil {
-			return ExecutorInternal{}, err
+			return ExecutorInternal{Servers: filter.Servers}, err
 		}
 	}
 	executorInternal.Servers = filter.Servers
@@ -254,41 +254,61 @@ func newValidHostServerItem(server ServerInternal, logger *logrus.Logger) (serve
 		return servers, nil
 	}
 
-	// host入参为文件类型(主机列表)
+	// 2.判断是否为文件类型(主机列表)
 	if _, err := os.Stat(server.Host); err == nil {
+		return parseServerListWithFile(server.Host, server, logger), nil
+	}
 
-		logger.Info("解析到Host类型为文件列表")
-		file, _ := os.OpenFile(server.Host, os.O_RDWR, 0666)
-		defer file.Close()
+	// 3.缺省 -> 断言为地址区间类型
+	return parseServerListWithRange(server, logger)
+}
 
-		buf := bufio.NewReader(file)
-		for {
-			line, err := buf.ReadString('\n')
-			line = strings.TrimSpace(line)
+func parseServerListWithFile(filePath string, server ServerInternal, logger *logrus.Logger) (servers []ServerInternal) {
+	logger.Info("解析到Host类型为文件列表")
+	file, _ := os.OpenFile(filePath, os.O_RDWR, 0666)
+	defer file.Close()
 
-			if ok := net.ParseIP(line); ok != nil {
-				servers = append(servers, ServerInternal{
-					Host:           line,
-					Port:           server.Port,
-					Username:       server.Username,
-					Password:       server.Password,
-					PrivateKeyPath: server.PrivateKeyPath,
-				})
+	buf := bufio.NewReader(file)
+	for {
+		line, err := buf.ReadString('\n')
+		line = strings.TrimSpace(line)
+
+		s := ServerInternal{
+			Host:           line,
+			Port:           server.Port,
+			Username:       server.Username,
+			Password:       server.Password,
+			PrivateKeyPath: server.PrivateKeyPath,
+		}
+
+		// 判断改行IP是否合法
+		if ok := net.ParseIP(line); ok != nil {
+			servers = append(servers, s)
+		} else {
+			results, _ := parseServerListWithRange(s, logger)
+			for _, v := range results {
+				servers = append(servers, v)
 			}
+		}
 
-			if err != nil {
-				if err == io.EOF {
-					logger.Debug("File read ok!")
-					return servers, nil
-				}
+		if err != nil {
+			if err == io.EOF {
+				logger.Debug("File read ok!")
+				return servers
 			}
 		}
 	}
+}
 
-	logger.Infoln("检测到配置文件中可能含有IP地址区间，开始解析组装...")
+// todo: 优化逻辑及实现
+func parseServerListWithRange(server ServerInternal, logger *logrus.Logger) (servers []ServerInternal, err error) {
+
+	logger.Info("检测到配置文件中可能含有IP地址区间，开始解析组装...")
 	flysnowRegexp := regexp.MustCompile("^((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})(\\.((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})){2}\\.")
 	cidr := flysnowRegexp.FindString(server.Host)
 	if cidr == "" {
+		// todo: 确认该case场景
+		// 10.10.[1:2].1
 		return servers, fmt.Errorf("%s 地址区间非法", server.Host)
 	}
 
@@ -302,7 +322,7 @@ func newValidHostServerItem(server ServerInternal, logger *logrus.Logger) (serve
 		servers = append(servers, v)
 	}
 
-	return
+	return servers, nil
 }
 
 func packageIPRange(server ServerInternal, interval addressInterval) []ServerInternal {

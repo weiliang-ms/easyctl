@@ -42,12 +42,12 @@ func TestParseIPAddress(t *testing.T) {
 	var err error
 	const d = `
 server:
- - host: 10.10.10.1
-   username: root
-   password: 123456
-   port: 22
+- host: 10.10.10.1
+  username: root
+  password: 123456
+  port: 22
 excludes:
- - 10.10.10.9`
+- 10.10.10.9`
 	servers, err := ParseServerList([]byte(d), logrus.New())
 	assert.Nil(t, err)
 
@@ -69,12 +69,12 @@ func TestParseInvalidIPRange1(t *testing.T) {
 
 	const d = `
 server:
- - host: 10.10.[1:2].1
-   username: root
-   password: 123456
-   port: 22
+- host: 10.10.[1:2].1
+  username: root
+  password: 123456
+  port: 22
 excludes:
- - 10.10.10.9`
+- 10.10.10.9`
 	_, err := ParseServerList([]byte(d), logrus.New())
 	assert.Equal(t, fmt.Errorf("10.10.[1:2].1 地址区间非法"), err)
 }
@@ -84,12 +84,12 @@ func TestParseInvalidIPRange2(t *testing.T) {
 
 	const d = `
 server:
- - host: 10.10.10.333:222
-   username: root
-   password: 123456
-   port: 22
+- host: 10.10.10.333:222
+  username: root
+  password: 123456
+  port: 22
 excludes:
- - 10.10.10.9`
+- 10.10.10.9`
 	os.Setenv(constant.SshNoTimeout, "true")
 	servers, err := ParseServerList([]byte(d), logrus.New())
 	assert.Nil(t, err)
@@ -101,12 +101,12 @@ func TestParseInvalidIPRange3(t *testing.T) {
 
 	const d = `
 server:
- - host: 10.10.10.1:333
-   username: root
-   password: 123456
-   port: 22
+- host: 10.10.10.1:333
+  username: root
+  password: 123456
+  port: 22
 excludes:
- - 10.10.10.9`
+- 10.10.10.9`
 	servers, err := ParseServerList([]byte(d), logrus.New())
 	assert.Nil(t, err)
 	assert.Nil(t, servers)
@@ -117,12 +117,12 @@ func TestParseInvalidIPRange4(t *testing.T) {
 
 	const d = `
 server:
- - host: 10.10.10.10+333
-   username: root
-   password: 123456
-   port: 22
+- host: 10.10.10.10+333
+  username: root
+  password: 123456
+  port: 22
 excludes:
- - 10.10.10.9`
+- 10.10.10.9`
 	servers, _ := ParseServerList([]byte(d), logrus.New())
 	assert.Nil(t, servers)
 }
@@ -134,12 +134,12 @@ func TestParseIPRange0(t *testing.T) {
 	var err error
 	const d = `
 server:
- - host: 10.10.10.[1:3]
-   username: root
-   password: 123456
-   port: 22
+- host: 10.10.10.[1:3]
+  username: root
+  password: 123456
+  port: 22
 excludes:
- - 10.10.10.3`
+- 10.10.10.3`
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 	servers, err := ParseServerList([]byte(d), logger)
@@ -167,12 +167,12 @@ func TestParseIPRange1(t *testing.T) {
 	var err error
 	const d = `
 server:
- - host: 10.10.10.[1:3]
-   username: root
-   password: 123456
-   port: 22
+- host: 10.10.10.[1:3]
+  username: root
+  password: 123456
+  port: 22
 excludes:
- - 10.10.10.3`
+- 10.10.10.3`
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 	servers, err := ParseServerList([]byte(d), logger)
@@ -200,12 +200,12 @@ func TestParseIPRange2(t *testing.T) {
 	var err error
 	const d = `
 server:
- - host: 10.10.10.1-3
-   username: root
-   password: 123456
-   port: 22
+- host: 10.10.10.1-3
+  username: root
+  password: 123456
+  port: 22
 excludes:
- - 10.10.10.3`
+- 10.10.10.3`
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 	servers, err := ParseServerList([]byte(d), logger)
@@ -233,12 +233,12 @@ func TestParseIPRange3(t *testing.T) {
 	var err error
 	const d = `
 server:
- - host: 10.10.10.[1-3]
-   username: root
-   password: 123456
-   port: 22
+- host: 10.10.10.[1-3]
+  username: root
+  password: 123456
+  port: 22
 excludes:
- - 10.10.10.3`
+- 10.10.10.3`
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 	servers, err := ParseServerList([]byte(d), logger)
@@ -266,12 +266,12 @@ func TestParseIPRange4(t *testing.T) {
 	var err error
 	const d = `
 server:
- - host: 10.10.10.1..3
-   username: root
-   password: 123456
-   port: 22
+- host: 10.10.10.1..3
+  username: root
+  password: 123456
+  port: 22
 excludes:
- - 10.10.10.3`
+- 10.10.10.3`
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 	servers, err := ParseServerList([]byte(d), logger)
@@ -299,12 +299,12 @@ func TestParseIPRange5(t *testing.T) {
 	var err error
 	const d = `
 server:
- - host: 10.10.10.[1..3]
-   username: root
-   password: 123456
-   port: 22
+- host: 10.10.10.[1..3]
+  username: root
+  password: 123456
+  port: 22
 excludes:
- - 10.10.10.3`
+- 10.10.10.3`
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 	servers, err := ParseServerList([]byte(d), logger)
@@ -330,12 +330,12 @@ func TestParseInvalidExcludes(t *testing.T) {
 
 	const d = `
 server:
- - host: 10.10.10.1:3
-   username: root
-   password: 123456
-   port: 22
+- host: 10.10.10.1:3
+  username: root
+  password: 123456
+  port: 22
 excludes:
- - 10.10.10.x`
+- 10.10.10.x`
 	servers, _ := ParseServerList([]byte(d), logrus.New())
 	var slice InternelServersSlice
 	var expect []ServerInternal
@@ -356,10 +356,10 @@ excludes:
 func TestParseServerListErrHosts(t *testing.T) {
 	aaa := `
 server:
-  host: 10.10.10.1
-  username: root
-  password: 123456
-  port: 22
+ host: 10.10.10.1
+ username: root
+ password: 123456
+ port: 22
 excludes:
 - 192.168.235.132
 `
@@ -373,10 +373,10 @@ func TestParseExecutor(t *testing.T) {
 	// a.测试异常元数据类型
 	const b = `
 server:
-  host: 10.10.10.1
-  username: root
-  password: 123456
-  port: 22
+ host: 10.10.10.1
+ username: root
+ password: 123456
+ port: 22
 excludes:
 - 192.168.235.132
 script: 1.sh
@@ -387,10 +387,10 @@ script: 1.sh
 	// b.测试地址段
 	const d = `
 server:
- - host: 10.10.10.1-3
-   username: root
-   password: 123456
-   port: 22
+- host: 10.10.10.1-3
+  username: root
+  password: 123456
+  port: 22
 excludes:
 - 192.168.235.132
 script: 1.sh
@@ -405,10 +405,10 @@ func TestParseMultiSplitCharServers(t *testing.T) {
 	// a.测试异常元数据类型
 	const b = `
 server:
-  - host: 10.10.10.,-1-3
-    username: root
-    password: 123456
-    port: 22
+ - host: 10.10.10.,-1-3
+   username: root
+   password: 123456
+   port: 22
 excludes:
 - 192.168.235.132
 `
@@ -422,10 +422,10 @@ func TestParseExecutorWithErrIPRange(t *testing.T) {
 	// a.测试异常元数据类型
 	const b = `
 server:
-  - host: xxx.xxx.xxx.1-3
-    username: root
-    password: 123456
-    port: 22
+ - host: xxx.xxx.xxx.1-3
+   username: root
+   password: 123456
+   port: 22
 excludes:
 - 192.168.235.132
 `
@@ -438,19 +438,75 @@ excludes:
 func TestParseHostSliceType(t *testing.T) {
 	const b = `
 server:
+  - host:
+      - 192.168.1.1-3
+      - 192.168.1.4
+    username: root
+    password: 123456
+    port: 22
+excludes:
+- 192.168.235.132
+`
+	// 反序列化
+	s, err := ParseExecutor([]byte(b), logrus.New())
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 4, len(s.Servers))
+}
+
+func TestParseServerListWithFile(t *testing.T) {
+
+	f, err := os.Create("server-list.txt")
+	defer f.Close()
+
+	f.WriteString("1.1.1.1\n")
+	f.WriteString("x.x.x.x\n")
+	f.WriteString("222.333.111.222\n")
+	f.WriteString("!\n")
+	f.WriteString("2.2.2.2\n")
+
+	f2, err := os.Create("server-list2.txt")
+	defer f2.Close()
+
+	f2.WriteString("3.1.1.1\n")
+	f2.WriteString("5.2.2.2:4\n")
+	f2.WriteString("10.10.[1:2].1\n")
+
+	const b = `
+server:
+   - host: "server-list.txt"
+     username: root
+     password: 123456
+     port: 22
+   - host:
+       - 192.168.69.175
+       - 192.168.71.[159-162]
+       - 10.10.10.1-3
+       - "server-list2.txt"
+     username: root
+     password: 123456
+     port: 22
+   - host: 192.168.0.1
+     username: root
+     password: 123456
+     port: 22
    - host:
        - 192.168.1.1-3
        - 192.168.1.4
      username: root
      password: 123456
      port: 22
-excludes:
- - 192.168.235.132
+   - host:
+       - 10.10.[1:2].1
+     username: root
+     password: 123456
+     port: 22
 `
-	// 反序列化
-	s, err := ParseExecutor([]byte(b), logrus.New())
-	assert.Equal(t, nil, err)
-	assert.Equal(t, 3, len(s.Servers))
+	executor, err := ParseExecutor([]byte(b), nil)
+	//assert.Nil(t, err)
+	assert.Equal(t, fmt.Errorf("10.10.[1:2].1 地址区间非法"), err)
+	assert.Equal(t, 19, len(executor.Servers))
+
+	os.Remove("x.x.x.x")
 }
 
 func TestParseHostsArray(t *testing.T) {
