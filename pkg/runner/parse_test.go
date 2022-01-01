@@ -452,3 +452,43 @@ excludes:
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 3, len(s.Servers))
 }
+
+func TestParseHostsArray(t *testing.T) {
+	const b = `
+server:
+   - hosts:
+       - 192.168.69.175
+       - 192.168.71.[159-162]
+     host: 10.10.10.1-3
+     username: root
+     password: 123456
+     port: 22
+   - host: 192.168.0.1
+     username: root
+     password: 123456
+     port: 22
+   - hosts:
+       - 192.168.1.1-3
+       - 192.168.1.4
+     username: root
+     password: 123456
+     port: 22
+`
+	executor, err := ParseExecutor([]byte(b), nil)
+	assert.Nil(t, err)
+	assert.Equal(t, 13, len(executor.Servers))
+}
+
+func TestParseHostsArrayWithErr(t *testing.T) {
+	const b = `
+server:
+   - hosts:
+       - xxx.xxx.xxx.1-3
+     username: root
+     password: 123456
+     port: 22
+`
+	executor, err := ParseExecutor([]byte(b), nil)
+	assert.NotNil(t, err)
+	assert.Equal(t, 0, len(executor.Servers))
+}
