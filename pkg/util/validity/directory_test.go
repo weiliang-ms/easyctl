@@ -25,4 +25,15 @@ func TestDataPath(t *testing.T) {
 
 	err = DataPath("/sbin/ddd")
 	assert.Equal(t, sensitivePathErr{Msg: "/sbin"}, err)
+
+	err = DataPath("/ddd")
+	assert.Equal(t, nil, err)
+}
+
+func TestErrorContent(t *testing.T) {
+	relativePathErr := relativePathErr{Msg: "bin"}
+	assert.Equal(t, "bin 路径非法，不是绝对路径", relativePathErr.Error())
+
+	sensitivePathErr := sensitivePathErr{Msg: "/bin"}
+	assert.Equal(t, "路径非法，不允许在/bin目录下", sensitivePathErr.Error())
 }
