@@ -435,17 +435,30 @@ excludes:
 }
 
 func TestParseHostsArray(t *testing.T) {
-	// a.测试异常元数据类型
 	const b = `
 server:
    - hosts:
        - 10.58.69.175
-       - 10.58.71.159
+       - 10.58.71.159:162
      username: root
      password: 123456
      port: 22
 `
 	executor, err := ParseExecutor([]byte(b), nil)
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(executor.Servers))
+	assert.Equal(t, 5, len(executor.Servers))
+}
+
+func TestParseHostsArrayWithErr(t *testing.T) {
+	const b = `
+server:
+   - hosts:
+       - xxx.xxx.xxx.1-3
+     username: root
+     password: 123456
+     port: 22
+`
+	executor, err := ParseExecutor([]byte(b), nil)
+	assert.NotNil(t, err)
+	assert.Equal(t, 0, len(executor.Servers))
 }
