@@ -20,6 +20,7 @@ type Item struct {
 	DefaultConfig  []byte
 	Fnc            func(item OperationItem) RunErr
 	ConfigFilePath string
+	Local          bool // 本地执行
 	OptionFunc     map[string]interface{}
 }
 
@@ -39,6 +40,7 @@ type OperationItem struct {
 	Logger     *logrus.Logger
 	OptionFunc map[string]interface{}
 	UnitTest   bool
+	Local      bool // 本地
 }
 
 var DefaultLogger *logrus.Logger
@@ -68,7 +70,10 @@ func SetExecutorDefault(item Item) (runErr RunErr) {
 		return RunErr{Err: err}
 	}
 
-	b, readErr := os.ReadFile(item.ConfigFilePath)
+	var b []byte
+	var readErr error
+
+	b, readErr = os.ReadFile(item.ConfigFilePath)
 	if readErr != nil {
 		return RunErr{Err: readErr}
 	}
@@ -86,5 +91,6 @@ func SetExecutorDefault(item Item) (runErr RunErr) {
 		B:          b,
 		Logger:     logger,
 		OptionFunc: item.OptionFunc,
+		Local:      item.Local,
 	})
 }

@@ -32,7 +32,6 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -184,18 +183,19 @@ func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResul
 }
 
 // ReturnRunResult 获取执行结果
-func (server ServerInternal) ReturnRunResult(cmd string) ShellResult {
-	log.Printf("<- %s开始执行命令...\n", server.Host)
+func (server ServerInternal) ReturnRunResult(item RunItem) ShellResult {
+	item.Logger.Infof("<- %s开始执行命令...\n", server.Host)
 	session, err := server.sshConnect()
 	if err != nil {
 		return ShellResult{Err: fmt.Errorf("%s建立ssh会话失败 -> %s", server.Host, err.Error())}
 	}
 
-	combo, err := session.CombinedOutput(cmd)
+	combo, err := session.CombinedOutput(item.Cmd)
 	if err != nil {
 		return ShellResult{Err: fmt.Errorf("%s执行失败, %s", server.Host, combo)}
 	}
-	log.Printf("<- %s执行命令成功，返回结果 => %s...\n", server.Host, string(combo))
+	item.Logger.Infof("<- %s执行命令成功", server.Host)
+	item.Logger.Debugf("[%s] 执行结果 => %s...\n", server.Host, string(combo))
 	defer session.Close()
 
 	return ShellResult{StdOut: string(combo)}
