@@ -456,10 +456,10 @@ excludes:
 func TestParseHostsArray(t *testing.T) {
 	const b = `
 server:
-   - hosts:
+   - host:
        - 192.168.69.175
        - 192.168.71.[159-162]
-     host: 10.10.10.1-3
+       - 10.10.10.1-3
      username: root
      password: 123456
      port: 22
@@ -467,7 +467,7 @@ server:
      username: root
      password: 123456
      port: 22
-   - hosts:
+   - host:
        - 192.168.1.1-3
        - 192.168.1.4
      username: root
@@ -482,7 +482,7 @@ server:
 func TestParseHostsArrayWithErr(t *testing.T) {
 	const b = `
 server:
-   - hosts:
+   - host:
        - xxx.xxx.xxx.1-3
      username: root
      password: 123456
