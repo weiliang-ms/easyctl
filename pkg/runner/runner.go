@@ -32,11 +32,11 @@ import (
 
 // ServerExternal server序列化对象
 type ServerExternal struct {
-	Host           string `yaml:"host"`
-	Port           string `yaml:"port"`
-	Username       string `yaml:"username"`
-	Password       string `yaml:"password"`
-	PrivateKeyPath string `yaml:"privateKeyPath"`
+	Host           interface{} `yaml:"host"`
+	Port           string      `yaml:"port"`
+	Username       string      `yaml:"username"`
+	Password       string      `yaml:"password"`
+	PrivateKeyPath string      `yaml:"privateKeyPath"`
 }
 
 // ServerInternal server内部对象
