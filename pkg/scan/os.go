@@ -109,6 +109,7 @@ func OS(item command.OperationItem) command.RunErr {
 	return command.RunErr{}
 }
 
+// 获取操作系统信息
 func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 
 	var osInfo OSInfo

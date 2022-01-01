@@ -225,9 +225,8 @@ func (server ServerInternal) parseIPRangeServer(filter *serverFilter, logger *lo
 			for _, s := range servers {
 				filter.Servers = append(filter.Servers, s)
 			}
-
-			return nil
 		}
+		return nil
 	}
 
 	// 3.判断是否为IP区间
@@ -247,6 +246,13 @@ func (server ServerInternal) parseIPRangeServer(filter *serverFilter, logger *lo
 
 // 处理非法的host
 func newValidHostServerItem(server ServerInternal, logger *logrus.Logger) (servers []ServerInternal, err error) {
+
+	// 1.判断是否为正常IP地址
+	if ok := net.ParseIP(server.Host); ok != nil {
+		servers = append(servers, server)
+		logger.Infof("%s非地址段/地址列表类型", server.Host)
+		return servers, nil
+	}
 
 	// host入参为文件类型(主机列表)
 	if _, err := os.Stat(server.Host); err == nil {
