@@ -453,7 +453,7 @@ excludes:
 	assert.Equal(t, 4, len(s.Servers))
 }
 
-func TestParseServerListWithFile(t *testing.T) {
+func TestParseMultiHostTypes(t *testing.T) {
 
 	f, err := os.Create("server-list.txt")
 	defer f.Close()
@@ -492,6 +492,7 @@ server:
    - host:
        - 192.168.1.1-3
        - 192.168.1.4
+       - 192.168.1.4
      username: root
      password: 123456
      port: 22
@@ -504,48 +505,8 @@ server:
 	executor, err := ParseExecutor([]byte(b), nil)
 	//assert.Nil(t, err)
 	assert.Equal(t, fmt.Errorf("10.10.[1:2].1 地址区间非法"), err)
-	assert.Equal(t, 19, len(executor.Servers))
+	assert.Equal(t, 3 + 11 + 1 + 5, len(executor.Servers))
 
-	os.Remove("x.x.x.x")
-}
-
-func TestParseHostsArray(t *testing.T) {
-	const b = `
-server:
-   - host:
-       - 192.168.69.175
-       - 192.168.71.[159-162]
-       - 10.10.10.1-3
-     username: root
-     password: 123456
-     port: 22
-   - host: 192.168.0.1
-     username: root
-     password: 123456
-     port: 22
-   - host:
-       - 192.168.1.1:3
-       - 192.168.1.4
-       - 192.168.1.4
-     username: root
-     password: 123456
-     port: 22
-`
-	executor, err := ParseExecutor([]byte(b), nil)
-	assert.Nil(t, err)
-	assert.Equal(t, 14, len(executor.Servers))
-}
-
-func TestParseHostsArrayWithErr(t *testing.T) {
-	const b = `
-server:
-   - host:
-       - xxx.xxx.xxx.1-3
-     username: root
-     password: 123456
-     port: 22
-`
-	executor, err := ParseExecutor([]byte(b), nil)
-	assert.NotNil(t, err)
-	assert.Equal(t, 0, len(executor.Servers))
+	os.Remove("server-list.txt")
+	os.Remove("server-list2.txt")
 }
