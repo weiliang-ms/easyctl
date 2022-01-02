@@ -524,7 +524,8 @@ server:
      password: 123456
      port: 22
    - host:
-       - 192.168.1.1-3
+       - 192.168.1.1:3
+       - 192.168.1.4
        - 192.168.1.4
      username: root
      password: 123456
@@ -532,33 +533,7 @@ server:
 `
 	executor, err := ParseExecutor([]byte(b), nil)
 	assert.Nil(t, err)
-	assert.Equal(t, 13, len(executor.Servers))
-}
-
-func TestParseHostsArray(t *testing.T) {
-	const b = `
-server:
-   - host:
-       - 192.168.69.175
-       - 192.168.71.[159-162]
-       - 10.10.10.1-3
-     username: root
-     password: 123456
-     port: 22
-   - host: 192.168.0.1
-     username: root
-     password: 123456
-     port: 22
-   - host:
-       - 192.168.1.1-3
-       - 192.168.1.4
-     username: root
-     password: 123456
-     port: 22
-`
-	executor, err := ParseExecutor([]byte(b), nil)
-	assert.Nil(t, err)
-	assert.Equal(t, 13, len(executor.Servers))
+	assert.Equal(t, 14, len(executor.Servers))
 }
 
 func TestParseHostsArrayWithErr(t *testing.T) {
