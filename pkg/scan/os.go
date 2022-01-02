@@ -5,7 +5,6 @@ import (
 	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
 	"io"
 	"os"
-
 	//
 	_ "embed"
 	"fmt"
@@ -75,26 +74,27 @@ func OS(item command.OperationItem) command.RunErr {
 		return command.RunErr{Err: err, Msg: "解析异常"}
 	}
 
+	serversOut, _ := format.Object(servers)
+	item.Logger.Debugf("列表信息：%s", &serversOut)
+
 	var result OSInfoSlice
 
 	ch := make(chan OSInfo, len(servers))
 	wg := sync.WaitGroup{}
+	wg.Add(len(servers))
 
 	for _, v := range servers {
 		go func(s runner.ServerInternal) {
-			wg.Add(1)
 			ch <- osInfo(s, item.Logger)
 			defer wg.Done()
 		}(v)
 	}
 
-	go func() {
-		for v := range ch {
-			result = append(result, v)
-		}
-	}()
-
 	wg.Wait()
+	close(ch)
+	for v := range ch {
+		result = append(result, v)
+	}
 
 	// 排序
 	sort.Sort(result)
@@ -104,11 +104,10 @@ func OS(item command.OperationItem) command.RunErr {
 	}
 	item.Logger.Infof("系统信息：\n%v", out.String())
 
-	SaveAsExcel(result)
-
-	return command.RunErr{}
+	return command.RunErr{Err: SaveAsExcel(result)}
 }
 
+// 获取操作系统信息
 func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 
 	var osInfo OSInfo
@@ -124,7 +123,9 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 	}); re.Err != nil {
 		panic(re.Err)
 	} else {
-		baseInfo.Hostname = strings.TrimSuffix(re.StdOut, "\n")
+		hostname := strings.TrimSuffix(re.StdOut, "\n")
+		logger.Debugf("[%s] 主机名为：%s", s.Host, hostname)
+		baseInfo.Hostname = hostname
 	}
 
 	if re := s.ReturnRunResult(runner.RunItem{
@@ -230,7 +231,9 @@ func NewCPUInfoItem(content string) CPUInfo {
 		reg := regexp.MustCompile("^model name")
 		if reg.MatchString(v) && c.CPUModeNum == "" && c.CPUClockSpeed == "" {
 			c.CPUModeNum = strings.TrimSpace(strings.Split(strings.Split(v, ":")[1], "@")[0])
-			c.CPUClockSpeed = strings.TrimSpace(strings.Split(strings.Split(v, ":")[1], "@")[1])
+			if re := strings.Split(strings.Split(v, ":")[1], "@"); len(re) > 1 {
+				c.CPUClockSpeed = strings.TrimSpace(re[1])
+			}
 		}
 	}
 
@@ -364,9 +367,7 @@ func SaveAsExcel(data []OSInfo) error {
 	}
 
 	for k, v := range maps {
-		f.SetSheetRow(sheet, k, &[]interface{}{
-			v,
-		})
+		f.SetSheetRow(sheet, k, &[]interface{}{v})
 	}
 
 	return f.Save()
