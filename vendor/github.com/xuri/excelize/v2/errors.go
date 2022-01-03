@@ -16,24 +16,50 @@ import (
 	"fmt"
 )
 
+// newInvalidColumnNameError defined the error message on receiving the invalid column name.
 func newInvalidColumnNameError(col string) error {
 	return fmt.Errorf("invalid column name %q", col)
 }
 
+// newInvalidRowNumberError defined the error message on receiving the invalid row number.
 func newInvalidRowNumberError(row int) error {
 	return fmt.Errorf("invalid row number %d", row)
 }
 
+// newInvalidCellNameError defined the error message on receiving the invalid cell name.
 func newInvalidCellNameError(cell string) error {
 	return fmt.Errorf("invalid cell name %q", cell)
 }
 
+// newInvalidExcelDateError defined the error message on receiving the data with negative values.
 func newInvalidExcelDateError(dateValue float64) error {
-	return fmt.Errorf("invalid date value %f, negative values are not supported supported", dateValue)
+	return fmt.Errorf("invalid date value %f, negative values are not supported", dateValue)
 }
 
+// newUnsupportChartType defined the error message on receiving the chart type are unsupported.
 func newUnsupportChartType(chartType string) error {
 	return fmt.Errorf("unsupported chart type %s", chartType)
+}
+
+// newUnzipSizeLimitError defined the error message on unzip size exceeds the limit.
+func newUnzipSizeLimitError(unzipSizeLimit int64) error {
+	return fmt.Errorf("unzip size exceeds the %d bytes limit", unzipSizeLimit)
+}
+
+// newInvalidStyleID defined the error message on receiving the invalid style ID.
+func newInvalidStyleID(styleID int) error {
+	return fmt.Errorf("invalid style ID %d, negative values are not supported", styleID)
+}
+
+// newFieldLengthError defined the error message on receiving the field length overflow.
+func newFieldLengthError(name string) error {
+	return fmt.Errorf("field %s must be less or equal than 255 characters", name)
+}
+
+// newCellNameToCoordinatesError defined the error message on converts
+// alphanumeric cell name to coordinates.
+func newCellNameToCoordinatesError(cell string, err error) error {
+	return fmt.Errorf("cannot convert cell %q to coordinates: %v", cell, err)
 }
 
 var (
@@ -64,8 +90,8 @@ var (
 	// ErrAddVBAProject defined the error message on add the VBA project in
 	// the workbook.
 	ErrAddVBAProject = errors.New("unsupported VBA project extension")
-	// ErrToExcelTime defined the error message on receive a not UTC time.
-	ErrToExcelTime = errors.New("only UTC time expected")
+	// ErrMaxRows defined the error message on receive a row number exceeds maximum limit.
+	ErrMaxRows = errors.New("row number exceeds maximum limit")
 	// ErrMaxRowHeight defined the error message on receive an invalid row
 	// height.
 	ErrMaxRowHeight = errors.New("the height of the row must be smaller than or equal to 409 points")
@@ -95,6 +121,8 @@ var (
 	// ErrDefinedNameduplicate defined the error message on the same name
 	// already exists on the scope.
 	ErrDefinedNameduplicate = errors.New("the same name already exists on the scope")
+	// ErrCustomNumFmt defined the error message on receive the empty custom number format.
+	ErrCustomNumFmt = errors.New("custom number format can not be empty")
 	// ErrFontLength defined the error message on the length of the font
 	// family name overflow.
 	ErrFontLength = errors.New("the length of the font family name must be smaller than or equal to 31")
@@ -114,4 +142,27 @@ var (
 	// ErrCellCharsLength defined the error message for receiving a cell
 	// characters length that exceeds the limit.
 	ErrCellCharsLength = fmt.Errorf("cell value must be 0-%d characters", TotalCellChars)
+	// ErrOptionsUnzipSizeLimit defined the error message for receiving
+	// invalid UnzipSizeLimit and UnzipXMLSizeLimit.
+	ErrOptionsUnzipSizeLimit = errors.New("the value of UnzipSizeLimit should be greater than or equal to UnzipXMLSizeLimit")
+	// ErrSave defined the error message for saving file.
+	ErrSave = errors.New("no path defined for file, consider File.WriteTo or File.Write")
+	// ErrAttrValBool defined the error message on marshal and unmarshal
+	// boolean type XML attribute.
+	ErrAttrValBool = errors.New("unexpected child of attrValBool")
+	// ErrSparklineType defined the error message on receive the invalid
+	// sparkline Type parameters.
+	ErrSparklineType = errors.New("parameter 'Type' must be 'line', 'column' or 'win_loss'")
+	// ErrSparklineLocation defined the error message on missing Location
+	// parameters
+	ErrSparklineLocation = errors.New("parameter 'Location' is required")
+	// ErrSparklineRange defined the error message on missing sparkline Range
+	// parameters
+	ErrSparklineRange = errors.New("parameter 'Range' is required")
+	// ErrSparkline defined the error message on receive the invalid sparkline
+	// parameters.
+	ErrSparkline = errors.New("must have the same number of 'Location' and 'Range' parameters")
+	// ErrSparklineStyle defined the error message on receive the invalid
+	// sparkline Style parameters.
+	ErrSparklineStyle = errors.New("parameter 'Style' must betweent 0-35")
 )

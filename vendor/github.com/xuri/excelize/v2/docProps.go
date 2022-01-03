@@ -19,6 +19,106 @@ import (
 	"reflect"
 )
 
+// SetAppProps provides a function to set document application properties. The
+// properties that can be set are:
+//
+//     Property          | Description
+//    -------------------+--------------------------------------------------------------------------
+//     Application       | The name of the application that created this document.
+//                       |
+//     ScaleCrop         | Indicates the display mode of the document thumbnail. Set this element
+//                       | to 'true' to enable scaling of the document thumbnail to the display. Set
+//                       | this element to 'false' to enable cropping of the document thumbnail to
+//                       | show only sections that will fit the display.
+//                       |
+//     DocSecurity       | Security level of a document as a numeric value. Document security is
+//                       | defined as:
+//                       | 1 - Document is password protected.
+//                       | 2 - Document is recommended to be opened as read-only.
+//                       | 3 - Document is enforced to be opened as read-only.
+//                       | 4 - Document is locked for annotation.
+//                       |
+//     Company           | The name of a company associated with the document.
+//                       |
+//     LinksUpToDate     | Indicates whether hyperlinks in a document are up-to-date. Set this
+//                       | element to 'true' to indicate that hyperlinks are updated. Set this
+//                       | element to 'false' to indicate that hyperlinks are outdated.
+//                       |
+//     HyperlinksChanged | Specifies that one or more hyperlinks in this part were updated
+//                       | exclusively in this part by a producer. The next producer to open this
+//                       | document shall update the hyperlink relationships with the new
+//                       | hyperlinks specified in this part.
+//                       |
+//     AppVersion        | Specifies the version of the application which produced this document.
+//                       | The content of this element shall be of the form XX.YYYY where X and Y
+//                       | represent numerical values, or the document shall be considered
+//                       | non-conformant.
+//
+// For example:
+//
+//    err := f.SetAppProps(&excelize.AppProperties{
+//        Application:       "Microsoft Excel",
+//        ScaleCrop:         true,
+//        DocSecurity:       3,
+//        Company:           "Company Name",
+//        LinksUpToDate:     true,
+//        HyperlinksChanged: true,
+//        AppVersion:        "16.0000",
+//    })
+//
+func (f *File) SetAppProps(appProperties *AppProperties) (err error) {
+	var (
+		app                *xlsxProperties
+		fields             []string
+		output             []byte
+		immutable, mutable reflect.Value
+		field              string
+	)
+	app = new(xlsxProperties)
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(dafaultXMLPathDocPropsApp)))).
+		Decode(app); err != nil && err != io.EOF {
+		err = fmt.Errorf("xml decode error: %s", err)
+		return
+	}
+	fields = []string{"Application", "ScaleCrop", "DocSecurity", "Company", "LinksUpToDate", "HyperlinksChanged", "AppVersion"}
+	immutable, mutable = reflect.ValueOf(*appProperties), reflect.ValueOf(app).Elem()
+	for _, field = range fields {
+		immutableField := immutable.FieldByName(field)
+		switch immutableField.Kind() {
+		case reflect.Bool:
+			mutable.FieldByName(field).SetBool(immutableField.Bool())
+		case reflect.Int:
+			mutable.FieldByName(field).SetInt(immutableField.Int())
+		default:
+			mutable.FieldByName(field).SetString(immutableField.String())
+		}
+	}
+	app.Vt = NameSpaceDocumentPropertiesVariantTypes.Value
+	output, err = xml.Marshal(app)
+	f.saveFileList(dafaultXMLPathDocPropsApp, output)
+	return
+}
+
+// GetAppProps provides a function to get document application properties.
+func (f *File) GetAppProps() (ret *AppProperties, err error) {
+	var app = new(xlsxProperties)
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(dafaultXMLPathDocPropsApp)))).
+		Decode(app); err != nil && err != io.EOF {
+		err = fmt.Errorf("xml decode error: %s", err)
+		return
+	}
+	ret, err = &AppProperties{
+		Application:       app.Application,
+		ScaleCrop:         app.ScaleCrop,
+		DocSecurity:       app.DocSecurity,
+		Company:           app.Company,
+		LinksUpToDate:     app.LinksUpToDate,
+		HyperlinksChanged: app.HyperlinksChanged,
+		AppVersion:        app.AppVersion,
+	}, nil
+	return
+}
+
 // SetDocProps provides a function to set document core properties. The
 // properties that can be set are:
 //
@@ -81,7 +181,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 	)
 
 	core = new(decodeCoreProperties)
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("docProps/core.xml")))).
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(dafaultXMLPathDocPropsCore)))).
 		Decode(core); err != nil && err != io.EOF {
 		err = fmt.Errorf("xml decode error: %s", err)
 		return
@@ -123,7 +223,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 		newProps.Modified.Text = docProperties.Modified
 	}
 	output, err = xml.Marshal(newProps)
-	f.saveFileList("docProps/core.xml", output)
+	f.saveFileList(dafaultXMLPathDocPropsCore, output)
 
 	return
 }
@@ -132,7 +232,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 func (f *File) GetDocProps() (ret *DocProperties, err error) {
 	var core = new(decodeCoreProperties)
 
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("docProps/core.xml")))).
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(dafaultXMLPathDocPropsCore)))).
 		Decode(core); err != nil && err != io.EOF {
 		err = fmt.Errorf("xml decode error: %s", err)
 		return

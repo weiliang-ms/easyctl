@@ -14,9 +14,10 @@ package excelize
 import (
 	"archive/zip"
 	"bytes"
-	"fmt"
+	"encoding/xml"
 	"io"
 	"os"
+	"path/filepath"
 	"sync"
 )
 
@@ -27,15 +28,15 @@ import (
 //
 func NewFile() *File {
 	f := newFile()
-	f.Pkg.Store("_rels/.rels", []byte(XMLHeader+templateRels))
-	f.Pkg.Store("docProps/app.xml", []byte(XMLHeader+templateDocpropsApp))
-	f.Pkg.Store("docProps/core.xml", []byte(XMLHeader+templateDocpropsCore))
-	f.Pkg.Store("xl/_rels/workbook.xml.rels", []byte(XMLHeader+templateWorkbookRels))
-	f.Pkg.Store("xl/theme/theme1.xml", []byte(XMLHeader+templateTheme))
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(XMLHeader+templateSheet))
-	f.Pkg.Store("xl/styles.xml", []byte(XMLHeader+templateStyles))
-	f.Pkg.Store("xl/workbook.xml", []byte(XMLHeader+templateWorkbook))
-	f.Pkg.Store("[Content_Types].xml", []byte(XMLHeader+templateContentTypes))
+	f.Pkg.Store("_rels/.rels", []byte(xml.Header+templateRels))
+	f.Pkg.Store(dafaultXMLPathDocPropsApp, []byte(xml.Header+templateDocpropsApp))
+	f.Pkg.Store(dafaultXMLPathDocPropsCore, []byte(xml.Header+templateDocpropsCore))
+	f.Pkg.Store("xl/_rels/workbook.xml.rels", []byte(xml.Header+templateWorkbookRels))
+	f.Pkg.Store("xl/theme/theme1.xml", []byte(xml.Header+templateTheme))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+templateSheet))
+	f.Pkg.Store(defaultXMLPathStyles, []byte(xml.Header+templateStyles))
+	f.Pkg.Store(defaultXMLPathWorkbook, []byte(xml.Header+templateWorkbook))
+	f.Pkg.Store(defaultXMLPathContentTypes, []byte(xml.Header+templateContentTypes))
 	f.SheetCount = 1
 	f.CalcChain = f.calcChainReader()
 	f.Comments = make(map[string]*xlsxComments)
@@ -57,7 +58,7 @@ func NewFile() *File {
 // Save provides a function to override the spreadsheet with origin path.
 func (f *File) Save() error {
 	if f.Path == "" {
-		return fmt.Errorf("no path defined for file, consider File.WriteTo or File.Write")
+		return ErrSave
 	}
 	return f.SaveAs(f.Path)
 }
@@ -69,16 +70,28 @@ func (f *File) SaveAs(name string, opt ...Options) error {
 		return ErrMaxFileNameLength
 	}
 	f.Path = name
-	file, err := os.OpenFile(name, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+	file, err := os.OpenFile(filepath.Clean(name), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 	f.options = nil
-	for _, o := range opt {
-		f.options = &o
+	for i := range opt {
+		f.options = &opt[i]
 	}
 	return f.Write(file)
+}
+
+// Close closes and cleanup the open temporary file for the spreadsheet.
+func (f *File) Close() error {
+	var err error
+	f.tempFiles.Range(func(k, v interface{}) bool {
+		if err = os.Remove(v.(string)); err != nil {
+			return false
+		}
+		return true
+	})
+	return err
 }
 
 // Write provides a function to write to an io.Writer.
@@ -102,7 +115,8 @@ func (f *File) WriteTo(w io.Writer) (int64, error) {
 	return 0, nil
 }
 
-// WriteToBuffer provides a function to get bytes.Buffer from the saved file. And it allocate space in memory. Be careful when the file size is large.
+// WriteToBuffer provides a function to get bytes.Buffer from the saved file,
+// and it allocates space in memory. Be careful when the file size is large.
 func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)
 	zw := zip.NewWriter(buf)
@@ -130,7 +144,7 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 func (f *File) writeDirectToWriter(w io.Writer) error {
 	zw := zip.NewWriter(w)
 	if err := f.writeToZip(zw); err != nil {
-		zw.Close()
+		_ = zw.Close()
 		return err
 	}
 	return zw.Close()
@@ -146,6 +160,7 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 	f.workBookWriter()
 	f.workSheetWriter()
 	f.relsWriter()
+	f.sharedStringsLoader()
 	f.sharedStringsWriter()
 	f.styleSheetWriter()
 
@@ -157,14 +172,14 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 		var from io.Reader
 		from, err = stream.rawData.Reader()
 		if err != nil {
-			stream.rawData.Close()
+			_ = stream.rawData.Close()
 			return err
 		}
 		_, err = io.Copy(fi, from)
 		if err != nil {
 			return err
 		}
-		stream.rawData.Close()
+		_ = stream.rawData.Close()
 	}
 	var err error
 	f.Pkg.Range(func(path, content interface{}) bool {
@@ -182,6 +197,17 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 		_, err = fi.Write(content.([]byte))
 		return true
 	})
-
+	f.tempFiles.Range(func(path, content interface{}) bool {
+		if _, ok := f.Pkg.Load(path); ok {
+			return true
+		}
+		var fi io.Writer
+		fi, err = zw.Create(path.(string))
+		if err != nil {
+			return false
+		}
+		_, err = fi.Write(f.readBytes(path.(string)))
+		return true
+	})
 	return err
 }

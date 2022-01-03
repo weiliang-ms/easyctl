@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -31,49 +32,72 @@ import (
 // File define a populated spreadsheet file struct.
 type File struct {
 	sync.Mutex
-	options          *Options
-	xmlAttr          map[string][]xml.Attr
-	checked          map[string]bool
-	sheetMap         map[string]string
-	streams          map[string]*StreamWriter
-	CalcChain        *xlsxCalcChain
-	Comments         map[string]*xlsxComments
-	ContentTypes     *xlsxTypes
-	Drawings         sync.Map
-	Path             string
-	SharedStrings    *xlsxSST
-	sharedStringsMap map[string]int
-	Sheet            sync.Map
-	SheetCount       int
-	Styles           *xlsxStyleSheet
-	Theme            *xlsxTheme
-	DecodeVMLDrawing map[string]*decodeVmlDrawing
-	VMLDrawing       map[string]*vmlDrawing
-	WorkBook         *xlsxWorkbook
-	Relationships    sync.Map
-	Pkg              sync.Map
-	CharsetReader    charsetTranscoderFn
+	options             *Options
+	xmlAttr             map[string][]xml.Attr
+	checked             map[string]bool
+	sheetMap            map[string]string
+	streams             map[string]*StreamWriter
+	tempFiles           sync.Map
+	CalcChain           *xlsxCalcChain
+	Comments            map[string]*xlsxComments
+	ContentTypes        *xlsxTypes
+	Drawings            sync.Map
+	Path                string
+	SharedStrings       *xlsxSST
+	sharedStringsMap    map[string]int
+	sharedStringItemMap *sync.Map
+	Sheet               sync.Map
+	SheetCount          int
+	Styles              *xlsxStyleSheet
+	Theme               *xlsxTheme
+	DecodeVMLDrawing    map[string]*decodeVmlDrawing
+	VMLDrawing          map[string]*vmlDrawing
+	WorkBook            *xlsxWorkbook
+	Relationships       sync.Map
+	Pkg                 sync.Map
+	CharsetReader       charsetTranscoderFn
 }
 
 type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, err error)
 
-// Options define the options for open spreadsheet.
+// Options define the options for open and reading spreadsheet.
+//
+// Password specifies the password of the spreadsheet in plain text.
+//
+// RawCellValue specifies if apply the number format for the cell value or get
+// the raw value.
+//
+// UnzipSizeLimit specifies the unzip size limit in bytes on open the
+// spreadsheet, this value should be greater than or equal to
+// UnzipXMLSizeLimit, the default size limit is 16GB.
+//
+// UnzipXMLSizeLimit specifies the memory limit on unzipping worksheet and
+// shared string table in bytes, worksheet XML will be extracted to system
+// temporary directory when the file size is over this value, this value
+// should be less than or equal to UnzipSizeLimit, the default value is
+// 16MB.
 type Options struct {
-	Password string
+	Password          string
+	RawCellValue      bool
+	UnzipSizeLimit    int64
+	UnzipXMLSizeLimit int64
 }
 
-// OpenFile take the name of an spreadsheet file and returns a populated spreadsheet file struct
-// for it. For example, open spreadsheet with password protection:
+// OpenFile take the name of an spreadsheet file and returns a populated
+// spreadsheet file struct for it. For example, open spreadsheet with
+// password protection:
 //
 //    f, err := excelize.OpenFile("Book1.xlsx", excelize.Options{Password: "password"})
 //    if err != nil {
 //        return
 //    }
 //
-// Note that the excelize just support decrypt and not support encrypt currently, the spreadsheet
-// saved by Save and SaveAs will be without password unprotected.
+// Note that the excelize just support decrypt and not support encrypt
+// currently, the spreadsheet saved by Save and SaveAs will be without
+// password unprotected. Close the file by Close after opening the
+// spreadsheet.
 func OpenFile(filename string, opt ...Options) (*File, error) {
-	file, err := os.Open(filename)
+	file, err := os.Open(filepath.Clean(filename))
 	if err != nil {
 		return nil, err
 	}
@@ -89,9 +113,11 @@ func OpenFile(filename string, opt ...Options) (*File, error) {
 // newFile is object builder
 func newFile() *File {
 	return &File{
+		options:          &Options{UnzipSizeLimit: UnzipSizeLimit, UnzipXMLSizeLimit: StreamChunkSize},
 		xmlAttr:          make(map[string][]xml.Attr),
 		checked:          make(map[string]bool),
 		sheetMap:         make(map[string]string),
+		tempFiles:        sync.Map{},
 		Comments:         make(map[string]*xlsxComments),
 		Drawings:         sync.Map{},
 		sharedStringsMap: make(map[string]int),
@@ -111,10 +137,23 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 		return nil, err
 	}
 	f := newFile()
-	if bytes.Contains(b, oleIdentifier) && len(opt) > 0 {
-		for _, o := range opt {
-			f.options = &o
+	f.options = parseOptions(opt...)
+	if f.options.UnzipSizeLimit == 0 {
+		f.options.UnzipSizeLimit = UnzipSizeLimit
+		if f.options.UnzipXMLSizeLimit > f.options.UnzipSizeLimit {
+			f.options.UnzipSizeLimit = f.options.UnzipXMLSizeLimit
 		}
+	}
+	if f.options.UnzipXMLSizeLimit == 0 {
+		f.options.UnzipXMLSizeLimit = StreamChunkSize
+		if f.options.UnzipSizeLimit < f.options.UnzipXMLSizeLimit {
+			f.options.UnzipXMLSizeLimit = f.options.UnzipSizeLimit
+		}
+	}
+	if f.options.UnzipXMLSizeLimit > f.options.UnzipSizeLimit {
+		return nil, ErrOptionsUnzipSizeLimit
+	}
+	if bytes.Contains(b, oleIdentifier) {
 		b, err = Decrypt(b, f.options)
 		if err != nil {
 			return nil, fmt.Errorf("decrypted file failed")
@@ -124,8 +163,7 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	file, sheetCount, err := ReadZipReader(zr)
+	file, sheetCount, err := f.ReadZipReader(zr)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +176,16 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 	f.Styles = f.stylesReader()
 	f.Theme = f.themeReader()
 	return f, nil
+}
+
+// parseOptions provides a function to parse the optional settings for open
+// and reading spreadsheet.
+func parseOptions(opts ...Options) *Options {
+	opt := &Options{}
+	for _, o := range opts {
+		opt = &o
+	}
+	return opt
 }
 
 // CharsetTranscoder Set user defined codepage transcoder function for open
@@ -183,16 +231,16 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 		ws = worksheet.(*xlsxWorksheet)
 		return
 	}
-	if strings.HasPrefix(name, "xl/chartsheets") {
-		err = fmt.Errorf("sheet %s is chart sheet", sheet)
+	if strings.HasPrefix(name, "xl/chartsheets") || strings.HasPrefix(name, "xl/macrosheet") {
+		err = fmt.Errorf("sheet %s is not a worksheet", sheet)
 		return
 	}
 	ws = new(xlsxWorksheet)
 	if _, ok := f.xmlAttr[name]; !ok {
-		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name))))
+		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name))))
 		f.xmlAttr[name] = append(f.xmlAttr[name], getRootElement(d)...)
 	}
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name)))).
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name)))).
 		Decode(ws); err != nil && err != io.EOF {
 		err = fmt.Errorf("xml decode error: %s", err)
 		return
@@ -216,7 +264,13 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 // continuous in a worksheet of XML.
 func checkSheet(ws *xlsxWorksheet) {
 	var row int
-	for _, r := range ws.SheetData.Row {
+	var r0 xlsxRow
+	for i, r := range ws.SheetData.Row {
+		if i == 0 && r.R == 0 {
+			r0 = r
+			ws.SheetData.Row = ws.SheetData.Row[1:]
+			continue
+		}
 		if r.R != 0 && r.R > row {
 			row = r.R
 			continue
@@ -228,7 +282,7 @@ func checkSheet(ws *xlsxWorksheet) {
 	sheetData := xlsxSheetData{Row: make([]xlsxRow, row)}
 	row = 0
 	for _, r := range ws.SheetData.Row {
-		if r.R == row {
+		if r.R == row && row > 0 {
 			sheetData.Row[r.R-1].C = append(sheetData.Row[r.R-1].C, r.C...)
 			continue
 		}
@@ -244,7 +298,29 @@ func checkSheet(ws *xlsxWorksheet) {
 	for i := 1; i <= row; i++ {
 		sheetData.Row[i-1].R = i
 	}
-	ws.SheetData = sheetData
+	checkSheetR0(ws, &sheetData, &r0)
+}
+
+// checkSheetR0 handle the row element with r="0" attribute, cells in this row
+// could be disorderly, the cell in this row can be used as the value of
+// which cell is empty in the normal rows.
+func checkSheetR0(ws *xlsxWorksheet, sheetData *xlsxSheetData, r0 *xlsxRow) {
+	for _, cell := range r0.C {
+		if col, row, err := CellNameToCoordinates(cell.R); err == nil {
+			rows, rowIdx := len(sheetData.Row), row-1
+			for r := rows; r < row; r++ {
+				sheetData.Row = append(sheetData.Row, xlsxRow{R: r + 1})
+			}
+			columns, colIdx := len(sheetData.Row[rowIdx].C), col-1
+			for c := columns; c < col; c++ {
+				sheetData.Row[rowIdx].C = append(sheetData.Row[rowIdx].C, xlsxC{})
+			}
+			if !sheetData.Row[rowIdx].C[colIdx].hasValue() {
+				sheetData.Row[rowIdx].C[colIdx] = cell
+			}
+		}
+	}
+	ws.SheetData = *sheetData
 }
 
 // addRels provides a function to add relationships by given XML path,
@@ -316,18 +392,18 @@ func (f *File) UpdateLinkedValue() error {
 	// recalculate formulas
 	wb.CalcPr = nil
 	for _, name := range f.GetSheetList() {
-		xlsx, err := f.workSheetReader(name)
+		ws, err := f.workSheetReader(name)
 		if err != nil {
-			if err.Error() == fmt.Sprintf("sheet %s is chart sheet", trimSheetName(name)) {
+			if err.Error() == fmt.Sprintf("sheet %s is not a worksheet", trimSheetName(name)) {
 				continue
 			}
 			return err
 		}
-		for indexR := range xlsx.SheetData.Row {
-			for indexC, col := range xlsx.SheetData.Row[indexR].C {
+		for indexR := range ws.SheetData.Row {
+			for indexC, col := range ws.SheetData.Row[indexR].C {
 				if col.F != nil && col.V != "" {
-					xlsx.SheetData.Row[indexR].C[indexC].V = ""
-					xlsx.SheetData.Row[indexR].C[indexC].T = ""
+					ws.SheetData.Row[indexR].C[indexC].V = ""
+					ws.SheetData.Row[indexR].C[indexC].T = ""
 				}
 			}
 		}
@@ -381,7 +457,7 @@ func (f *File) AddVBAProject(bin string) error {
 			Type:   SourceRelationshipVBAProject,
 		})
 	}
-	file, _ := ioutil.ReadFile(bin)
+	file, _ := ioutil.ReadFile(filepath.Clean(bin))
 	f.Pkg.Store("xl/vbaProject.bin", file)
 	return err
 }

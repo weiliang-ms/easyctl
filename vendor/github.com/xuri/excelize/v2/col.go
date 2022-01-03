@@ -32,11 +32,22 @@ const (
 
 // Cols defines an iterator to a sheet
 type Cols struct {
-	err                                  error
-	curCol, totalCol, stashCol, totalRow int
-	sheet                                string
-	f                                    *File
-	sheetXML                             []byte
+	err                                    error
+	curCol, totalCols, totalRows, stashCol int
+	rawCellValue                           bool
+	sheet                                  string
+	f                                      *File
+	sheetXML                               []byte
+}
+
+// CurrentCol returns the column number that represents the current column.
+func (cols *Cols) CurrentCol() int {
+	return cols.curCol
+}
+
+// TotalCols returns the total columns count in the worksheet.
+func (cols *Cols) TotalCols() int {
+	return cols.totalCols
 }
 
 // GetCols return all the columns in a sheet by given worksheet name (case
@@ -54,14 +65,14 @@ type Cols struct {
 //        fmt.Println()
 //    }
 //
-func (f *File) GetCols(sheet string) ([][]string, error) {
+func (f *File) GetCols(sheet string, opts ...Options) ([][]string, error) {
 	cols, err := f.Cols(sheet)
 	if err != nil {
 		return nil, err
 	}
 	results := make([][]string, 0, 64)
 	for cols.Next() {
-		col, _ := cols.Rows()
+		col, _ := cols.Rows(opts...)
 		results = append(results, col)
 	}
 	return results, nil
@@ -70,7 +81,7 @@ func (f *File) GetCols(sheet string) ([][]string, error) {
 // Next will return true if the next column is found.
 func (cols *Cols) Next() bool {
 	cols.curCol++
-	return cols.curCol <= cols.totalCol
+	return cols.curCol <= cols.totalCols
 }
 
 // Error will return an error when the error occurs.
@@ -79,7 +90,7 @@ func (cols *Cols) Error() error {
 }
 
 // Rows return the current column's row values.
-func (cols *Cols) Rows() ([]string, error) {
+func (cols *Cols) Rows(opts ...Options) ([]string, error) {
 	var (
 		err              error
 		inElement        string
@@ -89,6 +100,7 @@ func (cols *Cols) Rows() ([]string, error) {
 	if cols.stashCol >= cols.curCol {
 		return rows, err
 	}
+	cols.rawCellValue = parseOptions(opts...).RawCellValue
 	d := cols.f.sharedStringsReader()
 	decoder := cols.f.xmlNewDecoder(bytes.NewReader(cols.sheetXML))
 	for {
@@ -123,7 +135,7 @@ func (cols *Cols) Rows() ([]string, error) {
 				if cellCol == cols.curCol {
 					colCell := xlsxC{}
 					_ = decoder.DecodeElement(&colCell, &xmlElement)
-					val, _ := colCell.getValueFrom(cols.f, d)
+					val, _ := colCell.getValueFrom(cols.f, d, cols.rawCellValue)
 					rows = append(rows, val)
 				}
 			}
@@ -157,7 +169,7 @@ func columnXMLHandler(colIterator *columnXMLIterator, xmlElement *xml.StartEleme
 				colIterator.row = colIterator.curRow
 			}
 		}
-		colIterator.cols.totalRow = colIterator.row
+		colIterator.cols.totalRows = colIterator.row
 		colIterator.cellCol = 0
 	}
 	if inElement == "c" {
@@ -169,8 +181,8 @@ func columnXMLHandler(colIterator *columnXMLIterator, xmlElement *xml.StartEleme
 				}
 			}
 		}
-		if colIterator.cellCol > colIterator.cols.totalCol {
-			colIterator.cols.totalCol = colIterator.cellCol
+		if colIterator.cellCol > colIterator.cols.totalCols {
+			colIterator.cols.totalCols = colIterator.cellCol
 		}
 	}
 }
@@ -207,7 +219,7 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	var colIterator columnXMLIterator
-	colIterator.cols.sheetXML = f.readXML(name)
+	colIterator.cols.sheetXML = f.readBytes(name)
 	decoder := f.xmlNewDecoder(bytes.NewReader(colIterator.cols.sheetXML))
 	for {
 		token, _ := decoder.Token()
@@ -398,7 +410,9 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 }
 
 // SetColStyle provides a function to set style of columns by given worksheet
-// name, columns range and style ID.
+// name, columns range and style ID. Note that this will overwrite the
+// existing styles for the columns, it won't append or merge style with
+// existing styles.
 //
 // For example set style of column H on Sheet1:
 //
@@ -616,10 +630,10 @@ func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, heigh
 // getColWidth provides a function to get column width in pixels by given
 // sheet name and column number.
 func (f *File) getColWidth(sheet string, col int) int {
-	xlsx, _ := f.workSheetReader(sheet)
-	if xlsx.Cols != nil {
+	ws, _ := f.workSheetReader(sheet)
+	if ws.Cols != nil {
 		var width float64
-		for _, v := range xlsx.Cols.Col {
+		for _, v := range ws.Cols.Col {
 			if v.Min <= col && col <= v.Max {
 				width = v.Width
 			}

@@ -84,6 +84,12 @@ type StreamWriter struct {
 //        excelize.Cell{Value: 2},
 //        excelize.Cell{Formula: "SUM(A1,B1)"}});
 //
+// Set cell value and rows style for a worksheet with stream writer:
+//
+//    err := streamWriter.SetRow("A1", []interface{}{
+//        excelize.Cell{Value: 1}},
+//        excelize.RowOpts{StyleID: styleID, Height: 20, Hidden: false});
+//
 func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	sheetID := f.getSheetID(sheet)
 	if sheetID == -1 {
@@ -106,7 +112,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	}
 	f.streams[sheetPath] = sw
 
-	_, _ = sw.rawData.WriteString(XMLHeader + `<worksheet` + templateNamespaceIDMap)
+	_, _ = sw.rawData.WriteString(xml.Header + `<worksheet` + templateNamespaceIDMap)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 2, 5)
 	return sw, err
 }
@@ -289,10 +295,12 @@ type Cell struct {
 	Value   interface{}
 }
 
-// RowOpts define the options for set row.
+// RowOpts define the options for the set row, it can be used directly in
+// StreamWriter.SetRow to specify the style and properties of the row.
 type RowOpts struct {
-	Height float64
-	Hidden bool
+	Height  float64
+	Hidden  bool
+	StyleID int
 }
 
 // SetRow writes an array to stream rows by giving a worksheet name, starting
@@ -333,7 +341,7 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, opts ...RowOpt
 			val = v.Value
 			setCellFormula(&c, v.Formula)
 		}
-		if err = setCellValFunc(&c, val); err != nil {
+		if err = sw.setCellValFunc(&c, val); err != nil {
 			_, _ = sw.rawData.WriteString(`</row>`)
 			return err
 		}
@@ -346,8 +354,8 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, opts ...RowOpt
 // marshalRowAttrs prepare attributes of the row by given options.
 func marshalRowAttrs(opts ...RowOpts) (attrs string, err error) {
 	var opt *RowOpts
-	for _, o := range opts {
-		opt = &o
+	for i := range opts {
+		opt = &opts[i]
 	}
 	if opt == nil {
 		return
@@ -355,6 +363,9 @@ func marshalRowAttrs(opts ...RowOpts) (attrs string, err error) {
 	if opt.Height > MaxRowHeight {
 		err = ErrMaxRowHeight
 		return
+	}
+	if opt.StyleID > 0 {
+		attrs += fmt.Sprintf(` s="%d" customFormat="true"`, opt.StyleID)
 	}
 	if opt.Height > 0 {
 		attrs += fmt.Sprintf(` ht="%v" customHeight="true"`, opt.Height)
@@ -413,7 +424,7 @@ func setCellFormula(c *xlsxC, formula string) {
 }
 
 // setCellValFunc provides a function to set value of a cell.
-func setCellValFunc(c *xlsxC, val interface{}) (err error) {
+func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) (err error) {
 	switch val := val.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		err = setCellIntFunc(c, val)
@@ -428,7 +439,12 @@ func setCellValFunc(c *xlsxC, val interface{}) (err error) {
 	case time.Duration:
 		c.T, c.V = setCellDuration(val)
 	case time.Time:
-		c.T, c.V, _, err = setCellTime(val)
+		var isNum bool
+		c.T, c.V, isNum, err = setCellTime(val)
+		if isNum && c.S == 0 {
+			style, _ := sw.File.NewStyle(&Style{NumFmt: 22})
+			c.S = style
+		}
 	case bool:
 		c.T, c.V = setCellBool(val)
 	case nil:

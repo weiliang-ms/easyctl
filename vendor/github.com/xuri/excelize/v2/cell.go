@@ -14,10 +14,24 @@ package excelize
 import (
 	"encoding/xml"
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+)
+
+// CellType is the type of cell value type.
+type CellType byte
+
+// Cell value types enumeration.
+const (
+	CellTypeUnset CellType = iota
+	CellTypeBool
+	CellTypeDate
+	CellTypeError
+	CellTypeNumber
+	CellTypeString
 )
 
 const (
@@ -31,15 +45,44 @@ const (
 	STCellFormulaTypeShared = "shared"
 )
 
+// cellTypes mapping the cell's data type and enumeration.
+var cellTypes = map[string]CellType{
+	"b":         CellTypeBool,
+	"d":         CellTypeDate,
+	"n":         CellTypeNumber,
+	"e":         CellTypeError,
+	"s":         CellTypeString,
+	"str":       CellTypeString,
+	"inlineStr": CellTypeString,
+}
+
 // GetCellValue provides a function to get formatted value from cell by given
 // worksheet name and axis in spreadsheet file. If it is possible to apply a
 // format to the cell value, it will do so, if not then an error will be
-// returned, along with the raw value of the cell.
-func (f *File) GetCellValue(sheet, axis string) (string, error) {
+// returned, along with the raw value of the cell. All cells' values will be
+// the same in a merged range.
+func (f *File) GetCellValue(sheet, axis string, opts ...Options) (string, error) {
 	return f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
-		val, err := c.getValueFrom(f, f.sharedStringsReader())
+		val, err := c.getValueFrom(f, f.sharedStringsReader(), parseOptions(opts...).RawCellValue)
 		return val, true, err
 	})
+}
+
+// GetCellType provides a function to get the cell's data type by given
+// worksheet name and axis in spreadsheet file.
+func (f *File) GetCellType(sheet, axis string) (CellType, error) {
+	var (
+		err         error
+		cellTypeStr string
+		cellType    CellType
+	)
+	if cellTypeStr, err = f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
+		return c.T, true, nil
+	}); err != nil {
+		return CellTypeUnset, err
+	}
+	cellType = cellTypes[cellTypeStr]
+	return cellType, err
 }
 
 // SetCellValue provides a function to set the value of a cell. The specified
@@ -98,6 +141,28 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) error {
 		err = f.SetCellStr(sheet, axis, fmt.Sprint(value))
 	}
 	return err
+}
+
+// String extracts characters from a string item.
+func (x xlsxSI) String() string {
+	if len(x.R) > 0 {
+		var rows strings.Builder
+		for _, s := range x.R {
+			if s.T != nil {
+				rows.WriteString(s.T.Val)
+			}
+		}
+		return bstrUnmarshal(rows.String())
+	}
+	if x.T != nil {
+		return bstrUnmarshal(x.T.Val)
+	}
+	return ""
+}
+
+// hasValue determine if cell non-blank value.
+func (c *xlsxC) hasValue() bool {
+	return c.S != 0 || c.V != "" || c.F != nil || c.T != ""
 }
 
 // setCellIntFunc is a wrapper of SetCellInt.
@@ -161,8 +226,9 @@ func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
 // timestamp.
 func setCellTime(value time.Time) (t string, b string, isNum bool, err error) {
 	var excelTime float64
-	excelTime, err = timeToExcelTime(value)
-	if err != nil {
+	_, offset := value.In(value.Location()).Zone()
+	value = value.Add(time.Duration(offset) * time.Second)
+	if excelTime, err = timeToExcelTime(value); err != nil {
 		return
 	}
 	isNum = excelTime > 0
@@ -282,28 +348,49 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 	ws.Lock()
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
-	cellData.T, cellData.V = f.setCellString(value)
+	cellData.T, cellData.V, err = f.setCellString(value)
 	return err
 }
 
 // setCellString provides a function to set string type to shared string
 // table.
-func (f *File) setCellString(value string) (t string, v string) {
+func (f *File) setCellString(value string) (t, v string, err error) {
 	if len(value) > TotalCellChars {
-		value = value[0:TotalCellChars]
+		value = value[:TotalCellChars]
 	}
 	t = "s"
-	v = strconv.Itoa(f.setSharedString(value))
+	var si int
+	if si, err = f.setSharedString(value); err != nil {
+		return
+	}
+	v = strconv.Itoa(si)
+	return
+}
+
+// sharedStringsLoader load shared string table from system temporary file to
+// memory, and reset shared string table for reader.
+func (f *File) sharedStringsLoader() (err error) {
+	f.Lock()
+	defer f.Unlock()
+	if path, ok := f.tempFiles.Load(dafaultXMLPathSharedStrings); ok {
+		f.Pkg.Store(dafaultXMLPathSharedStrings, f.readBytes(dafaultXMLPathSharedStrings))
+		f.tempFiles.Delete(dafaultXMLPathSharedStrings)
+		err = os.Remove(path.(string))
+		f.SharedStrings, f.sharedStringItemMap = nil, nil
+	}
 	return
 }
 
 // setSharedString provides a function to add string to the share string table.
-func (f *File) setSharedString(val string) int {
+func (f *File) setSharedString(val string) (int, error) {
+	if err := f.sharedStringsLoader(); err != nil {
+		return 0, err
+	}
 	sst := f.sharedStringsReader()
 	f.Lock()
 	defer f.Unlock()
 	if i, ok := f.sharedStringsMap[val]; ok {
-		return i
+		return i, nil
 	}
 	sst.Count++
 	sst.UniqueCount++
@@ -311,17 +398,17 @@ func (f *File) setSharedString(val string) int {
 	_, val, t.Space = setCellStr(val)
 	sst.SI = append(sst.SI, xlsxSI{T: &t})
 	f.sharedStringsMap[val] = sst.UniqueCount - 1
-	return sst.UniqueCount - 1
+	return sst.UniqueCount - 1, nil
 }
 
 // setCellStr provides a function to set string type to cell.
 func setCellStr(value string) (t string, v string, ns xml.Attr) {
 	if len(value) > TotalCellChars {
-		value = value[0:TotalCellChars]
+		value = value[:TotalCellChars]
 	}
 	if len(value) > 0 {
 		prefix, suffix := value[0], value[len(value)-1]
-		for _, ascii := range []byte{10, 13, 32} {
+		for _, ascii := range []byte{9, 10, 13, 32} {
 			if prefix == ascii || suffix == ascii {
 				ns = xml.Attr{
 					Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
@@ -331,8 +418,7 @@ func setCellStr(value string) (t string, v string, ns xml.Attr) {
 			}
 		}
 	}
-	t = "str"
-	v = bstrMarshal(value)
+	t, v = "str", bstrMarshal(value)
 	return
 }
 
@@ -368,8 +454,8 @@ func (f *File) GetCellFormula(sheet, axis string) (string, error) {
 		if c.F == nil {
 			return "", false, nil
 		}
-		if c.F.T == STCellFormulaTypeShared {
-			return getSharedForumula(x, c.F.Si), true, nil
+		if c.F.T == STCellFormulaTypeShared && c.F.Si != nil {
+			return getSharedForumula(x, *c.F.Si, c.R), true, nil
 		}
 		return c.F.Content, true, nil
 	})
@@ -381,8 +467,84 @@ type FormulaOpts struct {
 	Ref  *string // Shared formula ref
 }
 
-// SetCellFormula provides a function to set cell formula by given string and
-// worksheet name.
+// SetCellFormula provides a function to set formula on the cell is taken
+// according to the given worksheet name (case sensitive) and cell formula
+// settings. The result of the formula cell can be calculated when the
+// worksheet is opened by the Office Excel application or can be using
+// the "CalcCellValue" function also can get the calculated cell value. If
+// the Excel application doesn't calculate the formula automatically when the
+// workbook has been opened, please call "UpdateLinkedValue" after setting
+// the cell formula functions.
+//
+// Example 1, set normal formula "=SUM(A1,B1)" for the cell "A3" on "Sheet1":
+//
+//    err := f.SetCellFormula("Sheet1", "A3", "=SUM(A1,B1)")
+//
+// Example 2, set one-dimensional vertical constant array (row array) formula
+// "1,2,3" for the cell "A3" on "Sheet1":
+//
+//    err := f.SetCellFormula("Sheet1", "A3", "={1,2,3}")
+//
+// Example 3, set one-dimensional horizontal constant array (column array)
+// formula '"a","b","c"' for the cell "A3" on "Sheet1":
+//
+//    err := f.SetCellFormula("Sheet1", "A3", "={\"a\",\"b\",\"c\"}")
+//
+// Example 4, set two-dimensional constant array formula '{1,2,"a","b"}' for
+// the cell "A3" on "Sheet1":
+//
+//    formulaType, ref := excelize.STCellFormulaTypeArray, "A3:A3"
+//    err := f.SetCellFormula("Sheet1", "A3", "={1,2,\"a\",\"b\"}",
+//        excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
+//
+// Example 5, set range array formula "A1:A2" for the cell "A3" on "Sheet1":
+//
+//    formulaType, ref := excelize.STCellFormulaTypeArray, "A3:A3"
+//    err := f.SetCellFormula("Sheet1", "A3", "=A1:A2",
+//	      excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
+//
+// Example 6, set shared formula "=A1+B1" for the cell "C1:C5"
+// on "Sheet1", "C1" is the master cell:
+//
+//    formulaType, ref := excelize.STCellFormulaTypeShared, "C1:C5"
+//    err := f.SetCellFormula("Sheet1", "C1", "=A1+B1",
+//        excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
+//
+// Example 7, set table formula "=SUM(Table1[[A]:[B]])" for the cell "C2"
+// on "Sheet1":
+//
+//    package main
+//
+//    import (
+//        "fmt"
+//
+//        "github.com/xuri/excelize/v2"
+//    )
+//
+//    func main() {
+//        f := excelize.NewFile()
+//        for idx, row := range [][]interface{}{{"A", "B", "C"}, {1, 2}} {
+//            if err := f.SetSheetRow("Sheet1", fmt.Sprintf("A%d", idx+1), &row); err != nil {
+//            	fmt.Println(err)
+//            	return
+//            }
+//        }
+//        if err := f.AddTable("Sheet1", "A1", "C2",
+//            `{"table_name":"Table1","table_style":"TableStyleMedium2"}`); err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        formulaType := excelize.STCellFormulaTypeDataTable
+//        if err := f.SetCellFormula("Sheet1", "C2", "=SUM(Table1[[A]:[B]])",
+//            excelize.FormulaOpts{Type: &formulaType}); err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        if err := f.SaveAs("Book1.xlsx"); err != nil {
+//            fmt.Println(err)
+//        }
+//    }
+//
 func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -406,15 +568,56 @@ func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) 
 
 	for _, o := range opts {
 		if o.Type != nil {
+			if *o.Type == STCellFormulaTypeDataTable {
+				return err
+			}
 			cellData.F.T = *o.Type
+			if cellData.F.T == STCellFormulaTypeShared {
+				if err = ws.setSharedFormula(*o.Ref); err != nil {
+					return err
+				}
+			}
 		}
-
 		if o.Ref != nil {
 			cellData.F.Ref = *o.Ref
 		}
 	}
 
 	return err
+}
+
+// setSharedFormula set shared formula for the cells.
+func (ws *xlsxWorksheet) setSharedFormula(ref string) error {
+	coordinates, err := areaRefToCoordinates(ref)
+	if err != nil {
+		return err
+	}
+	_ = sortCoordinates(coordinates)
+	cnt := ws.countSharedFormula()
+	for c := coordinates[0]; c <= coordinates[2]; c++ {
+		for r := coordinates[1]; r <= coordinates[3]; r++ {
+			prepareSheetXML(ws, c, r)
+			cell := &ws.SheetData.Row[r-1].C[c-1]
+			if cell.F == nil {
+				cell.F = &xlsxF{}
+			}
+			cell.F.T = STCellFormulaTypeShared
+			cell.F.Si = &cnt
+		}
+	}
+	return err
+}
+
+// countSharedFormula count shared formula in the given worksheet.
+func (ws *xlsxWorksheet) countSharedFormula() (count int) {
+	for _, row := range ws.SheetData.Row {
+		for _, cell := range row.C {
+			if cell.F != nil && cell.F.Si != nil && *cell.F.Si+1 > count {
+				count = *cell.F.Si + 1
+			}
+		}
+	}
+	return
 }
 
 // GetCellHyperLink provides a function to get cell hyperlink by given
@@ -430,13 +633,11 @@ func (f *File) GetCellHyperLink(sheet, axis string) (bool, string, error) {
 	if _, _, err := SplitCellName(axis); err != nil {
 		return false, "", err
 	}
-
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return false, "", err
 	}
-	axis, err = f.mergeCellsParser(ws, axis)
-	if err != nil {
+	if axis, err = f.mergeCellsParser(ws, axis); err != nil {
 		return false, "", err
 	}
 	if ws.Hyperlinks != nil {
@@ -484,8 +685,7 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 	if err != nil {
 		return err
 	}
-	axis, err = f.mergeCellsParser(ws, axis)
-	if err != nil {
+	if axis, err = f.mergeCellsParser(ws, axis); err != nil {
 		return err
 	}
 
@@ -580,6 +780,34 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 		runs = append(runs, run)
 	}
 	return
+}
+
+// newRpr create run properties for the rich text by given font format.
+func newRpr(fnt *Font) *xlsxRPr {
+	rpr := xlsxRPr{}
+	trueVal := ""
+	if fnt.Bold {
+		rpr.B = &trueVal
+	}
+	if fnt.Italic {
+		rpr.I = &trueVal
+	}
+	if fnt.Strike {
+		rpr.Strike = &trueVal
+	}
+	if fnt.Underline != "" {
+		rpr.U = &attrValString{Val: &fnt.Underline}
+	}
+	if fnt.Family != "" {
+		rpr.RFont = &attrValString{Val: &fnt.Family}
+	}
+	if fnt.Size > 0.0 {
+		rpr.Sz = &attrValFloat{Val: &fnt.Size}
+	}
+	if fnt.Color != "" {
+		rpr.Color = &xlsxColor{RGB: getPaletteColor(fnt.Color)}
+	}
+	return &rpr
 }
 
 // SetCellRichText provides a function to set cell with rich text by given
@@ -695,6 +923,9 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	if err != nil {
 		return err
 	}
+	if err := f.sharedStringsLoader(); err != nil {
+		return err
+	}
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
 	si := xlsxSI{}
 	sst := f.sharedStringsReader()
@@ -709,30 +940,7 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 		_, run.T.Val, run.T.Space = setCellStr(textRun.Text)
 		fnt := textRun.Font
 		if fnt != nil {
-			rpr := xlsxRPr{}
-			trueVal := ""
-			if fnt.Bold {
-				rpr.B = &trueVal
-			}
-			if fnt.Italic {
-				rpr.I = &trueVal
-			}
-			if fnt.Strike {
-				rpr.Strike = &trueVal
-			}
-			if fnt.Underline != "" {
-				rpr.U = &attrValString{Val: &fnt.Underline}
-			}
-			if fnt.Family != "" {
-				rpr.RFont = &attrValString{Val: &fnt.Family}
-			}
-			if fnt.Size > 0.0 {
-				rpr.Sz = &attrValFloat{Val: &fnt.Size}
-			}
-			if fnt.Color != "" {
-				rpr.Color = &xlsxColor{RGB: getPaletteColor(fnt.Color)}
-			}
-			run.RPr = &rpr
+			run.RPr = newRpr(fnt)
 		}
 		textRuns = append(textRuns, run)
 	}
@@ -855,14 +1063,26 @@ func (f *File) getCellStringFunc(sheet, axis string, fn func(x *xlsxWorksheet, c
 // formattedValue provides a function to returns a value after formatted. If
 // it is possible to apply a format to the cell value, it will do so, if not
 // then an error will be returned, along with the raw value of the cell.
-func (f *File) formattedValue(s int, v string) string {
-	if s == 0 {
+func (f *File) formattedValue(s int, v string, raw bool) string {
+	precise := v
+	isNum, precision := isNumeric(v)
+	if isNum && precision > 10 {
+		precise = roundPrecision(v, -1)
+	}
+	if raw {
 		return v
+	}
+	if !isNum {
+		v = roundPrecision(v, 15)
+		precise = v
+	}
+	if s == 0 {
+		return precise
 	}
 	styleSheet := f.stylesReader()
 
 	if s >= len(styleSheet.CellXfs.Xf) {
-		return v
+		return precise
 	}
 	var numFmtID int
 	if styleSheet.CellXfs.Xf[s].NumFmtID != nil {
@@ -871,21 +1091,26 @@ func (f *File) formattedValue(s int, v string) string {
 
 	ok := builtInNumFmtFunc[numFmtID]
 	if ok != nil {
-		return ok(v, builtInNumFmt[numFmtID])
+		return ok(precise, builtInNumFmt[numFmtID])
 	}
 	if styleSheet == nil || styleSheet.NumFmts == nil {
-		return v
+		return precise
 	}
 	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
 		if xlsxFmt.NumFmtID == numFmtID {
 			format := strings.ToLower(xlsxFmt.FormatCode)
-			if strings.Contains(format, "y") || strings.Contains(format, "m") || strings.Contains(strings.Replace(format, "red", "", -1), "d") || strings.Contains(format, "h") {
+			if isTimeNumFmt(format) {
 				return parseTime(v, format)
 			}
-			return v
+			return precise
 		}
 	}
-	return v
+	return precise
+}
+
+// isTimeNumFmt determine if the given number format expression is a time number format.
+func isTimeNumFmt(format string) bool {
+	return strings.Contains(format, "y") || strings.Contains(format, "m") || strings.Contains(strings.Replace(format, "red", "", -1), "d") || strings.Contains(format, "h")
 }
 
 // prepareCellStyle provides a function to prepare style index of cell in
@@ -931,7 +1156,7 @@ func (f *File) checkCellInArea(cell, area string) (bool, error) {
 	if len(rng) != 2 {
 		return false, err
 	}
-	coordinates, err := f.areaRefToCoordinates(area)
+	coordinates, err := areaRefToCoordinates(area)
 	if err != nil {
 		return false, err
 	}
@@ -957,6 +1182,48 @@ func isOverlap(rect1, rect2 []int) bool {
 		cellInRef([]int{rect2[2], rect2[3]}, rect1)
 }
 
+// parseSharedFormula generate dynamic part of shared formula for target cell
+// by given column and rows distance and origin shared formula.
+func parseSharedFormula(dCol, dRow int, orig []byte) (res string, start int) {
+	var (
+		end           int
+		stringLiteral bool
+	)
+	for end = 0; end < len(orig); end++ {
+		c := orig[end]
+		if c == '"' {
+			stringLiteral = !stringLiteral
+		}
+		if stringLiteral {
+			continue // Skip characters in quotes
+		}
+		if c >= 'A' && c <= 'Z' || c == '$' {
+			res += string(orig[start:end])
+			start = end
+			end++
+			foundNum := false
+			for ; end < len(orig); end++ {
+				idc := orig[end]
+				if idc >= '0' && idc <= '9' || idc == '$' {
+					foundNum = true
+				} else if idc >= 'A' && idc <= 'Z' {
+					if foundNum {
+						break
+					}
+				} else {
+					break
+				}
+			}
+			if foundNum {
+				cellID := string(orig[start:end])
+				res += shiftCell(cellID, dCol, dRow)
+				start = end
+			}
+		}
+	}
+	return
+}
+
 // getSharedForumula find a cell contains the same formula as another cell,
 // the "shared" value can be used for the t attribute and the si attribute can
 // be used to refer to the cell containing the formula. Two formulas are
@@ -965,13 +1232,43 @@ func isOverlap(rect1, rect2 []int) bool {
 //
 // Note that this function not validate ref tag to check the cell if or not in
 // allow area, and always return origin shared formula.
-func getSharedForumula(ws *xlsxWorksheet, si string) string {
+func getSharedForumula(ws *xlsxWorksheet, si int, axis string) string {
 	for _, r := range ws.SheetData.Row {
 		for _, c := range r.C {
-			if c.F != nil && c.F.Ref != "" && c.F.T == STCellFormulaTypeShared && c.F.Si == si {
-				return c.F.Content
+			if c.F != nil && c.F.Ref != "" && c.F.T == STCellFormulaTypeShared && c.F.Si != nil && *c.F.Si == si {
+				col, row, _ := CellNameToCoordinates(axis)
+				sharedCol, sharedRow, _ := CellNameToCoordinates(c.R)
+				dCol := col - sharedCol
+				dRow := row - sharedRow
+				orig := []byte(c.F.Content)
+				res, start := parseSharedFormula(dCol, dRow, orig)
+				if start < len(orig) {
+					res += string(orig[start:])
+				}
+				return res
 			}
 		}
 	}
 	return ""
+}
+
+// shiftCell returns the cell shifted according to dCol and dRow taking into
+// consideration of absolute references with dollar sign ($)
+func shiftCell(cellID string, dCol, dRow int) string {
+	fCol, fRow, _ := CellNameToCoordinates(cellID)
+	signCol, signRow := "", ""
+	if strings.Index(cellID, "$") == 0 {
+		signCol = "$"
+	} else {
+		// Shift column
+		fCol += dCol
+	}
+	if strings.LastIndex(cellID, "$") > 0 {
+		signRow = "$"
+	} else {
+		// Shift row
+		fRow += dRow
+	}
+	colName, _ := ColumnNumberToName(fCol)
+	return signCol + colName + signRow + strconv.Itoa(fRow)
 }
