@@ -281,7 +281,7 @@ func parseServerListWithFile(filePath string, server ServerInternal, logger *log
 			PrivateKeyPath: server.PrivateKeyPath,
 		}
 
-		// 判断改行IP是否合法
+		// 判断该行IP是否合法
 		if ok := net.ParseIP(line); ok != nil {
 			servers = append(servers, s)
 		} else {
