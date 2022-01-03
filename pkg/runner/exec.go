@@ -26,7 +26,6 @@ package runner
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
@@ -140,47 +139,54 @@ func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResul
 		}
 	}
 
+	// 是否实时输出
 	if executor.OutPutRealTime == true {
 		session.Stdout = os.Stdout
-		err := session.Run(executor.Script)
-		if err != nil {
+		var errOut bytes.Buffer
+		session.Stderr = &errOut
+
+		if err := session.Run(executor.Script); err != nil {
+			code := err.(*ssh.ExitError).ExitStatus()
 			return ShellResult{
 				Host:      server.Host,
-				Err:       errors.New(err.(*ssh.ExitError).String()),
+				Err:       err,
 				Cmd:       executor.Script,
 				Status:    constant.Fail,
-				Code:      err.(*ssh.ExitError).ExitStatus(),
-				StdErrMsg: fmt.Sprintf("[%s] err.(*ssh.ExitError).String()", server.Host)}
+				Code:      code,
+				StdErrMsg: fmt.Sprintf("[%s] 执行失败, %s", server.Host, string(errOut.Bytes()))}
 		}
 
-	} else {
-		out, err := session.Output(executor.Script)
-		if err != nil {
-			return ShellResult{
-				Host:      server.Host,
-				Err:       errors.New(err.(*ssh.ExitError).String()),
-				Cmd:       executor.Script,
-				Status:    constant.Fail,
-				Code:      err.(*ssh.ExitError).ExitStatus(),
-				StdErrMsg: fmt.Sprintf("[%s] err.(*ssh.ExitError).String()", server.Host)}
-		}
-
-		executor.Logger.Infof("<- end %s执行命令成功...", server.Host)
-		executor.Logger.Debugf("%s -> 返回值: \n%s", server.Host, string(out))
-
-		var subOut string
-
-		if len(string(out)) > 20 {
-			subOut = string(out)[:20]
-		} else {
-			subOut = string(out)
-		}
-
-		return ShellResult{Host: server.Host, StdOut: subOut,
-			Cmd: strings.TrimPrefix(executor.Script, "\n"), Status: constant.Success}
+		return ShellResult{}
 	}
 
-	return ShellResult{}
+	var out, errOut bytes.Buffer
+	session.Stdout = &out
+	session.Stderr = &errOut
+
+	if err := session.Run(executor.Script); err != nil {
+		code := err.(*ssh.ExitError).ExitStatus()
+		return ShellResult{
+			Host:      server.Host,
+			Err:       err,
+			Cmd:       executor.Script,
+			Status:    constant.Fail,
+			Code:      code,
+			StdErrMsg: fmt.Sprintf("[%s] 执行失败, %s", server.Host, string(errOut.Bytes()))}
+	}
+
+	executor.Logger.Infof("<- %s执行命令成功", server.Host)
+	executor.Logger.Debugf("[%s] 执行结果 => %s...\n", server.Host, string(out.Bytes()))
+
+	var subOut string
+
+	if len(string(out.Bytes())) > 20 {
+		subOut = string(out.Bytes())[:20]
+	} else {
+		subOut = string(out.Bytes())
+	}
+
+	defer session.Close()
+	return ShellResult{Host: server.Host, StdOut: subOut, Cmd: strings.TrimPrefix(executor.Script, "\n"), Status: constant.Success}
 }
 
 // ReturnRunResult 获取执行结果

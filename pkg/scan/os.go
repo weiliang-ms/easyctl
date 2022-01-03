@@ -28,7 +28,16 @@ type OSInfo struct {
 	MemoryInfo
 }
 
-const MountHighUsedValue = 90
+const (
+	MountHighUsedValue      = 90
+	PrintHostnameShell      = "hostname"
+	PrintKernelVersionShell = "uname -r"
+	PrintOSVersionShell     = "cat /etc/system-release"
+	PrintCPUInfoShell       = "cat /proc/cpuinfo"
+	PrintMemInfoShell       = "cat /proc/meminfo"
+	PrintCPULoadavgShell    = "cat /proc/loadavg|awk '{print $1,$2,$3}'"
+	PrintMountInfoShell     = "df -h|grep -v Filesystem"
+)
 
 type OSInfoSlice []OSInfo
 
@@ -102,15 +111,14 @@ func OS(item command.OperationItem) command.RunErr {
 	if err != nil {
 		panic(err)
 	}
-	item.Logger.Infof("系统信息：\n%v", out.String())
 
+	item.Logger.Infof("系统信息：\n%v", out.String())
 	return command.RunErr{Err: SaveAsExcel(result)}
 }
 
 // 获取操作系统信息
 func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 
-	var osInfo OSInfo
 	var cpuInfo CPUInfo
 	var memInfo MemoryInfo
 	var diskInfo DiskInfo
@@ -119,7 +127,7 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 
 	if re := s.ReturnRunResult(runner.RunItem{
 		Logger: logger,
-		Cmd:    "hostname",
+		Cmd:    PrintHostnameShell,
 	}); re.Err != nil {
 		panic(re.Err)
 	} else {
@@ -130,7 +138,7 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 
 	if re := s.ReturnRunResult(runner.RunItem{
 		Logger: logger,
-		Cmd:    "uname -r",
+		Cmd:    PrintKernelVersionShell,
 	}); re.Err != nil {
 		panic(re.Err)
 	} else {
@@ -139,7 +147,7 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 
 	if re := s.ReturnRunResult(runner.RunItem{
 		Logger: logger,
-		Cmd:    "cat /etc/system-release",
+		Cmd:    PrintOSVersionShell,
 	}); re.Err != nil {
 		panic(re.Err)
 	} else {
@@ -148,7 +156,7 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 
 	if re := s.ReturnRunResult(runner.RunItem{
 		Logger: logger,
-		Cmd:    "cat /proc/cpuinfo",
+		Cmd:    PrintCPUInfoShell,
 	}); re.Err != nil {
 		panic(re.Err)
 	} else {
@@ -157,7 +165,7 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 
 	if re := s.ReturnRunResult(runner.RunItem{
 		Logger: logger,
-		Cmd:    "cat /proc/loadavg|awk '{print $1,$2,$3}'",
+		Cmd:    PrintCPULoadavgShell,
 	}); re.Err != nil {
 		panic(re.Err)
 	} else {
@@ -166,7 +174,7 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 
 	if re := s.ReturnRunResult(runner.RunItem{
 		Logger: logger,
-		Cmd:    "cat /proc/meminfo",
+		Cmd:    PrintMemInfoShell,
 	}); re.Err != nil {
 		panic(re.Err)
 	} else {
@@ -175,27 +183,19 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 
 	if re := s.ReturnRunResult(runner.RunItem{
 		Logger: logger,
-		Cmd:    "cat /proc/meminfo",
-	}); re.Err != nil {
-		panic(re.Err)
-	} else {
-		memInfo = NewMemInfoItem(strings.TrimSpace(re.StdOut))
-	}
-
-	if re := s.ReturnRunResult(runner.RunItem{
-		Logger: logger,
-		Cmd:    "df -h|grep -v Filesystem",
+		Cmd:    PrintMountInfoShell,
 	}); re.Err != nil {
 		panic(re.Err)
 	} else {
 		diskInfo = NewDiskInfoItem(strings.TrimSpace(re.StdOut))
 	}
 
-	osInfo.BaseOSInfo = baseInfo
-	osInfo.CPUInfo = cpuInfo
-	osInfo.MemoryInfo = memInfo
-	osInfo.DiskInfo = diskInfo
-	return osInfo
+	return OSInfo{
+		BaseOSInfo: baseInfo,
+		CPUInfo:    cpuInfo,
+		DiskInfo:   diskInfo,
+		MemoryInfo: memInfo,
+	}
 }
 
 func (re OSInfoSlice) Len() int { return len(re) }
