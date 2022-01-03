@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/big"
 	"math/cmplx"
 	"math/rand"
 	"net/url"
@@ -34,29 +35,149 @@ import (
 	"golang.org/x/text/message"
 )
 
-// Excel formula errors
 const (
+	// Excel formula errors
 	formulaErrorDIV         = "#DIV/0!"
 	formulaErrorNAME        = "#NAME?"
 	formulaErrorNA          = "#N/A"
 	formulaErrorNUM         = "#NUM!"
 	formulaErrorVALUE       = "#VALUE!"
 	formulaErrorREF         = "#REF!"
-	formulaErrorNULL        = "#NULL"
+	formulaErrorNULL        = "#NULL!"
 	formulaErrorSPILL       = "#SPILL!"
 	formulaErrorCALC        = "#CALC!"
 	formulaErrorGETTINGDATA = "#GETTING_DATA"
+	// formula criteria condition enumeration.
+	_ byte = iota
+	criteriaEq
+	criteriaLe
+	criteriaGe
+	criteriaNe
+	criteriaL
+	criteriaG
+	criteriaErr
+	criteriaRegexp
+
+	matchModeExact      = 0
+	matchModeMinGreater = 1
+	matchModeMaxLess    = -1
+	matchModeWildcard   = 2
+
+	searchModeLinear        = 1
+	searchModeReverseLinear = -1
+	searchModeAscBinary     = 2
+	searchModeDescBinary    = -2
+
+	maxFinancialIterations = 128
+	financialPercision     = 1.0e-08
+	// Date and time format regular expressions
+	monthRe    = `((jan|january)|(feb|february)|(mar|march)|(apr|april)|(may)|(jun|june)|(jul|july)|(aug|august)|(sep|september)|(oct|october)|(nov|november)|(dec|december))`
+	df1        = `(([0-9])+)/(([0-9])+)/(([0-9])+)`
+	df2        = monthRe + ` (([0-9])+), (([0-9])+)`
+	df3        = `(([0-9])+)-(([0-9])+)-(([0-9])+)`
+	df4        = `(([0-9])+)-` + monthRe + `-(([0-9])+)`
+	datePrefix = `^((` + df1 + `|` + df2 + `|` + df3 + `|` + df4 + `) )?`
+	tfhh       = `(([0-9])+) (am|pm)`
+	tfhhmm     = `(([0-9])+):(([0-9])+)( (am|pm))?`
+	tfmmss     = `(([0-9])+):(([0-9])+\.([0-9])+)( (am|pm))?`
+	tfhhmmss   = `(([0-9])+):(([0-9])+):(([0-9])+(\.([0-9])+)?)( (am|pm))?`
+	timeSuffix = `( (` + tfhh + `|` + tfhhmm + `|` + tfmmss + `|` + tfhhmmss + `))?$`
 )
 
-// Numeric precision correct numeric values as legacy Excel application
-// https://en.wikipedia.org/wiki/Numeric_precision_in_Microsoft_Excel In the
-// top figure the fraction 1/9000 in Excel is displayed. Although this number
-// has a decimal representation that is an infinite string of ones, Excel
-// displays only the leading 15 figures. In the second line, the number one
-// is added to the fraction, and again Excel displays only 15 figures.
-const numericPrecision = 1000000000000000
-const maxFinancialIterations = 128
-const financialPercision = 1.0e-08
+var (
+	// tokenPriority defined basic arithmetic operator priority.
+	tokenPriority = map[string]int{
+		"^":  5,
+		"*":  4,
+		"/":  4,
+		"+":  3,
+		"-":  3,
+		"=":  2,
+		"<>": 2,
+		"<":  2,
+		"<=": 2,
+		">":  2,
+		">=": 2,
+		"&":  1,
+	}
+	month2num = map[string]int{
+		"january":   1,
+		"february":  2,
+		"march":     3,
+		"april":     4,
+		"may":       5,
+		"june":      6,
+		"july":      7,
+		"august":    8,
+		"september": 9,
+		"october":   10,
+		"november":  11,
+		"december":  12,
+		"jan":       1,
+		"feb":       2,
+		"mar":       3,
+		"apr":       4,
+		"jun":       6,
+		"jul":       7,
+		"aug":       8,
+		"sep":       9,
+		"oct":       10,
+		"nov":       11,
+		"dec":       12,
+	}
+	dateFormats = map[string]*regexp.Regexp{
+		"mm/dd/yy":    regexp.MustCompile(`^` + df1 + timeSuffix),
+		"mm dd, yy":   regexp.MustCompile(`^` + df2 + timeSuffix),
+		"yy-mm-dd":    regexp.MustCompile(`^` + df3 + timeSuffix),
+		"yy-mmStr-dd": regexp.MustCompile(`^` + df4 + timeSuffix),
+	}
+	timeFormats = map[string]*regexp.Regexp{
+		"hh":       regexp.MustCompile(datePrefix + tfhh + `$`),
+		"hh:mm":    regexp.MustCompile(datePrefix + tfhhmm + `$`),
+		"mm:ss":    regexp.MustCompile(datePrefix + tfmmss + `$`),
+		"hh:mm:ss": regexp.MustCompile(datePrefix + tfhhmmss + `$`),
+	}
+	dateOnlyFormats = []*regexp.Regexp{
+		regexp.MustCompile(`^` + df1 + `$`),
+		regexp.MustCompile(`^` + df2 + `$`),
+		regexp.MustCompile(`^` + df3 + `$`),
+		regexp.MustCompile(`^` + df4 + `$`),
+	}
+	addressFmtMaps = map[string]func(col, row int) (string, error){
+		"1_TRUE": func(col, row int) (string, error) {
+			return CoordinatesToCellName(col, row, true)
+		},
+		"1_FALSE": func(col, row int) (string, error) {
+			return fmt.Sprintf("R%dC%d", row, col), nil
+		},
+		"2_TRUE": func(col, row int) (string, error) {
+			column, err := ColumnNumberToName(col)
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("%s$%d", column, row), nil
+		},
+		"2_FALSE": func(col, row int) (string, error) {
+			return fmt.Sprintf("R%dC[%d]", row, col), nil
+		},
+		"3_TRUE": func(col, row int) (string, error) {
+			column, err := ColumnNumberToName(col)
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("$%s%d", column, row), nil
+		},
+		"3_FALSE": func(col, row int) (string, error) {
+			return fmt.Sprintf("R[%d]C%d", row, col), nil
+		},
+		"4_TRUE": func(col, row int) (string, error) {
+			return CoordinatesToCellName(col, row, false)
+		},
+		"4_FALSE": func(col, row int) (string, error) {
+			return fmt.Sprintf("R[%d]C[%d]", row, col), nil
+		},
+	}
+)
 
 // cellRef defines the structure of a cell reference.
 type cellRef struct {
@@ -71,26 +192,13 @@ type cellRange struct {
 	To   cellRef
 }
 
-// formula criteria condition enumeration.
-const (
-	_ byte = iota
-	criteriaEq
-	criteriaLe
-	criteriaGe
-	criteriaL
-	criteriaG
-	criteriaBeg
-	criteriaEnd
-	criteriaErr
-)
-
 // formulaCriteria defined formula criteria parser result.
 type formulaCriteria struct {
 	Type      byte
 	Condition string
 }
 
-// ArgType is the type if formula argument type.
+// ArgType is the type of formula argument type.
 type ArgType byte
 
 // Formula argument types enumeration.
@@ -193,22 +301,6 @@ type formulaFuncs struct {
 	sheet, cell string
 }
 
-// tokenPriority defined basic arithmetic operator priority.
-var tokenPriority = map[string]int{
-	"^":  5,
-	"*":  4,
-	"/":  4,
-	"+":  3,
-	"-":  3,
-	"=":  2,
-	"<>": 2,
-	"<":  2,
-	"<=": 2,
-	">":  2,
-	">=": 2,
-	"&":  1,
-}
-
 // CalcCellValue provides a function to get calculated cell value. This
 // feature is currently in working processing. Array formula, table formula
 // and some other formulas are not supported currently.
@@ -216,10 +308,15 @@ var tokenPriority = map[string]int{
 // Supported formula functions:
 //
 //    ABS
+//    ACCRINT
+//    ACCRINTM
 //    ACOS
 //    ACOSH
 //    ACOT
 //    ACOTH
+//    ADDRESS
+//    AMORDEGRC
+//    AMORLINC
 //    AND
 //    ARABIC
 //    ASIN
@@ -227,8 +324,10 @@ var tokenPriority = map[string]int{
 //    ATAN
 //    ATAN2
 //    ATANH
+//    AVEDEV
 //    AVERAGE
 //    AVERAGEA
+//    AVERAGEIF
 //    BASE
 //    BESSELI
 //    BESSELJ
@@ -246,6 +345,7 @@ var tokenPriority = map[string]int{
 //    CEILING.MATH
 //    CEILING.PRECISE
 //    CHAR
+//    CHIDIST
 //    CHOOSE
 //    CLEAN
 //    CODE
@@ -256,6 +356,8 @@ var tokenPriority = map[string]int{
 //    COMPLEX
 //    CONCAT
 //    CONCATENATE
+//    CONFIDENCE
+//    CONFIDENCE.NORM
 //    COS
 //    COSH
 //    COT
@@ -263,12 +365,23 @@ var tokenPriority = map[string]int{
 //    COUNT
 //    COUNTA
 //    COUNTBLANK
+//    COUNTIF
+//    COUNTIFS
+//    COUPDAYBS
+//    COUPDAYS
+//    COUPDAYSNC
+//    COUPNCD
+//    COUPNUM
+//    COUPPCD
 //    CSC
 //    CSCH
 //    CUMIPMT
 //    CUMPRINC
 //    DATE
 //    DATEDIF
+//    DATEVALUE
+//    DAY
+//    DAYS
 //    DB
 //    DDB
 //    DEC2BIN
@@ -276,10 +389,18 @@ var tokenPriority = map[string]int{
 //    DEC2OCT
 //    DECIMAL
 //    DEGREES
+//    DELTA
+//    DEVSQ
+//    DISC
 //    DOLLARDE
 //    DOLLARFR
+//    DURATION
 //    EFFECT
 //    ENCODEURL
+//    ERF
+//    ERF.PRECISE
+//    ERFC
+//    ERFC.PRECISE
 //    EVEN
 //    EXACT
 //    EXP
@@ -299,6 +420,8 @@ var tokenPriority = map[string]int{
 //    GAMMA
 //    GAMMALN
 //    GCD
+//    GEOMEAN
+//    GESTEP
 //    HARMEAN
 //    HEX2BIN
 //    HEX2DEC
@@ -306,6 +429,8 @@ var tokenPriority = map[string]int{
 //    HLOOKUP
 //    IF
 //    IFERROR
+//    IFNA
+//    IFS
 //    IMABS
 //    IMAGINARY
 //    IMARGUMENT
@@ -331,19 +456,25 @@ var tokenPriority = map[string]int{
 //    IMSUB
 //    IMSUM
 //    IMTAN
+//    INDEX
 //    INT
+//    INTRATE
 //    IPMT
 //    IRR
 //    ISBLANK
 //    ISERR
 //    ISERROR
 //    ISEVEN
+//    ISFORMULA
+//    ISLOGICAL
 //    ISNA
 //    ISNONTEXT
 //    ISNUMBER
 //    ISODD
+//    ISREF
 //    ISTEXT
 //    ISO.CEILING
+//    ISOWEEKNUM
 //    ISPMT
 //    KURT
 //    LARGE
@@ -357,15 +488,22 @@ var tokenPriority = map[string]int{
 //    LOG10
 //    LOOKUP
 //    LOWER
+//    MATCH
 //    MAX
+//    MAXA
+//    MAXIFS
 //    MDETERM
+//    MDURATION
 //    MEDIAN
 //    MID
 //    MIDB
 //    MIN
 //    MINA
+//    MINIFS
+//    MINUTE
 //    MIRR
 //    MOD
+//    MONTH
 //    MROUND
 //    MULTINOMIAL
 //    MUNIT
@@ -388,10 +526,15 @@ var tokenPriority = map[string]int{
 //    OCT2DEC
 //    OCT2HEX
 //    ODD
+//    ODDFPRICE
 //    OR
 //    PDURATION
+//    PERCENTILE.EXC
 //    PERCENTILE.INC
 //    PERCENTILE
+//    PERCENTRANK.EXC
+//    PERCENTRANK.INC
+//    PERCENTRANK
 //    PERMUT
 //    PERMUTATIONA
 //    PI
@@ -400,14 +543,23 @@ var tokenPriority = map[string]int{
 //    POISSON
 //    POWER
 //    PPMT
+//    PRICE
+//    PRICEDISC
+//    PRICEMAT
 //    PRODUCT
 //    PROPER
+//    PV
 //    QUARTILE
+//    QUARTILE.EXC
 //    QUARTILE.INC
 //    QUOTIENT
 //    RADIANS
 //    RAND
 //    RANDBETWEEN
+//    RANK
+//    RANK.EQ
+//    RATE
+//    RECEIVED
 //    REPLACE
 //    REPLACEB
 //    REPT
@@ -419,36 +571,71 @@ var tokenPriority = map[string]int{
 //    ROUNDUP
 //    ROW
 //    ROWS
+//    RRI
 //    SEC
 //    SECH
 //    SHEET
+//    SHEETS
 //    SIGN
 //    SIN
 //    SINH
 //    SKEW
+//    SLN
 //    SMALL
 //    SQRT
 //    SQRTPI
+//    STANDARDIZE
 //    STDEV
+//    STDEV.P
 //    STDEV.S
 //    STDEVA
+//    STDEVP
 //    SUBSTITUTE
 //    SUM
 //    SUMIF
 //    SUMSQ
+//    SWITCH
+//    SYD
 //    T
 //    TAN
 //    TANH
+//    TBILLEQ
+//    TBILLPRICE
+//    TBILLYIELD
+//    TEXTJOIN
+//    TIME
 //    TODAY
+//    TRANSPOSE
 //    TRIM
+//    TRIMMEAN
 //    TRUE
 //    TRUNC
 //    UNICHAR
 //    UNICODE
 //    UPPER
+//    VALUE
+//    VAR
 //    VAR.P
+//    VAR.S
+//    VARA
 //    VARP
+//    VARPA
+//    VDB
 //    VLOOKUP
+//    WEEKDAY
+//    WEIBULL
+//    WEIBULL.DIST
+//    XIRR
+//    XLOOKUP
+//    XNPV
+//    XOR
+//    YEAR
+//    YEARFRAC
+//    YIELD
+//    YIELDDISC
+//    YIELDMAT
+//    Z.TEST
+//    ZTEST
 //
 func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 	var (
@@ -469,7 +656,7 @@ func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 	result = token.TValue
 	isNum, precision := isNumeric(result)
 	if isNum && precision > 15 {
-		num, _ := roundPrecision(result)
+		num := roundPrecision(result, -1)
 		result = strings.ToUpper(num)
 	}
 	return
@@ -560,6 +747,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 		if isFunctionStartToken(token) {
 			opfStack.Push(token)
 			argsStack.Push(list.New().Init())
+			opftStack.Push(token) // to know which operators belong to a function use the function as a separator
 			continue
 		}
 
@@ -572,7 +760,11 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 
 			// current token is args or range, skip next token, order required: parse reference first
 			if token.TSubType == efp.TokenSubTypeRange {
-				if !opftStack.Empty() {
+				if opftStack.Peek().(efp.Token) != opfStack.Peek().(efp.Token) {
+					refTo := f.getDefinedNameRefTo(token.TValue, sheet)
+					if refTo != "" {
+						token.TValue = refTo
+					}
 					// parse reference: must reference at here
 					result, err := f.parseReference(sheet, token.TValue)
 					if err != nil {
@@ -613,7 +805,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 
 			// current token is arg
 			if token.TType == efp.TokenTypeArgument {
-				for !opftStack.Empty() {
+				for opftStack.Peek().(efp.Token) != opfStack.Peek().(efp.Token) {
 					// calculate trigger
 					topOpt := opftStack.Peek().(efp.Token)
 					if err := calculate(opfdStack, topOpt); err != nil {
@@ -656,7 +848,7 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 		return nil
 	}
 	// current token is function stop
-	for !opftStack.Empty() {
+	for opftStack.Peek().(efp.Token) != opfStack.Peek().(efp.Token) {
 		// calculate trigger
 		topOpt := opftStack.Peek().(efp.Token)
 		if err := calculate(opfdStack, topOpt); err != nil {
@@ -677,9 +869,10 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 		return errors.New(arg.Value())
 	}
 	argsStack.Pop()
+	opftStack.Pop() // remove current function separator
 	opfStack.Pop()
 	if opfStack.Len() > 0 { // still in function stack
-		if nextToken.TType == efp.TokenTypeOperatorInfix {
+		if nextToken.TType == efp.TokenTypeOperatorInfix || (opftStack.Len() > 1 && opfdStack.Len() > 0) {
 			// mathematics calculate in formula function
 			opfdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 		} else {
@@ -692,12 +885,12 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 }
 
 // calcPow evaluate exponentiation arithmetic operations.
-func calcPow(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
+func calcPow(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
+	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
@@ -707,86 +900,106 @@ func calcPow(rOpd, lOpd string, opdStack *Stack) error {
 }
 
 // calcEq evaluate equal arithmetic operations.
-func calcEq(rOpd, lOpd string, opdStack *Stack) error {
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpd == lOpd)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcEq(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpd.TValue == lOpd.TValue)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	return nil
 }
 
 // calcNEq evaluate not equal arithmetic operations.
-func calcNEq(rOpd, lOpd string, opdStack *Stack) error {
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpd != lOpd)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcNEq(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpd.TValue != lOpd.TValue)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	return nil
 }
 
 // calcL evaluate less than arithmetic operations.
-func calcL(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
-	if err != nil {
-		return err
+func calcL(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeNumber {
+		lOpdVal, _ := strconv.ParseFloat(lOpd.TValue, 64)
+		rOpdVal, _ := strconv.ParseFloat(rOpd.TValue, 64)
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(lOpdVal < rOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
-	if err != nil {
-		return err
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd.TValue, rOpd.TValue) == -1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpdVal > lOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(false)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeNumber {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(true)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
 	return nil
 }
 
 // calcLe evaluate less than or equal arithmetic operations.
-func calcLe(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
-	if err != nil {
-		return err
+func calcLe(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeNumber {
+		lOpdVal, _ := strconv.ParseFloat(lOpd.TValue, 64)
+		rOpdVal, _ := strconv.ParseFloat(rOpd.TValue, 64)
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(lOpdVal <= rOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
-	if err != nil {
-		return err
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd.TValue, rOpd.TValue) != 1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpdVal >= lOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(false)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeNumber {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(true)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
 	return nil
 }
 
 // calcG evaluate greater than or equal arithmetic operations.
-func calcG(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
-	if err != nil {
-		return err
+func calcG(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeNumber {
+		lOpdVal, _ := strconv.ParseFloat(lOpd.TValue, 64)
+		rOpdVal, _ := strconv.ParseFloat(rOpd.TValue, 64)
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(lOpdVal > rOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
-	if err != nil {
-		return err
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd.TValue, rOpd.TValue) == 1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpdVal < lOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(true)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeNumber {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(false)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
 	return nil
 }
 
 // calcGe evaluate greater than or equal arithmetic operations.
-func calcGe(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
-	if err != nil {
-		return err
+func calcGe(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeNumber {
+		lOpdVal, _ := strconv.ParseFloat(lOpd.TValue, 64)
+		rOpdVal, _ := strconv.ParseFloat(rOpd.TValue, 64)
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(lOpdVal >= rOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
-	if err != nil {
-		return err
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd.TValue, rOpd.TValue) != -1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpdVal <= lOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(true)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeNumber {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(false)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
 	return nil
 }
 
 // calcSplice evaluate splice '&' operations.
-func calcSplice(rOpd, lOpd string, opdStack *Stack) error {
-	opdStack.Push(efp.Token{TValue: lOpd + rOpd, TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcSplice(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	opdStack.Push(efp.Token{TValue: lOpd.TValue + rOpd.TValue, TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	return nil
 }
 
 // calcAdd evaluate addition arithmetic operations.
-func calcAdd(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
+func calcAdd(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
+	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
@@ -796,12 +1009,12 @@ func calcAdd(rOpd, lOpd string, opdStack *Stack) error {
 }
 
 // calcSubtract evaluate subtraction arithmetic operations.
-func calcSubtract(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
+func calcSubtract(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
+	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
@@ -811,12 +1024,12 @@ func calcSubtract(rOpd, lOpd string, opdStack *Stack) error {
 }
 
 // calcMultiply evaluate multiplication arithmetic operations.
-func calcMultiply(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
+func calcMultiply(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
+	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
@@ -826,12 +1039,12 @@ func calcMultiply(rOpd, lOpd string, opdStack *Stack) error {
 }
 
 // calcDiv evaluate division arithmetic operations.
-func calcDiv(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
+func calcDiv(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
+	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
@@ -857,7 +1070,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		result := 0 - opdVal
 		opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
-	tokenCalcFunc := map[string]func(rOpd, lOpd string, opdStack *Stack) error{
+	tokenCalcFunc := map[string]func(rOpd, lOpd efp.Token, opdStack *Stack) error{
 		"^":  calcPow,
 		"*":  calcMultiply,
 		"/":  calcDiv,
@@ -876,7 +1089,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		}
 		rOpd := opdStack.Pop().(efp.Token)
 		lOpd := opdStack.Pop().(efp.Token)
-		if err := calcSubtract(rOpd.TValue, lOpd.TValue, opdStack); err != nil {
+		if err := calcSubtract(rOpd, lOpd, opdStack); err != nil {
 			return err
 		}
 	}
@@ -887,7 +1100,8 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		}
 		rOpd := opdStack.Pop().(efp.Token)
 		lOpd := opdStack.Pop().(efp.Token)
-		if err := fn(rOpd.TValue, lOpd.TValue, opdStack); err != nil {
+
+		if err := fn(rOpd, lOpd, opdStack); err != nil {
 			return err
 		}
 	}
@@ -923,7 +1137,7 @@ func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Tok
 	return
 }
 
-// isFunctionStartToken determine if the token is function stop.
+// isFunctionStartToken determine if the token is function start.
 func isFunctionStartToken(token efp.Token) bool {
 	return token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStart
 }
@@ -948,6 +1162,11 @@ func isEndParenthesesToken(token efp.Token) bool {
 func isOperatorPrefixToken(token efp.Token) bool {
 	_, ok := tokenPriority[token.TValue]
 	return (token.TValue == "-" && token.TType == efp.TokenTypeOperatorPrefix) || (ok && token.TType == efp.TokenTypeOperatorInfix)
+}
+
+// isOperand determine if the token is parse operand perand.
+func isOperand(token efp.Token) bool {
+	return token.TType == efp.TokenTypeOperand && (token.TSubType == efp.TokenSubTypeNumber || token.TSubType == efp.TokenSubTypeText)
 }
 
 // getDefinedNameRefTo convert defined name to reference range.
@@ -1009,8 +1228,15 @@ func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Sta
 		}
 		optStack.Pop()
 	}
+	if token.TType == efp.TokenTypeOperatorPostfix && !opdStack.Empty() {
+		topOpd := opdStack.Pop().(efp.Token)
+		opd, err := strconv.ParseFloat(topOpd.TValue, 64)
+		topOpd.TValue = strconv.FormatFloat(opd/100, 'f', -1, 64)
+		opdStack.Push(topOpd)
+		return err
+	}
 	// opd
-	if token.TType == efp.TokenTypeOperand && (token.TSubType == efp.TokenSubTypeNumber || token.TSubType == efp.TokenSubTypeText) {
+	if isOperand(token) {
 		opdStack.Push(token)
 	}
 	return nil
@@ -1157,7 +1383,7 @@ func (f *File) rangeResolver(cellRefs, cellRanges *list.List) (arg formulaArg, e
 				if cell, err = CoordinatesToCellName(col, row); err != nil {
 					return
 				}
-				if value, err = f.GetCellValue(sheet, cell); err != nil {
+				if value, err = f.GetCellValue(sheet, cell, Options{RawCellValue: true}); err != nil {
 					return
 				}
 				matrixRow = append(matrixRow, formulaArg{
@@ -1176,7 +1402,7 @@ func (f *File) rangeResolver(cellRefs, cellRanges *list.List) (arg formulaArg, e
 		if cell, err = CoordinatesToCellName(cr.Col, cr.Row); err != nil {
 			return
 		}
-		if arg.String, err = f.GetCellValue(cr.Sheet, cell); err != nil {
+		if arg.String, err = f.GetCellValue(cr.Sheet, cell, Options{RawCellValue: true}); err != nil {
 			return
 		}
 		arg.Type = ArgString
@@ -1213,6 +1439,10 @@ func formulaCriteriaParser(exp string) (fc *formulaCriteria) {
 		fc.Type, fc.Condition = criteriaEq, match[1]
 		return
 	}
+	if match := regexp.MustCompile(`^<>(.*)$`).FindStringSubmatch(exp); len(match) > 1 {
+		fc.Type, fc.Condition = criteriaNe, match[1]
+		return
+	}
 	if match := regexp.MustCompile(`^<=(.*)$`).FindStringSubmatch(exp); len(match) > 1 {
 		fc.Type, fc.Condition = criteriaLe, match[1]
 		return
@@ -1229,16 +1459,13 @@ func formulaCriteriaParser(exp string) (fc *formulaCriteria) {
 		fc.Type, fc.Condition = criteriaG, match[1]
 		return
 	}
-	if strings.Contains(exp, "*") {
-		if strings.HasPrefix(exp, "*") {
-			fc.Type, fc.Condition = criteriaEnd, strings.TrimPrefix(exp, "*")
-		}
-		if strings.HasSuffix(exp, "*") {
-			fc.Type, fc.Condition = criteriaBeg, strings.TrimSuffix(exp, "*")
-		}
-		return
+	if strings.Contains(exp, "?") {
+		exp = strings.ReplaceAll(exp, "?", ".")
 	}
-	fc.Type, fc.Condition = criteriaEq, exp
+	if strings.Contains(exp, "*") {
+		exp = strings.ReplaceAll(exp, "*", ".*")
+	}
+	fc.Type, fc.Condition = criteriaRegexp, exp
 	return
 }
 
@@ -1264,16 +1491,16 @@ func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, er
 	case criteriaGe:
 		value, expected, e = prepareValue(val, criteria.Condition)
 		return value >= expected && e == nil, err
+	case criteriaNe:
+		return val != criteria.Condition, err
 	case criteriaL:
 		value, expected, e = prepareValue(val, criteria.Condition)
 		return value < expected && e == nil, err
 	case criteriaG:
 		value, expected, e = prepareValue(val, criteria.Condition)
 		return value > expected && e == nil, err
-	case criteriaBeg:
-		return strings.HasPrefix(val, criteria.Condition), err
-	case criteriaEnd:
-		return strings.HasSuffix(val, criteria.Condition), err
+	case criteriaRegexp:
+		return regexp.MatchString(criteria.Condition, val)
 	}
 	return
 }
@@ -1305,7 +1532,7 @@ func (fn *formulaFuncs) BESSELJ(argsList *list.List) formulaArg {
 	return fn.bassel(argsList, false)
 }
 
-// bassel is an implementation of the formula function BESSELI and BESSELJ.
+// bassel is an implementation of the formula functions BESSELI and BESSELJ.
 func (fn *formulaFuncs) bassel(argsList *list.List, modfied bool) formulaArg {
 	x, n := argsList.Front().Value.(formulaArg).ToNumber(), argsList.Back().Value.(formulaArg).ToNumber()
 	if x.Type != ArgNumber {
@@ -1639,7 +1866,7 @@ func (fn *formulaFuncs) BITXOR(argsList *list.List) formulaArg {
 	return fn.bitwise("BITXOR", argsList)
 }
 
-// bitwise is an implementation of the formula function BITAND, BITLSHIFT,
+// bitwise is an implementation of the formula functions BITAND, BITLSHIFT,
 // BITOR, BITRSHIFT and BITXOR.
 func (fn *formulaFuncs) bitwise(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
@@ -1750,7 +1977,7 @@ func (fn *formulaFuncs) DEC2OCT(argsList *list.List) formulaArg {
 	return fn.dec2x("DEC2OCT", argsList)
 }
 
-// dec2x is an implementation of the formula function DEC2BIN, DEC2HEX and
+// dec2x is an implementation of the formula functions DEC2BIN, DEC2HEX and
 // DEC2OCT.
 func (fn *formulaFuncs) dec2x(name string, argsList *list.List) formulaArg {
 	if argsList.Len() < 1 {
@@ -1818,6 +2045,131 @@ func (fn *formulaFuncs) dec2x(name string, argsList *list.List) formulaArg {
 		return newStringFormulaArg(strings.ToUpper(binary[len(binary)-10:]))
 	}
 	return newStringFormulaArg(strings.ToUpper(binary))
+}
+
+// DELTA function tests two numbers for equality and returns the Kronecker
+// Delta. i.e. the function returns 1 if the two supplied numbers are equal
+// and 0 otherwise. The syntax of the function is:
+//
+//    DELTA(number1,[number2])
+//
+func (fn *formulaFuncs) DELTA(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DELTA requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DELTA allows at most 2 arguments")
+	}
+	number1 := argsList.Front().Value.(formulaArg).ToNumber()
+	if number1.Type != ArgNumber {
+		return number1
+	}
+	number2 := newNumberFormulaArg(0)
+	if argsList.Len() == 2 {
+		if number2 = argsList.Back().Value.(formulaArg).ToNumber(); number2.Type != ArgNumber {
+			return number2
+		}
+	}
+	return newBoolFormulaArg(number1.Number == number2.Number).ToNumber()
+}
+
+// ERF function calculates the Error Function, integrated between two supplied
+// limits. The syntax of the function is:
+//
+//    ERF(lower_limit,[upper_limit])
+//
+func (fn *formulaFuncs) ERF(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ERF requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ERF allows at most 2 arguments")
+	}
+	lower := argsList.Front().Value.(formulaArg).ToNumber()
+	if lower.Type != ArgNumber {
+		return lower
+	}
+	if argsList.Len() == 2 {
+		upper := argsList.Back().Value.(formulaArg).ToNumber()
+		if upper.Type != ArgNumber {
+			return upper
+		}
+		return newNumberFormulaArg(math.Erf(upper.Number) - math.Erf(lower.Number))
+	}
+	return newNumberFormulaArg(math.Erf(lower.Number))
+}
+
+// ERFdotPRECISE function calculates the Error Function, integrated between a
+// supplied lower or upper limit and 0. The syntax of the function is:
+//
+//    ERF.PRECISE(x)
+//
+func (fn *formulaFuncs) ERFdotPRECISE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ERF.PRECISE requires 1 argument")
+	}
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	return newNumberFormulaArg(math.Erf(x.Number))
+}
+
+// erfc is an implementation of the formula functions ERFC and ERFC.PRECISE.
+func (fn *formulaFuncs) erfc(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 1 argument", name))
+	}
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	return newNumberFormulaArg(math.Erfc(x.Number))
+}
+
+// ERFC function calculates the Complementary Error Function, integrated
+// between a supplied lower limit and infinity. The syntax of the function
+// is:
+//
+//    ERFC(x)
+//
+func (fn *formulaFuncs) ERFC(argsList *list.List) formulaArg {
+	return fn.erfc("ERFC", argsList)
+}
+
+// ERFC.PRECISE function calculates the Complementary Error Function,
+// integrated between a supplied lower limit and infinity. The syntax of the
+// function is:
+//
+//    ERFC(x)
+//
+func (fn *formulaFuncs) ERFCdotPRECISE(argsList *list.List) formulaArg {
+	return fn.erfc("ERFC.PRECISE", argsList)
+}
+
+// GESTEP unction tests whether a supplied number is greater than a supplied
+// step size and returns. The syntax of the function is:
+//
+//    GESTEP(number,[step])
+//
+func (fn *formulaFuncs) GESTEP(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "GESTEP requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "GESTEP allows at most 2 arguments")
+	}
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type != ArgNumber {
+		return number
+	}
+	step := newNumberFormulaArg(0)
+	if argsList.Len() == 2 {
+		if step = argsList.Back().Value.(formulaArg).ToNumber(); step.Type != ArgNumber {
+			return step
+		}
+	}
+	return newBoolFormulaArg(number.Number >= step.Number).ToNumber()
 }
 
 // HEX2BIN function converts a Hexadecimal (Base 16) number into a Binary
@@ -2542,7 +2894,7 @@ func (fn *formulaFuncs) ARABIC(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "ARABIC requires 1 numeric argument")
 	}
 	text := argsList.Front().Value.(formulaArg).Value()
-	if len(text) > 255 {
+	if len(text) > MaxFieldLength {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	text = strings.ToUpper(text)
@@ -4240,17 +4592,42 @@ func (fn *formulaFuncs) STDEVA(argsList *list.List) formulaArg {
 	return fn.stdev(true, argsList)
 }
 
-// stdev is an implementation of the formula function STDEV and STDEVA.
-func (fn *formulaFuncs) stdev(stdeva bool, argsList *list.List) formulaArg {
-	pow := func(result, count float64, n, m formulaArg) (float64, float64) {
-		if result == -1 {
-			result = math.Pow((n.Number - m.Number), 2)
-		} else {
-			result += math.Pow((n.Number - m.Number), 2)
-		}
-		count++
-		return result, count
+// calcStdevPow is part of the implementation stdev.
+func calcStdevPow(result, count float64, n, m formulaArg) (float64, float64) {
+	if result == -1 {
+		result = math.Pow((n.Number - m.Number), 2)
+	} else {
+		result += math.Pow((n.Number - m.Number), 2)
 	}
+	count++
+	return result, count
+}
+
+// calcStdev is part of the implementation stdev.
+func calcStdev(stdeva bool, result, count float64, mean, token formulaArg) (float64, float64) {
+	for _, row := range token.ToList() {
+		if row.Type == ArgNumber || row.Type == ArgString {
+			if !stdeva && (row.Value() == "TRUE" || row.Value() == "FALSE") {
+				continue
+			} else if stdeva && (row.Value() == "TRUE" || row.Value() == "FALSE") {
+				num := row.ToBool()
+				if num.Type == ArgNumber {
+					result, count = calcStdevPow(result, count, num, mean)
+					continue
+				}
+			} else {
+				num := row.ToNumber()
+				if num.Type == ArgNumber {
+					result, count = calcStdevPow(result, count, num, mean)
+				}
+			}
+		}
+	}
+	return result, count
+}
+
+// stdev is an implementation of the formula functions STDEV and STDEVA.
+func (fn *formulaFuncs) stdev(stdeva bool, argsList *list.List) formulaArg {
 	count, result := -1.0, -1.0
 	var mean formulaArg
 	if stdeva {
@@ -4267,34 +4644,17 @@ func (fn *formulaFuncs) stdev(stdeva bool, argsList *list.List) formulaArg {
 			} else if stdeva && (token.Value() == "TRUE" || token.Value() == "FALSE") {
 				num := token.ToBool()
 				if num.Type == ArgNumber {
-					result, count = pow(result, count, num, mean)
+					result, count = calcStdevPow(result, count, num, mean)
 					continue
 				}
 			} else {
 				num := token.ToNumber()
 				if num.Type == ArgNumber {
-					result, count = pow(result, count, num, mean)
+					result, count = calcStdevPow(result, count, num, mean)
 				}
 			}
 		case ArgList, ArgMatrix:
-			for _, row := range token.ToList() {
-				if row.Type == ArgNumber || row.Type == ArgString {
-					if !stdeva && (row.Value() == "TRUE" || row.Value() == "FALSE") {
-						continue
-					} else if stdeva && (row.Value() == "TRUE" || row.Value() == "FALSE") {
-						num := row.ToBool()
-						if num.Type == ArgNumber {
-							result, count = pow(result, count, num, mean)
-							continue
-						}
-					} else {
-						num := row.ToNumber()
-						if num.Type == ArgNumber {
-							result, count = pow(result, count, num, mean)
-						}
-					}
-				}
-			}
+			result, count = calcStdev(stdeva, result, count, mean, token)
 		}
 	}
 	if count > 0 && result >= 0 {
@@ -4389,7 +4749,7 @@ func (fn *formulaFuncs) SUM(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) SUMIF(argsList *list.List) formulaArg {
 	if argsList.Len() < 2 {
-		return newErrorFormulaArg(formulaErrorVALUE, "SUMIF requires at least 2 argument")
+		return newErrorFormulaArg(formulaErrorVALUE, "SUMIF requires at least 2 arguments")
 	}
 	var criteria = formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg).String)
 	var rangeMtx = argsList.Front().Value.(formulaArg).Matrix
@@ -4406,9 +4766,7 @@ func (fn *formulaFuncs) SUMIF(argsList *list.List) formulaArg {
 			if col.String == "" {
 				continue
 			}
-			if ok, err = formulaCriteriaEval(fromVal, criteria); err != nil {
-				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
-			}
+			ok, _ = formulaCriteriaEval(fromVal, criteria)
 			if ok {
 				if argsList.Len() == 3 {
 					if len(sumRange) <= rowIdx || len(sumRange[rowIdx]) <= colIdx {
@@ -4417,7 +4775,7 @@ func (fn *formulaFuncs) SUMIF(argsList *list.List) formulaArg {
 					fromVal = sumRange[rowIdx][colIdx].String
 				}
 				if val, err = strconv.ParseFloat(fromVal, 64); err != nil {
-					return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+					continue
 				}
 				sum += val
 			}
@@ -4534,6 +4892,31 @@ func (fn *formulaFuncs) TRUNC(argsList *list.List) formulaArg {
 
 // Statistical Functions
 
+// AVEDEV function calculates the average deviation of a supplied set of
+// values. The syntax of the function is:
+//
+//    AVEDEV(number1,[number2],...)
+//
+func (fn *formulaFuncs) AVEDEV(argsList *list.List) formulaArg {
+	if argsList.Len() == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "AVEDEV requires at least 1 argument")
+	}
+	average := fn.AVERAGE(argsList)
+	if average.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	result, count := 0.0, 0.0
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		num := arg.Value.(formulaArg).ToNumber()
+		if num.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+		result += math.Abs(num.Number - average.Number)
+		count++
+	}
+	return newNumberFormulaArg(result / count)
+}
+
 // AVERAGE function returns the arithmetic mean of a list of supplied numbers.
 // The syntax of the function is:
 //
@@ -4568,6 +4951,162 @@ func (fn *formulaFuncs) AVERAGEA(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(sum / count)
 }
 
+// AVERAGEIF function finds the values in a supplied array that satisfy a
+// specified criteria, and returns the average (i.e. the statistical mean) of
+// the corresponding values in a second supplied array. The syntax of the
+// function is:
+//
+//    AVERAGEIF(range,criteria,[average_range])
+//
+func (fn *formulaFuncs) AVERAGEIF(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "AVERAGEIF requires at least 2 arguments")
+	}
+	var (
+		criteria  = formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg).String)
+		rangeMtx  = argsList.Front().Value.(formulaArg).Matrix
+		cellRange [][]formulaArg
+		args      []formulaArg
+		val       float64
+		err       error
+		ok        bool
+	)
+	if argsList.Len() == 3 {
+		cellRange = argsList.Back().Value.(formulaArg).Matrix
+	}
+	for rowIdx, row := range rangeMtx {
+		for colIdx, col := range row {
+			fromVal := col.String
+			if col.String == "" {
+				continue
+			}
+			ok, _ = formulaCriteriaEval(fromVal, criteria)
+			if ok {
+				if argsList.Len() == 3 {
+					if len(cellRange) <= rowIdx || len(cellRange[rowIdx]) <= colIdx {
+						continue
+					}
+					fromVal = cellRange[rowIdx][colIdx].String
+				}
+				if val, err = strconv.ParseFloat(fromVal, 64); err != nil {
+					continue
+				}
+				args = append(args, newNumberFormulaArg(val))
+			}
+		}
+	}
+	count, sum := fn.countSum(false, args)
+	if count == 0 {
+		return newErrorFormulaArg(formulaErrorDIV, "AVERAGEIF divide by zero")
+	}
+	return newNumberFormulaArg(sum / count)
+}
+
+// incompleteGamma is an implementation of the incomplete gamma function.
+func incompleteGamma(a, x float64) float64 {
+	max := 32
+	summer := 0.0
+	for n := 0; n <= max; n++ {
+		divisor := a
+		for i := 1; i <= n; i++ {
+			divisor *= (a + float64(i))
+		}
+		summer += math.Pow(x, float64(n)) / divisor
+	}
+	return math.Pow(x, a) * math.Exp(0-x) * summer
+}
+
+// CHIDIST function calculates the right-tailed probability of the chi-square
+// distribution. The syntax of the function is:
+//
+//    CHIDIST(x,degrees_freedom)
+//
+func (fn *formulaFuncs) CHIDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CHIDIST requires 2 numeric arguments")
+	}
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	degress := argsList.Back().Value.(formulaArg).ToNumber()
+	if degress.Type != ArgNumber {
+		return degress
+	}
+	return newNumberFormulaArg(1 - (incompleteGamma(degress.Number/2, x.Number/2) / math.Gamma(degress.Number/2)))
+}
+
+// confidence is an implementation of the formula functions CONFIDENCE and
+// CONFIDENCE.NORM.
+func (fn *formulaFuncs) confidence(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 3 numeric arguments", name))
+	}
+	alpha := argsList.Front().Value.(formulaArg).ToNumber()
+	if alpha.Type != ArgNumber {
+		return alpha
+	}
+	if alpha.Number <= 0 || alpha.Number >= 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	stdDev := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if stdDev.Type != ArgNumber {
+		return stdDev
+	}
+	if stdDev.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	size := argsList.Back().Value.(formulaArg).ToNumber()
+	if size.Type != ArgNumber {
+		return size
+	}
+	if size.Number < 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	args := list.New()
+	args.Init()
+	args.PushBack(newNumberFormulaArg(alpha.Number / 2))
+	args.PushBack(newNumberFormulaArg(0))
+	args.PushBack(newNumberFormulaArg(1))
+	return newNumberFormulaArg(-fn.NORMINV(args).Number * (stdDev.Number / math.Sqrt(size.Number)))
+}
+
+// CONFIDENCE function uses a Normal Distribution to calculate a confidence
+// value that can be used to construct the Confidence Interval for a
+// population mean, for a supplied probablity and sample size. It is assumed
+// that the standard deviation of the population is known. The syntax of the
+// function is:
+//
+//    CONFIDENCE(alpha,standard_dev,size)
+//
+func (fn *formulaFuncs) CONFIDENCE(argsList *list.List) formulaArg {
+	return fn.confidence("CONFIDENCE", argsList)
+}
+
+// CONFIDENCEdotNORM function uses a Normal Distribution to calculate a
+// confidence value that can be used to construct the confidence interval for
+// a population mean, for a supplied probablity and sample size. It is
+// assumed that the standard deviation of the population is known. The syntax
+// of the Confidence.Norm function is:
+//
+//    CONFIDENCE.NORM(alpha,standard_dev,size)
+//
+func (fn *formulaFuncs) CONFIDENCEdotNORM(argsList *list.List) formulaArg {
+	return fn.confidence("CONFIDENCE.NORM", argsList)
+}
+
+// calcStringCountSum is part of the implementation countSum.
+func calcStringCountSum(countText bool, count, sum float64, num, arg formulaArg) (float64, float64) {
+	if countText && num.Type == ArgError && arg.String != "" {
+		count++
+	}
+	if num.Type == ArgNumber {
+		sum += num.Number
+		count++
+	}
+	return count, sum
+}
+
 // countSum get count and sum for a formula arguments array.
 func (fn *formulaFuncs) countSum(countText bool, args []formulaArg) (count, sum float64) {
 	for _, arg := range args {
@@ -4589,13 +5128,7 @@ func (fn *formulaFuncs) countSum(countText bool, args []formulaArg) (count, sum 
 				}
 			}
 			num := arg.ToNumber()
-			if countText && num.Type == ArgError && arg.String != "" {
-				count++
-			}
-			if num.Type == ArgNumber {
-				sum += num.Number
-				count++
-			}
+			count, sum = calcStringCountSum(countText, count, sum, num, arg)
 		case ArgList, ArgMatrix:
 			cnt, summary := fn.countSum(countText, arg.ToList())
 			sum += summary
@@ -4676,28 +5209,112 @@ func (fn *formulaFuncs) COUNTBLANK(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "COUNTBLANK requires 1 argument")
 	}
-	var count int
-	token := argsList.Front().Value.(formulaArg)
-	switch token.Type {
-	case ArgString:
-		if token.String == "" {
+	var count float64
+	for _, cell := range argsList.Front().Value.(formulaArg).ToList() {
+		if cell.Value() == "" {
 			count++
 		}
-	case ArgList, ArgMatrix:
-		for _, row := range token.ToList() {
-			switch row.Type {
-			case ArgString:
-				if row.String == "" {
-					count++
+	}
+	return newNumberFormulaArg(count)
+}
+
+// COUNTIF function returns the number of cells within a supplied range, that
+// satisfy a given criteria. The syntax of the function is:
+//
+//    COUNTIF(range,criteria)
+//
+func (fn *formulaFuncs) COUNTIF(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "COUNTIF requires 2 arguments")
+	}
+	var (
+		criteria = formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg).String)
+		count    float64
+	)
+	for _, cell := range argsList.Front().Value.(formulaArg).ToList() {
+		if ok, _ := formulaCriteriaEval(cell.Value(), criteria); ok {
+			count++
+		}
+	}
+	return newNumberFormulaArg(count)
+}
+
+// formulaIfsMatch function returns cells reference array which match criteria.
+func formulaIfsMatch(args []formulaArg) (cellRefs []cellRef) {
+	for i := 0; i < len(args)-1; i += 2 {
+		match := []cellRef{}
+		matrix, criteria := args[i].Matrix, formulaCriteriaParser(args[i+1].Value())
+		if i == 0 {
+			for rowIdx, row := range matrix {
+				for colIdx, col := range row {
+					if ok, _ := formulaCriteriaEval(col.Value(), criteria); ok {
+						match = append(match, cellRef{Col: colIdx, Row: rowIdx})
+					}
 				}
-			case ArgEmpty:
-				count++
+			}
+		} else {
+			for _, ref := range cellRefs {
+				value := matrix[ref.Row][ref.Col]
+				if ok, _ := formulaCriteriaEval(value.Value(), criteria); ok {
+					match = append(match, ref)
+				}
 			}
 		}
-	case ArgEmpty:
-		count++
+		if len(match) == 0 {
+			return
+		}
+		cellRefs = match[:]
 	}
-	return newNumberFormulaArg(float64(count))
+	return
+}
+
+// COUNTIFS function returns the number of rows within a table, that satisfy a
+// set of given criteria. The syntax of the function is:
+//
+//    COUNTIFS(criteria_range1,criteria1,[criteria_range2,criteria2],...)
+//
+func (fn *formulaFuncs) COUNTIFS(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "COUNTIFS requires at least 2 arguments")
+	}
+	if argsList.Len()%2 != 0 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	args := []formulaArg{}
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		args = append(args, arg.Value.(formulaArg))
+	}
+	return newNumberFormulaArg(float64(len(formulaIfsMatch(args))))
+}
+
+// DEVSQ function calculates the sum of the squared deviations from the sample
+// mean. The syntax of the function is:
+//
+//    DEVSQ(number1,[number2],...)
+//
+func (fn *formulaFuncs) DEVSQ(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DEVSQ requires at least 1 numeric argument")
+	}
+	avg, count, result := fn.AVERAGE(argsList), -1, 0.0
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		for _, number := range arg.Value.(formulaArg).ToList() {
+			num := number.ToNumber()
+			if num.Type != ArgNumber {
+				continue
+			}
+			count++
+			if count == 0 {
+				result = math.Pow(num.Number-avg.Number, 2)
+				continue
+			}
+			result += math.Pow(num.Number-avg.Number, 2)
+		}
+	}
+	if count == -1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	return newNumberFormulaArg(result)
 }
 
 // FISHER function calculates the Fisher Transformation for a supplied value.
@@ -4804,6 +5421,27 @@ func (fn *formulaFuncs) GAMMALN(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(math.Log(math.Gamma(token.Number)))
 	}
 	return newErrorFormulaArg(formulaErrorVALUE, "GAMMALN requires 1 numeric argument")
+}
+
+// GEOMEAN function calculates the geometric mean of a supplied set of values.
+// The syntax of the function is:
+//
+//    GEOMEAN(number1,[number2],...)
+//
+func (fn *formulaFuncs) GEOMEAN(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "GEOMEAN requires at least 1 numeric argument")
+	}
+	product := fn.PRODUCT(argsList)
+	if product.Type != ArgNumber {
+		return product
+	}
+	count := fn.COUNT(argsList)
+	min := fn.MIN(argsList)
+	if product.Number > 0 && min.Number > 0 {
+		return newNumberFormulaArg(math.Pow(product.Number, (1 / count.Number)))
+	}
+	return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 }
 
 // HARMEAN function calculates the harmonic mean of a supplied set of values.
@@ -5083,17 +5721,17 @@ func norminv(p float64) (float64, error) {
 	return 0, errors.New(formulaErrorNUM)
 }
 
-// kth is an implementation of the formula function LARGE and SMALL.
+// kth is an implementation of the formula functions LARGE and SMALL.
 func (fn *formulaFuncs) kth(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 arguments", name))
 	}
 	array := argsList.Front().Value.(formulaArg).ToList()
-	kArg := argsList.Back().Value.(formulaArg).ToNumber()
-	if kArg.Type != ArgNumber {
-		return kArg
+	argK := argsList.Back().Value.(formulaArg).ToNumber()
+	if argK.Type != ArgNumber {
+		return argK
 	}
-	k := int(kArg.Number)
+	k := int(argK.Number)
 	if k < 1 {
 		return newErrorFormulaArg(formulaErrorNUM, "k should be > 0")
 	}
@@ -5148,7 +5786,62 @@ func (fn *formulaFuncs) MAXA(argsList *list.List) formulaArg {
 	return fn.max(true, argsList)
 }
 
-// max is an implementation of the formula function MAX and MAXA.
+// MAXIFS function returns the maximum value from a subset of values that are
+// specified according to one or more criteria. The syntax of the function
+// is:
+//
+//    MAXIFS(max_range,criteria_range1,criteria1,[criteria_range2,criteria2],...)
+//
+func (fn *formulaFuncs) MAXIFS(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MAXIFS requires at least 3 arguments")
+	}
+	if argsList.Len()%2 != 1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	max, maxRange, args := -math.MaxFloat64, argsList.Front().Value.(formulaArg).Matrix, []formulaArg{}
+	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
+		args = append(args, arg.Value.(formulaArg))
+	}
+	for _, ref := range formulaIfsMatch(args) {
+		if num := maxRange[ref.Row][ref.Col].ToNumber(); num.Type == ArgNumber && max < num.Number {
+			max = num.Number
+		}
+	}
+	if max == -math.MaxFloat64 {
+		max = 0
+	}
+	return newNumberFormulaArg(max)
+}
+
+// calcListMatrixMax is part of the implementation max.
+func calcListMatrixMax(maxa bool, max float64, arg formulaArg) float64 {
+	for _, row := range arg.ToList() {
+		switch row.Type {
+		case ArgString:
+			if !maxa && (row.Value() == "TRUE" || row.Value() == "FALSE") {
+				continue
+			} else {
+				num := row.ToBool()
+				if num.Type == ArgNumber && num.Number > max {
+					max = num.Number
+					continue
+				}
+			}
+			num := row.ToNumber()
+			if num.Type != ArgError && num.Number > max {
+				max = num.Number
+			}
+		case ArgNumber:
+			if row.Number > max {
+				max = row.Number
+			}
+		}
+	}
+	return max
+}
+
+// max is an implementation of the formula functions MAX and MAXA.
 func (fn *formulaFuncs) max(maxa bool, argsList *list.List) formulaArg {
 	max := -math.MaxFloat64
 	for token := argsList.Front(); token != nil; token = token.Next() {
@@ -5173,28 +5866,7 @@ func (fn *formulaFuncs) max(maxa bool, argsList *list.List) formulaArg {
 				max = arg.Number
 			}
 		case ArgList, ArgMatrix:
-			for _, row := range arg.ToList() {
-				switch row.Type {
-				case ArgString:
-					if !maxa && (row.Value() == "TRUE" || row.Value() == "FALSE") {
-						continue
-					} else {
-						num := row.ToBool()
-						if num.Type == ArgNumber && num.Number > max {
-							max = num.Number
-							continue
-						}
-					}
-					num := row.ToNumber()
-					if num.Type != ArgError && num.Number > max {
-						max = num.Number
-					}
-				case ArgNumber:
-					if row.Number > max {
-						max = row.Number
-					}
-				}
-			}
+			max = calcListMatrixMax(maxa, max, arg)
 		case ArgError:
 			return arg
 		}
@@ -5277,7 +5949,62 @@ func (fn *formulaFuncs) MINA(argsList *list.List) formulaArg {
 	return fn.min(true, argsList)
 }
 
-// min is an implementation of the formula function MIN and MINA.
+// MINIFS function returns the minimum value from a subset of values that are
+// specified according to one or more criteria. The syntax of the function
+// is:
+//
+//    MINIFS(min_range,criteria_range1,criteria1,[criteria_range2,criteria2],...)
+//
+func (fn *formulaFuncs) MINIFS(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MINIFS requires at least 3 arguments")
+	}
+	if argsList.Len()%2 != 1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	min, minRange, args := math.MaxFloat64, argsList.Front().Value.(formulaArg).Matrix, []formulaArg{}
+	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
+		args = append(args, arg.Value.(formulaArg))
+	}
+	for _, ref := range formulaIfsMatch(args) {
+		if num := minRange[ref.Row][ref.Col].ToNumber(); num.Type == ArgNumber && min > num.Number {
+			min = num.Number
+		}
+	}
+	if min == math.MaxFloat64 {
+		min = 0
+	}
+	return newNumberFormulaArg(min)
+}
+
+// calcListMatrixMin is part of the implementation min.
+func calcListMatrixMin(mina bool, min float64, arg formulaArg) float64 {
+	for _, row := range arg.ToList() {
+		switch row.Type {
+		case ArgString:
+			if !mina && (row.Value() == "TRUE" || row.Value() == "FALSE") {
+				continue
+			} else {
+				num := row.ToBool()
+				if num.Type == ArgNumber && num.Number < min {
+					min = num.Number
+					continue
+				}
+			}
+			num := row.ToNumber()
+			if num.Type != ArgError && num.Number < min {
+				min = num.Number
+			}
+		case ArgNumber:
+			if row.Number < min {
+				min = row.Number
+			}
+		}
+	}
+	return min
+}
+
+// min is an implementation of the formula functions MIN and MINA.
 func (fn *formulaFuncs) min(mina bool, argsList *list.List) formulaArg {
 	min := math.MaxFloat64
 	for token := argsList.Front(); token != nil; token = token.Next() {
@@ -5302,28 +6029,7 @@ func (fn *formulaFuncs) min(mina bool, argsList *list.List) formulaArg {
 				min = arg.Number
 			}
 		case ArgList, ArgMatrix:
-			for _, row := range arg.ToList() {
-				switch row.Type {
-				case ArgString:
-					if !mina && (row.Value() == "TRUE" || row.Value() == "FALSE") {
-						continue
-					} else {
-						num := row.ToBool()
-						if num.Type == ArgNumber && num.Number < min {
-							min = num.Number
-							continue
-						}
-					}
-					num := row.ToNumber()
-					if num.Type != ArgError && num.Number < min {
-						min = num.Number
-					}
-				case ArgNumber:
-					if row.Number < min {
-						min = row.Number
-					}
-				}
-			}
+			min = calcListMatrixMin(mina, min, arg)
 		case ArgError:
 			return arg
 		}
@@ -5332,6 +6038,43 @@ func (fn *formulaFuncs) min(mina bool, argsList *list.List) formulaArg {
 		min = 0
 	}
 	return newNumberFormulaArg(min)
+}
+
+// PERCENTILEdotEXC function returns the k'th percentile (i.e. the value below
+// which k% of the data values fall) for a supplied range of values and a
+// supplied k (between 0 & 1 exclusive).The syntax of the function is:
+//
+//    PERCENTILE.EXC(array,k)
+//
+func (fn *formulaFuncs) PERCENTILEdotEXC(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PERCENTILE.EXC requires 2 arguments")
+	}
+	array := argsList.Front().Value.(formulaArg).ToList()
+	k := argsList.Back().Value.(formulaArg).ToNumber()
+	if k.Type != ArgNumber {
+		return k
+	}
+	if k.Number <= 0 || k.Number >= 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	numbers := []float64{}
+	for _, arg := range array {
+		if arg.Type == ArgError {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		num := arg.ToNumber()
+		if num.Type == ArgNumber {
+			numbers = append(numbers, num.Number)
+		}
+	}
+	cnt := len(numbers)
+	sort.Float64s(numbers)
+	idx := k.Number * (float64(cnt) + 1)
+	base := math.Floor(idx)
+	next := base - 1
+	proportion := idx - base
+	return newNumberFormulaArg(numbers[int(next)] + ((numbers[int(base)] - numbers[int(next)]) * proportion))
 }
 
 // PERCENTILEdotINC function returns the k'th percentile (i.e. the value below
@@ -5385,6 +6128,88 @@ func (fn *formulaFuncs) PERCENTILE(argsList *list.List) formulaArg {
 	next := base + 1
 	proportion := idx - base
 	return newNumberFormulaArg(numbers[int(base)] + ((numbers[int(next)] - numbers[int(base)]) * proportion))
+}
+
+// percentrank is an implementation of the formula functions PERCENTRANK and
+// PERCENTRANK.INC.
+func (fn *formulaFuncs) percentrank(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 2 && argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 or 3 arguments", name))
+	}
+	array := argsList.Front().Value.(formulaArg).ToList()
+	x := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	numbers := []float64{}
+	for _, arg := range array {
+		if arg.Type == ArgError {
+			return arg
+		}
+		num := arg.ToNumber()
+		if num.Type == ArgNumber {
+			numbers = append(numbers, num.Number)
+		}
+	}
+	cnt := len(numbers)
+	sort.Float64s(numbers)
+	if x.Number < numbers[0] || x.Number > numbers[cnt-1] {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	pos, significance := float64(inFloat64Slice(numbers, x.Number)), newNumberFormulaArg(3)
+	if argsList.Len() == 3 {
+		if significance = argsList.Back().Value.(formulaArg).ToNumber(); significance.Type != ArgNumber {
+			return significance
+		}
+		if significance.Number < 1 {
+			return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s arguments significance should be > 1", name))
+		}
+	}
+	if pos == -1 {
+		pos = 0
+		cmp := numbers[0]
+		for cmp < x.Number {
+			pos++
+			cmp = numbers[int(pos)]
+		}
+		pos--
+		pos += (x.Number - numbers[int(pos)]) / (cmp - numbers[int(pos)])
+	}
+	pow := math.Pow(10, float64(significance.Number))
+	digit := pow * float64(pos) / (float64(cnt) - 1)
+	if name == "PERCENTRANK.EXC" {
+		digit = pow * float64(pos+1) / (float64(cnt) + 1)
+	}
+	return newNumberFormulaArg(math.Floor(digit) / pow)
+}
+
+// PERCENTRANKdotEXC function calculates the relative position, between 0 and
+// 1 (exclusive), of a specified value within a supplied array. The syntax of
+// the function is:
+//
+//    PERCENTRANK.EXC(array,x,[significance])
+//
+func (fn *formulaFuncs) PERCENTRANKdotEXC(argsList *list.List) formulaArg {
+	return fn.percentrank("PERCENTRANK.EXC", argsList)
+}
+
+// PERCENTRANKdotINC function calculates the relative position, between 0 and
+// 1 (inclusive), of a specified value within a supplied array.The syntax of
+// the function is:
+//
+//    PERCENTRANK.INC(array,x,[significance])
+//
+func (fn *formulaFuncs) PERCENTRANKdotINC(argsList *list.List) formulaArg {
+	return fn.percentrank("PERCENTRANK.INC", argsList)
+}
+
+// PERCENTRANK function calculates the relative position of a specified value,
+// within a set of values, as a percentage. The syntax of the function is:
+//
+//    PERCENTRANK(array,x,[significance])
+//
+func (fn *formulaFuncs) PERCENTRANK(argsList *list.List) formulaArg {
+	return fn.percentrank("PERCENTRANK", argsList)
 }
 
 // PERMUT function calculates the number of permutations of a specified number
@@ -5457,6 +6282,29 @@ func (fn *formulaFuncs) QUARTILE(argsList *list.List) formulaArg {
 	return fn.PERCENTILE(args)
 }
 
+// QUARTILEdotEXC function returns a requested quartile of a supplied range of
+// values, based on a percentile range of 0 to 1 exclusive. The syntax of the
+// function is:
+//
+//    QUARTILE.EXC(array,quart)
+//
+func (fn *formulaFuncs) QUARTILEdotEXC(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "QUARTILE.EXC requires 2 arguments")
+	}
+	quart := argsList.Back().Value.(formulaArg).ToNumber()
+	if quart.Type != ArgNumber {
+		return quart
+	}
+	if quart.Number <= 0 || quart.Number >= 4 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	args.PushBack(newNumberFormulaArg(quart.Number / 4))
+	return fn.PERCENTILEdotEXC(args)
+}
+
 // QUARTILEdotINC function returns a requested quartile of a supplied range of
 // values. The syntax of the function is:
 //
@@ -5467,6 +6315,61 @@ func (fn *formulaFuncs) QUARTILEdotINC(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "QUARTILE.INC requires 2 arguments")
 	}
 	return fn.QUARTILE(argsList)
+}
+
+// rank is an implementation of the formula functions RANK and RANK.EQ.
+func (fn *formulaFuncs) rank(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 2 arguments", name))
+	}
+	if argsList.Len() > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at most 3 arguments", name))
+	}
+	num := argsList.Front().Value.(formulaArg).ToNumber()
+	if num.Type != ArgNumber {
+		return num
+	}
+	arr := []float64{}
+	for _, arg := range argsList.Front().Next().Value.(formulaArg).ToList() {
+		n := arg.ToNumber()
+		if n.Type == ArgNumber {
+			arr = append(arr, n.Number)
+		}
+	}
+	sort.Float64s(arr)
+	order := newNumberFormulaArg(0)
+	if argsList.Len() == 3 {
+		if order = argsList.Back().Value.(formulaArg).ToNumber(); order.Type != ArgNumber {
+			return order
+		}
+	}
+	if order.Number == 0 {
+		sort.Sort(sort.Reverse(sort.Float64Slice(arr)))
+	}
+	if idx := inFloat64Slice(arr, num.Number); idx != -1 {
+		return newNumberFormulaArg(float64(idx + 1))
+	}
+	return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+}
+
+// RANK.EQ function returns the statistical rank of a given value, within a
+// supplied array of values. If there are duplicate values in the list, these
+// are given the same rank. The syntax of the function is:
+//
+//    RANK.EQ(number,ref,[order])
+//
+func (fn *formulaFuncs) RANKdotEQ(argsList *list.List) formulaArg {
+	return fn.rank("RANK.EQ", argsList)
+}
+
+// RANK function returns the statistical rank of a given value, within a
+// supplied array of values. If there are duplicate values in the list, these
+// are given the same rank. The syntax of the function is:
+//
+//    RANK(number,ref,[order])
+//
+func (fn *formulaFuncs) RANK(argsList *list.List) formulaArg {
+	return fn.rank("RANK", argsList)
 }
 
 // SKEW function calculates the skewness of the distribution of a supplied set
@@ -5515,31 +6418,172 @@ func (fn *formulaFuncs) SMALL(argsList *list.List) formulaArg {
 	return fn.kth("SMALL", argsList)
 }
 
+// STANDARDIZE function returns a normalized value of a distribution that is
+// characterized by a supplied mean and standard deviation. The syntax of the
+// function is:
+//
+//    STANDARDIZE(x,mean,standard_dev)
+//
+func (fn *formulaFuncs) STANDARDIZE(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "STANDARDIZE requires 3 arguments")
+	}
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	mean := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if mean.Type != ArgNumber {
+		return mean
+	}
+	stdDev := argsList.Back().Value.(formulaArg).ToNumber()
+	if stdDev.Type != ArgNumber {
+		return stdDev
+	}
+	if stdDev.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	return newNumberFormulaArg((x.Number - mean.Number) / stdDev.Number)
+}
+
+// stdevp is an implementation of the formula functions STDEVP and STDEV.P.
+func (fn *formulaFuncs) stdevp(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
+	}
+	varp := fn.VARP(argsList)
+	if varp.Type != ArgNumber {
+		return varp
+	}
+	return newNumberFormulaArg(math.Sqrt(varp.Number))
+}
+
+// STDEVP function calculates the standard deviation of a supplied set of
+// values. The syntax of the function is:
+//
+//    STDEVP(number1,[number2],...)
+//
+func (fn *formulaFuncs) STDEVP(argsList *list.List) formulaArg {
+	return fn.stdevp("STDEVP", argsList)
+}
+
+// STDEVdotP function calculates the standard deviation of a supplied set of
+// values.
+//
+//    STDEV.P( number1, [number2], ... )
+//
+func (fn *formulaFuncs) STDEVdotP(argsList *list.List) formulaArg {
+	return fn.stdevp("STDEV.P", argsList)
+}
+
+// TRIMMEAN function calculates the trimmed mean (or truncated mean) of a
+// supplied set of values. The syntax of the function is:
+//
+//    TRIMMEAN(array,percent)
+//
+func (fn *formulaFuncs) TRIMMEAN(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TRIMMEAN requires 2 arguments")
+	}
+	percent := argsList.Back().Value.(formulaArg).ToNumber()
+	if percent.Type != ArgNumber {
+		return percent
+	}
+	if percent.Number < 0 || percent.Number >= 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	arr := []float64{}
+	arrArg := argsList.Front().Value.(formulaArg).ToList()
+	for _, cell := range arrArg {
+		num := cell.ToNumber()
+		if num.Type != ArgNumber {
+			continue
+		}
+		arr = append(arr, num.Number)
+	}
+	discard := math.Floor(float64(len(arr)) * percent.Number / 2)
+	sort.Float64s(arr)
+	for i := 0; i < int(discard); i++ {
+		if len(arr) > 0 {
+			arr = arr[1:]
+		}
+		if len(arr) > 0 {
+			arr = arr[:len(arr)-1]
+		}
+	}
+
+	args := list.New().Init()
+	for _, ele := range arr {
+		args.PushBack(newNumberFormulaArg(ele))
+	}
+	return fn.AVERAGE(args)
+}
+
+// vars is an implementation of the formula functions VAR, VARA, VARP, VAR.P
+// VAR.S and VARPA.
+func (fn *formulaFuncs) vars(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
+	}
+	summerA, summerB, count := 0.0, 0.0, 0.0
+	minimum := 0.0
+	if name == "VAR" || name == "VAR.S" || name == "VARA" {
+		minimum = 1.0
+	}
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		for _, token := range arg.Value.(formulaArg).ToList() {
+			num := token.ToNumber()
+			if token.Value() != "TRUE" && num.Type == ArgNumber {
+				summerA += (num.Number * num.Number)
+				summerB += num.Number
+				count++
+				continue
+			}
+			num = token.ToBool()
+			if num.Type == ArgNumber {
+				summerA += (num.Number * num.Number)
+				summerB += num.Number
+				count++
+				continue
+			}
+			if name == "VARA" || name == "VARPA" {
+				count++
+			}
+		}
+	}
+	if count > minimum {
+		summerA *= count
+		summerB *= summerB
+		return newNumberFormulaArg((summerA - summerB) / (count * (count - minimum)))
+	}
+	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+}
+
+// VAR function returns the sample variance of a supplied set of values. The
+// syntax of the function is:
+//
+//    VAR(number1,[number2],...)
+//
+func (fn *formulaFuncs) VAR(argsList *list.List) formulaArg {
+	return fn.vars("VAR", argsList)
+}
+
+// VARA function calculates the sample variance of a supplied set of values.
+// The syntax of the function is:
+//
+//    VARA(number1,[number2],...)
+//
+func (fn *formulaFuncs) VARA(argsList *list.List) formulaArg {
+	return fn.vars("VARA", argsList)
+}
+
 // VARP function returns the Variance of a given set of values. The syntax of
 // the function is:
 //
 //    VARP(number1,[number2],...)
 //
 func (fn *formulaFuncs) VARP(argsList *list.List) formulaArg {
-	if argsList.Len() < 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "VARP requires at least 1 argument")
-	}
-	summerA, summerB, count := 0.0, 0.0, 0.0
-	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
-		for _, token := range arg.Value.(formulaArg).ToList() {
-			if num := token.ToNumber(); num.Type == ArgNumber {
-				summerA += (num.Number * num.Number)
-				summerB += num.Number
-				count++
-			}
-		}
-	}
-	if count > 0 {
-		summerA *= count
-		summerB *= summerB
-		return newNumberFormulaArg((summerA - summerB) / (count * count))
-	}
-	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	return fn.vars("VARP", argsList)
 }
 
 // VARdotP function returns the Variance of a given set of values. The syntax
@@ -5548,10 +6592,120 @@ func (fn *formulaFuncs) VARP(argsList *list.List) formulaArg {
 //    VAR.P(number1,[number2],...)
 //
 func (fn *formulaFuncs) VARdotP(argsList *list.List) formulaArg {
-	if argsList.Len() < 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "VAR.P requires at least 1 argument")
+	return fn.vars("VAR.P", argsList)
+}
+
+// VARdotS function calculates the sample variance of a supplied set of
+// values. The syntax of the function is:
+//
+//    VAR.S(number1,[number2],...)
+//
+func (fn *formulaFuncs) VARdotS(argsList *list.List) formulaArg {
+	return fn.vars("VAR.S", argsList)
+}
+
+// VARPA function returns the Variance of a given set of values. The syntax of
+// the function is:
+//
+//    VARPA(number1,[number2],...)
+//
+func (fn *formulaFuncs) VARPA(argsList *list.List) formulaArg {
+	return fn.vars("VARPA", argsList)
+}
+
+// WEIBULL function calculates the Weibull Probability Density Function or the
+// Weibull Cumulative Distribution Function for a supplied set of parameters.
+// The syntax of the function is:
+//
+//    WEIBULL(x,alpha,beta,cumulative)
+//
+func (fn *formulaFuncs) WEIBULL(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "WEIBULL requires 4 arguments")
 	}
-	return fn.VARP(argsList)
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	alpha := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	beta := argsList.Back().Prev().Value.(formulaArg).ToNumber()
+	if alpha.Type == ArgNumber && beta.Type == ArgNumber && x.Type == ArgNumber {
+		if alpha.Number < 0 || alpha.Number <= 0 || beta.Number <= 0 {
+			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		}
+		cumulative := argsList.Back().Value.(formulaArg).ToBool()
+		if cumulative.Boolean && cumulative.Number == 1 {
+			return newNumberFormulaArg(1 - math.Exp(0-math.Pow((x.Number/beta.Number), alpha.Number)))
+		}
+		return newNumberFormulaArg((alpha.Number / math.Pow(beta.Number, alpha.Number)) *
+			math.Pow(x.Number, (alpha.Number-1)) * math.Exp(0-math.Pow((x.Number/beta.Number), alpha.Number)))
+	}
+	return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+}
+
+// WEIBULLdotDIST function calculates the Weibull Probability Density Function
+// or the Weibull Cumulative Distribution Function for a supplied set of
+// parameters. The syntax of the function is:
+//
+//    WEIBULL.DIST(x,alpha,beta,cumulative)
+//
+func (fn *formulaFuncs) WEIBULLdotDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "WEIBULL.DIST requires 4 arguments")
+	}
+	return fn.WEIBULL(argsList)
+}
+
+// ZdotTEST function calculates the one-tailed probability value of the
+// Z-Test. The syntax of the function is:
+//
+//    Z.TEST(array,x,[sigma])
+//
+func (fn *formulaFuncs) ZdotTEST(argsList *list.List) formulaArg {
+	argsLen := argsList.Len()
+	if argsLen < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "Z.TEST requires at least 2 arguments")
+	}
+	if argsLen > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "Z.TEST accepts at most 3 arguments")
+	}
+	return fn.ZTEST(argsList)
+}
+
+// ZTEST function calculates the one-tailed probability value of the Z-Test.
+// The syntax of the function is:
+//
+//    ZTEST(array,x,[sigma])
+//
+func (fn *formulaFuncs) ZTEST(argsList *list.List) formulaArg {
+	argsLen := argsList.Len()
+	if argsLen < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ZTEST requires at least 2 arguments")
+	}
+	if argsLen > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ZTEST accepts at most 3 arguments")
+	}
+	arrArg, arrArgs := argsList.Front().Value.(formulaArg), list.New()
+	arrArgs.PushBack(arrArg)
+	arr := fn.AVERAGE(arrArgs)
+	if arr.Type == ArgError {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	x := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if x.Type == ArgError {
+		return x
+	}
+	sigma := argsList.Back().Value.(formulaArg).ToNumber()
+	if sigma.Type == ArgError {
+		return sigma
+	}
+	if argsLen != 3 {
+		sigma = fn.STDEV(arrArgs).ToNumber()
+	}
+	normsdistArg := list.New()
+	div := sigma.Number / math.Sqrt(float64(len(arrArg.ToList())))
+	if div == 0 {
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	}
+	normsdistArg.PushBack(newNumberFormulaArg((arr.Number - x.Number) / div))
+	return newNumberFormulaArg(1 - fn.NORMSDIST(normsdistArg).Number)
 }
 
 // Information Functions
@@ -5659,6 +6813,44 @@ func (fn *formulaFuncs) ISEVEN(argsList *list.List) formulaArg {
 	return newStringFormulaArg(result)
 }
 
+// ISFORMULA function tests if a specified cell contains a formula, and if so,
+// returns TRUE; Otherwise, the function returns FALSE. The syntax of the
+// function is:
+//
+//    ISFORMULA(reference)
+//
+func (fn *formulaFuncs) ISFORMULA(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ISFORMULA requires 1 argument")
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	if arg.cellRefs != nil && arg.cellRefs.Len() == 1 {
+		ref := arg.cellRefs.Front().Value.(cellRef)
+		cell, _ := CoordinatesToCellName(ref.Col, ref.Row)
+		if formula, _ := fn.f.GetCellFormula(ref.Sheet, cell); len(formula) > 0 {
+			return newBoolFormulaArg(true)
+		}
+	}
+	return newBoolFormulaArg(false)
+}
+
+// ISLOGICAL function tests if a supplied value (or expression) returns a
+// logical value (i.e. evaluates to True or False). If so, the function
+// returns TRUE; Otherwise, it returns FALSE. The syntax of the function is:
+//
+//    ISLOGICAL(value)
+//
+func (fn *formulaFuncs) ISLOGICAL(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ISLOGICAL requires 1 argument")
+	}
+	val := argsList.Front().Value.(formulaArg).Value()
+	if strings.EqualFold("TRUE", val) || strings.EqualFold("FALSE", val) {
+		return newBoolFormulaArg(true)
+	}
+	return newBoolFormulaArg(false)
+}
+
 // ISNA function tests if an initial supplied expression (or value) returns
 // the Excel #N/A Error, and if so, returns TRUE; Otherwise the function
 // returns FALSE. The syntax of the function is:
@@ -5741,6 +6933,23 @@ func (fn *formulaFuncs) ISODD(argsList *list.List) formulaArg {
 	return newStringFormulaArg(result)
 }
 
+// ISREF function tests if a supplied value is a reference. If so, the
+// function returns TRUE; Otherwise it returns FALSE. The syntax of the
+// function is:
+//
+//    ISREF(value)
+//
+func (fn *formulaFuncs) ISREF(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ISREF requires 1 argument")
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	if arg.cellRanges != nil && arg.cellRanges.Len() > 0 || arg.cellRefs != nil && arg.cellRefs.Len() > 0 {
+		return newBoolFormulaArg(true)
+	}
+	return newBoolFormulaArg(false)
+}
+
 // ISTEXT function tests if a supplied value is text, and if so, returns TRUE;
 // Otherwise, the function returns FALSE. The syntax of the function is:
 //
@@ -5795,13 +7004,61 @@ func (fn *formulaFuncs) NA(argsList *list.List) formulaArg {
 // SHEET function returns the Sheet number for a specified reference. The
 // syntax of the function is:
 //
-//    SHEET()
+//    SHEET([value])
 //
 func (fn *formulaFuncs) SHEET(argsList *list.List) formulaArg {
-	if argsList.Len() != 0 {
-		return newErrorFormulaArg(formulaErrorVALUE, "SHEET accepts no arguments")
+	if argsList.Len() > 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SHEET accepts at most 1 argument")
 	}
-	return newNumberFormulaArg(float64(fn.f.GetSheetIndex(fn.sheet) + 1))
+	if argsList.Len() == 0 {
+		return newNumberFormulaArg(float64(fn.f.GetSheetIndex(fn.sheet) + 1))
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	if sheetIdx := fn.f.GetSheetIndex(arg.Value()); sheetIdx != -1 {
+		return newNumberFormulaArg(float64(sheetIdx + 1))
+	}
+	if arg.cellRanges != nil && arg.cellRanges.Len() > 0 {
+		if sheetIdx := fn.f.GetSheetIndex(arg.cellRanges.Front().Value.(cellRange).From.Sheet); sheetIdx != -1 {
+			return newNumberFormulaArg(float64(sheetIdx + 1))
+		}
+	}
+	if arg.cellRefs != nil && arg.cellRefs.Len() > 0 {
+		if sheetIdx := fn.f.GetSheetIndex(arg.cellRefs.Front().Value.(cellRef).Sheet); sheetIdx != -1 {
+			return newNumberFormulaArg(float64(sheetIdx + 1))
+		}
+	}
+	return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+}
+
+// SHEETS function returns the number of sheets in a supplied reference. The
+// result includes sheets that are Visible, Hidden or Very Hidden. The syntax
+// of the function is:
+//
+//    SHEETS([reference])
+//
+func (fn *formulaFuncs) SHEETS(argsList *list.List) formulaArg {
+	if argsList.Len() > 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SHEETS accepts at most 1 argument")
+	}
+	if argsList.Len() == 0 {
+		return newNumberFormulaArg(float64(len(fn.f.GetSheetList())))
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	sheetMap := map[string]struct{}{}
+	if arg.cellRanges != nil && arg.cellRanges.Len() > 0 {
+		for rng := arg.cellRanges.Front(); rng != nil; rng = rng.Next() {
+			sheetMap[rng.Value.(cellRange).From.Sheet] = struct{}{}
+		}
+	}
+	if arg.cellRefs != nil && arg.cellRefs.Len() > 0 {
+		for ref := arg.cellRefs.Front(); ref != nil; ref = ref.Next() {
+			sheetMap[ref.Value.(cellRef).Sheet] = struct{}{}
+		}
+	}
+	if len(sheetMap) > 0 {
+		return newNumberFormulaArg(float64(len(sheetMap)))
+	}
+	return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 }
 
 // T function tests if a supplied value is text and if so, returns the
@@ -5898,6 +7155,44 @@ func (fn *formulaFuncs) IFERROR(argsList *list.List) formulaArg {
 	return argsList.Back().Value.(formulaArg)
 }
 
+// IFNA function tests if an initial supplied value (or expression) evaluates
+// to the Excel #N/A error. If so, the function returns a second supplied
+// value; Otherwise the function returns the first supplied value. The syntax
+// of the function is:
+//
+//    IFNA(value,value_if_na)
+//
+func (fn *formulaFuncs) IFNA(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IFNA requires 2 arguments")
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	if arg.Type == ArgError && arg.Value() == formulaErrorNA {
+		return argsList.Back().Value.(formulaArg)
+	}
+	return arg
+}
+
+// IFS function tests a number of supplied conditions and returns the result
+// corresponding to the first condition that evaluates to TRUE. If none of
+// the supplied conditions evaluate to TRUE, the function returns the #N/A
+// error.
+//
+//    IFS(logical_test1,value_if_true1,[logical_test2,value_if_true2],...)
+//
+func (fn *formulaFuncs) IFS(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IFS requires at least 2 arguments")
+	}
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		if arg.Value.(formulaArg).ToBool().Number == 1 {
+			return arg.Next().Value.(formulaArg)
+		}
+		arg = arg.Next()
+	}
+	return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+}
+
 // NOT function returns the opposite to a supplied logical value. The syntax
 // of the function is:
 //
@@ -5967,6 +7262,41 @@ func (fn *formulaFuncs) OR(argsList *list.List) formulaArg {
 	return newStringFormulaArg(strings.ToUpper(strconv.FormatBool(or)))
 }
 
+// SWITCH function compares a number of supplied values to a supplied test
+// expression and returns a result corresponding to the first value that
+// matches the test expression. A default value can be supplied, to be
+// returned if none of the supplied values match the test expression. The
+// syntax of the function is:
+//
+//
+//    SWITCH(expression,value1,result1,[value2,result2],[value3,result3],...,[default])
+//
+func (fn *formulaFuncs) SWITCH(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SWITCH requires at least 3 arguments")
+	}
+	target := argsList.Front().Value.(formulaArg)
+	argCount := argsList.Len() - 1
+	switchCount := int(math.Floor(float64(argCount) / 2))
+	hasDefaultClause := argCount%2 != 0
+	result := newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	if hasDefaultClause {
+		result = argsList.Back().Value.(formulaArg)
+	}
+	if switchCount > 0 {
+		arg := argsList.Front()
+		for i := 0; i < switchCount; i++ {
+			arg = arg.Next()
+			if target.Value() == arg.Value.(formulaArg).Value() {
+				result = arg.Next().Value.(formulaArg)
+				break
+			}
+			arg = arg.Next()
+		}
+	}
+	return result
+}
+
 // TRUE function returns the logical value TRUE. The syntax of the function
 // is:
 //
@@ -5977,6 +7307,65 @@ func (fn *formulaFuncs) TRUE(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "TRUE takes no arguments")
 	}
 	return newBoolFormulaArg(true)
+}
+
+// calcXor checking if numeric cell exists and count it by given arguments
+// sequence for the formula function XOR.
+func calcXor(argsList *list.List) formulaArg {
+	count, ok := 0, false
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		token := arg.Value.(formulaArg)
+		switch token.Type {
+		case ArgError:
+			return token
+		case ArgString:
+			if b := token.ToBool(); b.Type == ArgNumber {
+				ok = true
+				if b.Number == 1 {
+					count++
+				}
+				continue
+			}
+			if num := token.ToNumber(); num.Type == ArgNumber {
+				ok = true
+				if num.Number != 0 {
+					count++
+				}
+			}
+		case ArgNumber:
+			ok = true
+			if token.Number != 0 {
+				count++
+			}
+		case ArgMatrix:
+			for _, value := range token.ToList() {
+				if num := value.ToNumber(); num.Type == ArgNumber {
+					ok = true
+					if num.Number != 0 {
+						count++
+					}
+				}
+			}
+		}
+	}
+	if !ok {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return newBoolFormulaArg(count%2 != 0)
+}
+
+// XOR function returns the Exclusive Or logical operation for one or more
+// supplied conditions. I.e. the Xor function returns TRUE if an odd number
+// of the supplied conditions evaluate to TRUE, and FALSE otherwise. The
+// syntax of the function is:
+//
+//    XOR(logical_test1,[logical_test2],...)
+//
+func (fn *formulaFuncs) XOR(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "XOR requires at least 1 argument")
+	}
+	return calcXor(argsList)
 }
 
 // Date and Time Functions
@@ -5998,6 +7387,39 @@ func (fn *formulaFuncs) DATE(argsList *list.List) formulaArg {
 	}
 	d := makeDate(int(year.Number), time.Month(month.Number), int(day.Number))
 	return newStringFormulaArg(timeFromExcelTime(daysBetween(excelMinTime1900.Unix(), d)+1, false).String())
+}
+
+// calcDateDif is an implementation of the formula function DATEDIF,
+// calculation difference between two dates.
+func calcDateDif(unit string, diff float64, seq []int, startArg, endArg formulaArg) float64 {
+	ey, sy, em, sm, ed, sd := seq[0], seq[1], seq[2], seq[3], seq[4], seq[5]
+	switch unit {
+	case "d":
+		diff = endArg.Number - startArg.Number
+	case "md":
+		smMD := em
+		if ed < sd {
+			smMD--
+		}
+		diff = endArg.Number - daysBetween(excelMinTime1900.Unix(), makeDate(ey, time.Month(smMD), sd)) - 1
+	case "ym":
+		diff = float64(em - sm)
+		if ed < sd {
+			diff--
+		}
+		if diff < 0 {
+			diff += 12
+		}
+	case "yd":
+		syYD := sy
+		if em < sm || (em == sm && ed < sd) {
+			syYD++
+		}
+		s := daysBetween(excelMinTime1900.Unix(), makeDate(syYD, time.Month(em), ed))
+		e := daysBetween(excelMinTime1900.Unix(), makeDate(sy, time.Month(sm), sd))
+		diff = s - e
+	}
+	return diff
 }
 
 // DATEDIF function calculates the number of days, months, or years between
@@ -6025,8 +7447,6 @@ func (fn *formulaFuncs) DATEDIF(argsList *list.List) formulaArg {
 	ey, emm, ed := endDate.Date()
 	sm, em, diff := int(smm), int(emm), 0.0
 	switch unit {
-	case "d":
-		return newNumberFormulaArg(endArg.Number - startArg.Number)
 	case "y":
 		diff = float64(ey - sy)
 		if em < sm || (em == sm && ed < sd) {
@@ -6043,32 +7463,581 @@ func (fn *formulaFuncs) DATEDIF(argsList *list.List) formulaArg {
 			mdiff += 12
 		}
 		diff = float64(ydiff*12 + mdiff)
-	case "md":
-		smMD := em
-		if ed < sd {
-			smMD--
-		}
-		diff = endArg.Number - daysBetween(excelMinTime1900.Unix(), makeDate(ey, time.Month(smMD), sd)) - 1
-	case "ym":
-		diff = float64(em - sm)
-		if ed < sd {
-			diff--
-		}
-		if diff < 0 {
-			diff += 12
-		}
-	case "yd":
-		syYD := sy
-		if em < sm || (em == sm && ed < sd) {
-			syYD++
-		}
-		s := daysBetween(excelMinTime1900.Unix(), makeDate(syYD, time.Month(em), ed))
-		e := daysBetween(excelMinTime1900.Unix(), makeDate(sy, time.Month(sm), sd))
-		diff = s - e
+	case "d", "md", "ym", "yd":
+		diff = calcDateDif(unit, diff, []int{ey, sy, em, sm, ed, sd}, startArg, endArg)
 	default:
 		return newErrorFormulaArg(formulaErrorVALUE, "DATEDIF has invalid unit")
 	}
 	return newNumberFormulaArg(diff)
+}
+
+// isDateOnlyFmt check if the given string matches date-only format regular expressions.
+func isDateOnlyFmt(dateString string) bool {
+	for _, df := range dateOnlyFormats {
+		submatch := df.FindStringSubmatch(dateString)
+		if len(submatch) > 1 {
+			return true
+		}
+	}
+	return false
+}
+
+// isTimeOnlyFmt check if the given string matches time-only format regular expressions.
+func isTimeOnlyFmt(timeString string) bool {
+	for _, tf := range timeFormats {
+		submatch := tf.FindStringSubmatch(timeString)
+		if len(submatch) > 1 {
+			return true
+		}
+	}
+	return false
+}
+
+// strToTimePatternHandler1 parse and convert the given string in pattern
+// hh to the time.
+func strToTimePatternHandler1(submatch []string) (h, m int, s float64, err error) {
+	h, err = strconv.Atoi(submatch[0])
+	return
+}
+
+// strToTimePatternHandler2 parse and convert the given string in pattern
+// hh:mm to the time.
+func strToTimePatternHandler2(submatch []string) (h, m int, s float64, err error) {
+	if h, err = strconv.Atoi(submatch[0]); err != nil {
+		return
+	}
+	m, err = strconv.Atoi(submatch[2])
+	return
+}
+
+// strToTimePatternHandler3 parse and convert the given string in pattern
+// mm:ss to the time.
+func strToTimePatternHandler3(submatch []string) (h, m int, s float64, err error) {
+	if m, err = strconv.Atoi(submatch[0]); err != nil {
+		return
+	}
+	s, err = strconv.ParseFloat(submatch[2], 64)
+	return
+}
+
+// strToTimePatternHandler4 parse and convert the given string in pattern
+// hh:mm:ss to the time.
+func strToTimePatternHandler4(submatch []string) (h, m int, s float64, err error) {
+	if h, err = strconv.Atoi(submatch[0]); err != nil {
+		return
+	}
+	if m, err = strconv.Atoi(submatch[2]); err != nil {
+		return
+	}
+	s, err = strconv.ParseFloat(submatch[4], 64)
+	return
+}
+
+// strToTime parse and convert the given string to the time.
+func strToTime(str string) (int, int, float64, bool, bool, formulaArg) {
+	pattern, submatch := "", []string{}
+	for key, tf := range timeFormats {
+		submatch = tf.FindStringSubmatch(str)
+		if len(submatch) > 1 {
+			pattern = key
+			break
+		}
+	}
+	if pattern == "" {
+		return 0, 0, 0, false, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	dateIsEmpty := submatch[1] == ""
+	submatch = submatch[49:]
+	var (
+		l              = len(submatch)
+		last           = submatch[l-1]
+		am             = last == "am"
+		pm             = last == "pm"
+		hours, minutes int
+		seconds        float64
+		err            error
+	)
+	if handler, ok := map[string]func(subsubmatch []string) (int, int, float64, error){
+		"hh":       strToTimePatternHandler1,
+		"hh:mm":    strToTimePatternHandler2,
+		"mm:ss":    strToTimePatternHandler3,
+		"hh:mm:ss": strToTimePatternHandler4,
+	}[pattern]; ok {
+		if hours, minutes, seconds, err = handler(submatch); err != nil {
+			return 0, 0, 0, false, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	if minutes >= 60 {
+		return 0, 0, 0, false, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if am || pm {
+		if hours > 12 || seconds >= 60 {
+			return 0, 0, 0, false, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		} else if hours == 12 {
+			hours = 0
+		}
+	} else if hours >= 24 || seconds >= 10000 {
+		return 0, 0, 0, false, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return hours, minutes, seconds, pm, dateIsEmpty, newEmptyFormulaArg()
+}
+
+// strToDatePatternHandler1 parse and convert the given string in pattern
+// mm/dd/yy to the date.
+func strToDatePatternHandler1(submatch []string) (int, int, int, bool, error) {
+	var year, month, day int
+	var err error
+	if month, err = strconv.Atoi(submatch[1]); err != nil {
+		return 0, 0, 0, false, err
+	}
+	if day, err = strconv.Atoi(submatch[3]); err != nil {
+		return 0, 0, 0, false, err
+	}
+	if year, err = strconv.Atoi(submatch[5]); err != nil {
+		return 0, 0, 0, false, err
+	}
+	if year < 0 || year > 9999 || (year > 99 && year < 1900) {
+		return 0, 0, 0, false, ErrParameterInvalid
+	}
+	return formatYear(year), month, day, submatch[8] == "", err
+}
+
+// strToDatePatternHandler2 parse and convert the given string in pattern mm
+// dd, yy to the date.
+func strToDatePatternHandler2(submatch []string) (int, int, int, bool, error) {
+	var year, month, day int
+	var err error
+	month = month2num[submatch[1]]
+	if day, err = strconv.Atoi(submatch[14]); err != nil {
+		return 0, 0, 0, false, err
+	}
+	if year, err = strconv.Atoi(submatch[16]); err != nil {
+		return 0, 0, 0, false, err
+	}
+	if year < 0 || year > 9999 || (year > 99 && year < 1900) {
+		return 0, 0, 0, false, ErrParameterInvalid
+	}
+	return formatYear(year), month, day, submatch[19] == "", err
+}
+
+// strToDatePatternHandler3 parse and convert the given string in pattern
+// yy-mm-dd to the date.
+func strToDatePatternHandler3(submatch []string) (int, int, int, bool, error) {
+	var year, month, day int
+	v1, err := strconv.Atoi(submatch[1])
+	if err != nil {
+		return 0, 0, 0, false, err
+	}
+	v2, err := strconv.Atoi(submatch[3])
+	if err != nil {
+		return 0, 0, 0, false, err
+	}
+	v3, err := strconv.Atoi(submatch[5])
+	if err != nil {
+		return 0, 0, 0, false, err
+	}
+	if v1 >= 1900 && v1 < 10000 {
+		year = v1
+		month = v2
+		day = v3
+	} else if v1 > 0 && v1 < 13 {
+		month = v1
+		day = v2
+		year = v3
+	} else {
+		return 0, 0, 0, false, ErrParameterInvalid
+	}
+	return year, month, day, submatch[8] == "", err
+}
+
+// strToDatePatternHandler4 parse and convert the given string in pattern
+// yy-mmStr-dd, yy to the date.
+func strToDatePatternHandler4(submatch []string) (int, int, int, bool, error) {
+	var year, month, day int
+	var err error
+	if year, err = strconv.Atoi(submatch[16]); err != nil {
+		return 0, 0, 0, false, err
+	}
+	month = month2num[submatch[3]]
+	if day, err = strconv.Atoi(submatch[1]); err != nil {
+		return 0, 0, 0, false, err
+	}
+	return formatYear(year), month, day, submatch[19] == "", err
+}
+
+// strToDate parse and convert the given string to the date.
+func strToDate(str string) (int, int, int, bool, formulaArg) {
+	pattern, submatch := "", []string{}
+	for key, df := range dateFormats {
+		submatch = df.FindStringSubmatch(str)
+		if len(submatch) > 1 {
+			pattern = key
+			break
+		}
+	}
+	if pattern == "" {
+		return 0, 0, 0, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	var (
+		timeIsEmpty      bool
+		year, month, day int
+		err              error
+	)
+	if handler, ok := map[string]func(subsubmatch []string) (int, int, int, bool, error){
+		"mm/dd/yy":    strToDatePatternHandler1,
+		"mm dd, yy":   strToDatePatternHandler2,
+		"yy-mm-dd":    strToDatePatternHandler3,
+		"yy-mmStr-dd": strToDatePatternHandler4,
+	}[pattern]; ok {
+		if year, month, day, timeIsEmpty, err = handler(submatch); err != nil {
+			return 0, 0, 0, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	if !validateDate(year, month, day) {
+		return 0, 0, 0, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return year, month, day, timeIsEmpty, newEmptyFormulaArg()
+}
+
+// DATEVALUE function converts a text representation of a date into an Excel
+// date. For example, the function converts a text string representing a
+// date, into the serial number that represents the date in Excel's date-time
+// code.  The syntax of the function is:
+//
+//    DATEVALUE(date_text)
+//
+func (fn *formulaFuncs) DATEVALUE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DATEVALUE requires 1 argument")
+	}
+	dateText := argsList.Front().Value.(formulaArg).Value()
+	if !isDateOnlyFmt(dateText) {
+		if _, _, _, _, _, err := strToTime(dateText); err.Type == ArgError {
+			return err
+		}
+	}
+	y, m, d, _, err := strToDate(dateText)
+	if err.Type == ArgError {
+		return err
+	}
+	return newNumberFormulaArg(daysBetween(excelMinTime1900.Unix(), makeDate(y, time.Month(m), d)) + 1)
+}
+
+// DAY function returns the day of a date, represented by a serial number. The
+// day is given as an integer ranging from 1 to 31. The syntax of the
+// function is:
+//
+//    DAY(serial_number)
+//
+func (fn *formulaFuncs) DAY(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DAY requires exactly 1 argument")
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	num := arg.ToNumber()
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(arg.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		_, _, day, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		return newNumberFormulaArg(float64(day))
+	}
+	if num.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "DAY only accepts positive argument")
+	}
+	if num.Number <= 60 {
+		return newNumberFormulaArg(math.Mod(num.Number, 31.0))
+	}
+	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Day()))
+}
+
+// DAYS function returns the number of days between two supplied dates. The
+// syntax of the function is:
+//
+//    DAYS(end_date,start_date)
+//
+func (fn *formulaFuncs) DAYS(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DAYS requires 2 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	end, start := args.List[0], args.List[1]
+	return newNumberFormulaArg(end.Number - start.Number)
+}
+
+// ISOWEEKNUM function returns the ISO week number of a supplied date. The
+// syntax of the function is:
+//
+//    ISOWEEKNUM(date)
+//
+func (fn *formulaFuncs) ISOWEEKNUM(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ISOWEEKNUM requires 1 argument")
+	}
+	date := argsList.Front().Value.(formulaArg)
+	num := date.ToNumber()
+	weeknum := 0
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(date.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		y, m, d, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		_, weeknum = time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.UTC).ISOWeek()
+	} else {
+		if num.Number < 0 {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		_, weeknum = timeFromExcelTime(num.Number, false).ISOWeek()
+	}
+	return newNumberFormulaArg(float64(weeknum))
+}
+
+// MINUTE function returns an integer representing the minute component of a
+// supplied Excel time. The syntax of the function is:
+//
+//    MINUTE(serial_number)
+//
+func (fn *formulaFuncs) MINUTE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MINUTE requires exactly 1 argument")
+	}
+	date := argsList.Front().Value.(formulaArg)
+	num := date.ToNumber()
+	if num.Type != ArgNumber {
+		timeString := strings.ToLower(date.Value())
+		if !isTimeOnlyFmt(timeString) {
+			_, _, _, _, err := strToDate(timeString)
+			if err.Type == ArgError {
+				return err
+			}
+		}
+		_, m, _, _, _, err := strToTime(timeString)
+		if err.Type == ArgError {
+			return err
+		}
+		return newNumberFormulaArg(float64(m))
+	}
+	if num.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "MINUTE only accepts positive argument")
+	}
+	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Minute()))
+}
+
+// MONTH function returns the month of a date represented by a serial number.
+// The month is given as an integer, ranging from 1 (January) to 12
+// (December). The syntax of the function is:
+//
+//    MONTH(serial_number)
+//
+func (fn *formulaFuncs) MONTH(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MONTH requires exactly 1 argument")
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	num := arg.ToNumber()
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(arg.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		_, month, _, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		return newNumberFormulaArg(float64(month))
+	}
+	if num.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "MONTH only accepts positive argument")
+	}
+	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Month()))
+}
+
+// YEAR function returns an integer representing the year of a supplied date.
+// The syntax of the function is:
+//
+//    YEAR(serial_number)
+//
+func (fn *formulaFuncs) YEAR(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "YEAR requires exactly 1 argument")
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	num := arg.ToNumber()
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(arg.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		year, _, _, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		return newNumberFormulaArg(float64(year))
+	}
+	if num.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "YEAR only accepts positive argument")
+	}
+	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Year()))
+}
+
+// yearFracBasisCond is an implementation of the yearFracBasis1.
+func yearFracBasisCond(sy, sm, sd, ey, em, ed int) bool {
+	return (isLeapYear(sy) && (sm < 2 || (sm == 2 && sd <= 29))) || (isLeapYear(ey) && (em > 2 || (em == 2 && ed == 29)))
+}
+
+// yearFracBasis0 function returns the fraction of a year that between two
+// supplied dates in US (NASD) 30/360 type of day.
+func yearFracBasis0(startDate, endDate float64) (dayDiff, daysInYear float64) {
+	startTime, endTime := timeFromExcelTime(startDate, false), timeFromExcelTime(endDate, false)
+	sy, smM, sd := startTime.Date()
+	ey, emM, ed := endTime.Date()
+	sm, em := int(smM), int(emM)
+	if sd == 31 {
+		sd--
+	}
+	if sd == 30 && ed == 31 {
+		ed--
+	} else if leap := isLeapYear(sy); sm == 2 && ((leap && sd == 29) || (!leap && sd == 28)) {
+		sd = 30
+		if leap := isLeapYear(ey); em == 2 && ((leap && ed == 29) || (!leap && ed == 28)) {
+			ed = 30
+		}
+	}
+	dayDiff = float64((ey-sy)*360 + (em-sm)*30 + (ed - sd))
+	daysInYear = 360
+	return
+}
+
+// yearFracBasis1 function returns the fraction of a year that between two
+// supplied dates in actual type of day.
+func yearFracBasis1(startDate, endDate float64) (dayDiff, daysInYear float64) {
+	startTime, endTime := timeFromExcelTime(startDate, false), timeFromExcelTime(endDate, false)
+	sy, smM, sd := startTime.Date()
+	ey, emM, ed := endTime.Date()
+	sm, em := int(smM), int(emM)
+	dayDiff = endDate - startDate
+	isYearDifferent := sy != ey
+	if isYearDifferent && (ey != sy+1 || sm < em || (sm == em && sd < ed)) {
+		dayCount := 0
+		for y := sy; y <= ey; y++ {
+			dayCount += getYearDays(y, 1)
+		}
+		daysInYear = float64(dayCount) / float64(ey-sy+1)
+	} else {
+		if !isYearDifferent && isLeapYear(sy) {
+			daysInYear = 366
+		} else {
+			if isYearDifferent && yearFracBasisCond(sy, sm, sd, ey, em, ed) {
+				daysInYear = 366
+			} else {
+				daysInYear = 365
+			}
+		}
+	}
+	return
+}
+
+// yearFracBasis4 function returns the fraction of a year that between two
+// supplied dates in European 30/360 type of day.
+func yearFracBasis4(startDate, endDate float64) (dayDiff, daysInYear float64) {
+	startTime, endTime := timeFromExcelTime(startDate, false), timeFromExcelTime(endDate, false)
+	sy, smM, sd := startTime.Date()
+	ey, emM, ed := endTime.Date()
+	sm, em := int(smM), int(emM)
+	if sd == 31 {
+		sd--
+	}
+	if ed == 31 {
+		ed--
+	}
+	dayDiff = float64((ey-sy)*360 + (em-sm)*30 + (ed - sd))
+	daysInYear = 360
+	return
+}
+
+// yearFrac is an implementation of the formula function YEARFRAC.
+func yearFrac(startDate, endDate float64, basis int) formulaArg {
+	startTime, endTime := timeFromExcelTime(startDate, false), timeFromExcelTime(endDate, false)
+	if startTime == endTime {
+		return newNumberFormulaArg(0)
+	}
+	var dayDiff, daysInYear float64
+	switch basis {
+	case 0:
+		dayDiff, daysInYear = yearFracBasis0(startDate, endDate)
+	case 1:
+		dayDiff, daysInYear = yearFracBasis1(startDate, endDate)
+	case 2:
+		dayDiff = endDate - startDate
+		daysInYear = 360
+	case 3:
+		dayDiff = endDate - startDate
+		daysInYear = 365
+	case 4:
+		dayDiff, daysInYear = yearFracBasis4(startDate, endDate)
+	default:
+		return newErrorFormulaArg(formulaErrorNUM, "invalid basis")
+	}
+	return newNumberFormulaArg(dayDiff / daysInYear)
+}
+
+// getYearDays return days of the year with specifying the type of day count
+// basis to be used.
+func getYearDays(year, basis int) int {
+	switch basis {
+	case 1:
+		if isLeapYear(year) {
+			return 366
+		}
+		return 365
+	case 3:
+		return 365
+	default:
+		return 360
+	}
+}
+
+// YEARFRAC function returns the fraction of a year that is represented by the
+// number of whole days between two supplied dates. The syntax of the
+// function is:
+//
+//    YEARFRAC(start_date,end_date,[basis])
+//
+func (fn *formulaFuncs) YEARFRAC(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 && argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "YEARFRAC requires 3 or 4 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	start, end := args.List[0], args.List[1]
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 3 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return basis
+		}
+	}
+	return yearFrac(start.Number, end.Number, int(basis.Number))
 }
 
 // NOW function returns the current date and time. The function receives no
@@ -6083,6 +8052,30 @@ func (fn *formulaFuncs) NOW(argsList *list.List) formulaArg {
 	now := time.Now()
 	_, offset := now.Zone()
 	return newNumberFormulaArg(25569.0 + float64(now.Unix()+int64(offset))/86400)
+}
+
+// TIME function accepts three integer arguments representing hours, minutes
+// and seconds, and returns an Excel time. I.e. the function returns the
+// decimal value that represents the time in Excel. The syntax of the Time
+// function is:
+//
+//    TIME(hour,minute,second)
+//
+func (fn *formulaFuncs) TIME(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TIME requires 3 number arguments")
+	}
+	h := argsList.Front().Value.(formulaArg).ToNumber()
+	m := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	s := argsList.Back().Value.(formulaArg).ToNumber()
+	if h.Type != ArgNumber || m.Type != ArgNumber || s.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, "TIME requires 3 number arguments")
+	}
+	t := (h.Number*3600 + m.Number*60 + s.Number) / 86400
+	if t < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(t)
 }
 
 // TODAY function returns the current date. The function has no arguments and
@@ -6115,6 +8108,62 @@ func daysBetween(startDate, endDate int64) float64 {
 	return float64(int(0.5 + float64((endDate-startDate)/86400)))
 }
 
+// WEEKDAY function returns an integer representing the day of the week for a
+// supplied date. The syntax of the function is:
+//
+//    WEEKDAY(serial_number,[return_type])
+//
+func (fn *formulaFuncs) WEEKDAY(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "WEEKDAY requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "WEEKDAY allows at most 2 arguments")
+	}
+	sn := argsList.Front().Value.(formulaArg)
+	num := sn.ToNumber()
+	weekday, returnType := 0, 1
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(sn.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		y, m, d, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		weekday = int(time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.Now().Location()).Weekday())
+	} else {
+		if num.Number < 0 {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		weekday = int(timeFromExcelTime(num.Number, false).Weekday())
+	}
+	if argsList.Len() == 2 {
+		returnTypeArg := argsList.Back().Value.(formulaArg).ToNumber()
+		if returnTypeArg.Type != ArgNumber {
+			return returnTypeArg
+		}
+		returnType = int(returnTypeArg.Number)
+	}
+	if returnType == 2 {
+		returnType = 11
+	}
+	weekday++
+	if returnType == 1 {
+		return newNumberFormulaArg(float64(weekday))
+	}
+	if returnType == 3 {
+		return newNumberFormulaArg(float64((weekday + 6 - 1) % 7))
+	}
+	if returnType >= 11 && returnType <= 17 {
+		return newNumberFormulaArg(float64((weekday+6-(returnType-10))%7 + 1))
+	}
+	return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+}
+
 // Text Functions
 
 // CHAR function returns the character relating to a supplied character set
@@ -6131,7 +8180,7 @@ func (fn *formulaFuncs) CHAR(argsList *list.List) formulaArg {
 		return arg
 	}
 	num := int(arg.Number)
-	if num < 0 || num > 255 {
+	if num < 0 || num > MaxFieldLength {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	return newStringFormulaArg(fmt.Sprintf("%c", num))
@@ -6165,7 +8214,7 @@ func (fn *formulaFuncs) CODE(argsList *list.List) formulaArg {
 	return fn.code("CODE", argsList)
 }
 
-// code is an implementation of the formula function CODE and UNICODE.
+// code is an implementation of the formula functions CODE and UNICODE.
 func (fn *formulaFuncs) code(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 1 argument", name))
@@ -6198,7 +8247,8 @@ func (fn *formulaFuncs) CONCATENATE(argsList *list.List) formulaArg {
 	return fn.concat("CONCATENATE", argsList)
 }
 
-// concat is an implementation of the formula function CONCAT and CONCATENATE.
+// concat is an implementation of the formula functions CONCAT and
+// CONCATENATE.
 func (fn *formulaFuncs) concat(name string, argsList *list.List) formulaArg {
 	buf := bytes.Buffer{}
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
@@ -6308,7 +8358,7 @@ func (fn *formulaFuncs) FINDB(argsList *list.List) formulaArg {
 	return fn.find("FINDB", argsList)
 }
 
-// find is an implementation of the formula function FIND and FINDB.
+// find is an implementation of the formula functions FIND and FINDB.
 func (fn *formulaFuncs) find(name string, argsList *list.List) formulaArg {
 	if argsList.Len() < 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 2 arguments", name))
@@ -6362,7 +8412,7 @@ func (fn *formulaFuncs) LEFTB(argsList *list.List) formulaArg {
 	return fn.leftRight("LEFTB", argsList)
 }
 
-// leftRight is an implementation of the formula function LEFT, LEFTB, RIGHT,
+// leftRight is an implementation of the formula functions LEFT, LEFTB, RIGHT,
 // RIGHTB. TODO: support DBCS include Japanese, Chinese (Simplified), Chinese
 // (Traditional), and Korean.
 func (fn *formulaFuncs) leftRight(name string, argsList *list.List) formulaArg {
@@ -6451,7 +8501,7 @@ func (fn *formulaFuncs) MIDB(argsList *list.List) formulaArg {
 	return fn.mid("MIDB", argsList)
 }
 
-// mid is an implementation of the formula function MID and MIDB. TODO:
+// mid is an implementation of the formula functions MID and MIDB. TODO:
 // support DBCS include Japanese, Chinese (Simplified), Chinese
 // (Traditional), and Korean.
 func (fn *formulaFuncs) mid(name string, argsList *list.List) formulaArg {
@@ -6524,7 +8574,7 @@ func (fn *formulaFuncs) REPLACEB(argsList *list.List) formulaArg {
 	return fn.replace("REPLACEB", argsList)
 }
 
-// replace is an implementation of the formula function REPLACE and REPLACEB.
+// replace is an implementation of the formula functions REPLACE and REPLACEB.
 // TODO: support DBCS include Japanese, Chinese (Simplified), Chinese
 // (Traditional), and Korean.
 func (fn *formulaFuncs) replace(name string, argsList *list.List) formulaArg {
@@ -6648,6 +8698,64 @@ func (fn *formulaFuncs) SUBSTITUTE(argsList *list.List) formulaArg {
 	return newStringFormulaArg(pre + newText.Value() + post)
 }
 
+// TEXTJOIN function joins together a series of supplied text strings into one
+// combined text string. The user can specify a delimiter to add between the
+// individual text items, if required. The syntax of the function is:
+//
+//    TEXTJOIN([delimiter],[ignore_empty],text1,[text2],...)
+//
+func (fn *formulaFuncs) TEXTJOIN(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TEXTJOIN requires at least 3 arguments")
+	}
+	if argsList.Len() > 252 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TEXTJOIN accepts at most 252 arguments")
+	}
+	delimiter := argsList.Front().Value.(formulaArg)
+	ignoreEmpty := argsList.Front().Next().Value.(formulaArg).ToBool()
+	if ignoreEmpty.Type != ArgNumber {
+		return ignoreEmpty
+	}
+	args, ok := textJoin(argsList.Front().Next().Next(), []string{}, ignoreEmpty.Number != 0)
+	if ok.Type != ArgNumber {
+		return ok
+	}
+	result := strings.Join(args, delimiter.Value())
+	if len(result) > TotalCellChars {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("TEXTJOIN function exceeds %d characters", TotalCellChars))
+	}
+	return newStringFormulaArg(result)
+}
+
+// textJoin is an implementation of the formula function TEXTJOIN.
+func textJoin(arg *list.Element, arr []string, ignoreEmpty bool) ([]string, formulaArg) {
+	for arg.Next(); arg != nil; arg = arg.Next() {
+		switch arg.Value.(formulaArg).Type {
+		case ArgError:
+			return arr, arg.Value.(formulaArg)
+		case ArgString:
+			val := arg.Value.(formulaArg).Value()
+			if val != "" || !ignoreEmpty {
+				arr = append(arr, val)
+			}
+		case ArgNumber:
+			arr = append(arr, arg.Value.(formulaArg).Value())
+		case ArgMatrix:
+			for _, row := range arg.Value.(formulaArg).Matrix {
+				argList := list.New().Init()
+				for _, ele := range row {
+					argList.PushBack(ele)
+				}
+				if argList.Len() > 0 {
+					args, _ := textJoin(argList.Front(), []string{}, ignoreEmpty)
+					arr = append(arr, args...)
+				}
+			}
+		}
+	}
+	return arr, newBoolFormulaArg(true)
+}
+
 // TRIM removes extra spaces (i.e. all spaces except for single spaces between
 // words or characters) from a supplied text string. The syntax of the
 // function is:
@@ -6701,6 +8809,44 @@ func (fn *formulaFuncs) UPPER(argsList *list.List) formulaArg {
 	return newStringFormulaArg(strings.ToUpper(argsList.Front().Value.(formulaArg).String))
 }
 
+// VALUE function converts a text string into a numeric value. The syntax of
+// the function is:
+//
+//    VALUE(text)
+//
+func (fn *formulaFuncs) VALUE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "VALUE requires 1 argument")
+	}
+	text := strings.ReplaceAll(argsList.Front().Value.(formulaArg).Value(), ",", "")
+	percent := 1.0
+	if strings.HasSuffix(text, "%") {
+		percent, text = 0.01, strings.TrimSuffix(text, "%")
+	}
+	decimal := big.Float{}
+	if _, ok := decimal.SetString(text); ok {
+		value, _ := decimal.Float64()
+		return newNumberFormulaArg(value * percent)
+	}
+	dateValue, timeValue, errTime, errDate := 0.0, 0.0, false, false
+	if !isDateOnlyFmt(text) {
+		h, m, s, _, _, err := strToTime(text)
+		errTime = err.Type == ArgError
+		if !errTime {
+			timeValue = (float64(h)*3600 + float64(m)*60 + s) / 86400
+		}
+	}
+	y, m, d, _, err := strToDate(text)
+	errDate = err.Type == ArgError
+	if !errDate {
+		dateValue = daysBetween(excelMinTime1900.Unix(), makeDate(y, time.Month(m), d)) + 1
+	}
+	if errTime && errDate {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return newNumberFormulaArg(dateValue + timeValue)
+}
+
 // Conditional Functions
 
 // IF function tests a supplied condition and returns one result if the
@@ -6720,7 +8866,7 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 	var (
 		cond   bool
 		err    error
-		result string
+		result formulaArg
 	)
 	switch token.Type {
 	case ArgString:
@@ -6731,16 +8877,84 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 			return newBoolFormulaArg(cond)
 		}
 		if cond {
-			return newStringFormulaArg(argsList.Front().Next().Value.(formulaArg).String)
+			value := argsList.Front().Next().Value.(formulaArg)
+			switch value.Type {
+			case ArgNumber:
+				result = value.ToNumber()
+			default:
+				result = newStringFormulaArg(value.String)
+			}
+			return result
 		}
 		if argsList.Len() == 3 {
-			result = argsList.Back().Value.(formulaArg).String
+			value := argsList.Back().Value.(formulaArg)
+			switch value.Type {
+			case ArgNumber:
+				result = value.ToNumber()
+			default:
+				result = newStringFormulaArg(value.String)
+			}
 		}
 	}
-	return newStringFormulaArg(result)
+	return result
 }
 
 // Lookup and Reference Functions
+
+// ADDRESS function takes a row and a column number and returns a cell
+// reference as a text string. The syntax of the function is:
+//
+//    ADDRESS(row_num,column_num,[abs_num],[a1],[sheet_text])
+//
+func (fn *formulaFuncs) ADDRESS(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ADDRESS requires at least 2 arguments")
+	}
+	if argsList.Len() > 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ADDRESS requires at most 5 arguments")
+	}
+	rowNum := argsList.Front().Value.(formulaArg).ToNumber()
+	if rowNum.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if rowNum.Number >= TotalRows {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	colNum := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if colNum.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	absNum := newNumberFormulaArg(1)
+	if argsList.Len() >= 3 {
+		absNum = argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+		if absNum.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	if absNum.Number < 1 || absNum.Number > 4 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	a1 := newBoolFormulaArg(true)
+	if argsList.Len() >= 4 {
+		a1 = argsList.Front().Next().Next().Next().Value.(formulaArg).ToBool()
+		if a1.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	var sheetText string
+	if argsList.Len() == 5 {
+		sheetText = trimSheetName(argsList.Back().Value.(formulaArg).Value())
+	}
+	if len(sheetText) > 0 {
+		sheetText = fmt.Sprintf("%s!", sheetText)
+	}
+	formatter := addressFmtMaps[fmt.Sprintf("%d_%s", int(absNum.Number), a1.Value())]
+	addr, err := formatter(int(colNum.Number), int(colNum.Number))
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return newStringFormulaArg(fmt.Sprintf("%s%s", sheetText, addr))
+}
 
 // CHOOSE function returns a value from an array, that corresponds to a
 // supplied index number (position). The syntax of the function is:
@@ -6762,14 +8976,7 @@ func (fn *formulaFuncs) CHOOSE(argsList *list.List) formulaArg {
 	for i := 0; i < idx; i++ {
 		arg = arg.Next()
 	}
-	var result formulaArg
-	switch arg.Value.(formulaArg).Type {
-	case ArgString:
-		result = newStringFormulaArg(arg.Value.(formulaArg).String)
-	case ArgMatrix:
-		result = newMatrixFormulaArg(arg.Value.(formulaArg).Matrix)
-	}
-	return result
+	return arg.Value.(formulaArg)
 }
 
 // deepMatchRune finds whether the text deep matches/satisfies the pattern
@@ -6818,7 +9025,7 @@ func matchPattern(pattern, name string) (matched bool) {
 // compareFormulaArg compares the left-hand sides and the right-hand sides
 // formula arguments by given conditions such as case sensitive, if exact
 // match, and make compare result as formula criteria condition type.
-func compareFormulaArg(lhs, rhs formulaArg, caseSensitive, exactMatch bool) byte {
+func compareFormulaArg(lhs, rhs, matchMode formulaArg, caseSensitive bool) byte {
 	if lhs.Type != rhs.Type {
 		return criteriaErr
 	}
@@ -6836,35 +9043,26 @@ func compareFormulaArg(lhs, rhs formulaArg, caseSensitive, exactMatch bool) byte
 		if !caseSensitive {
 			ls, rs = strings.ToLower(ls), strings.ToLower(rs)
 		}
-		if exactMatch {
-			match := matchPattern(rs, ls)
-			if match {
+		if matchMode.Number == matchModeWildcard {
+			if matchPattern(rs, ls) {
 				return criteriaEq
 			}
-			return criteriaG
+
 		}
-		switch strings.Compare(ls, rs) {
-		case 1:
-			return criteriaG
-		case -1:
-			return criteriaL
-		case 0:
-			return criteriaEq
-		}
-		return criteriaErr
+		return map[int]byte{1: criteriaG, -1: criteriaL, 0: criteriaEq}[strings.Compare(ls, rs)]
 	case ArgEmpty:
 		return criteriaEq
 	case ArgList:
-		return compareFormulaArgList(lhs, rhs, caseSensitive, exactMatch)
+		return compareFormulaArgList(lhs, rhs, matchMode, caseSensitive)
 	case ArgMatrix:
-		return compareFormulaArgMatrix(lhs, rhs, caseSensitive, exactMatch)
+		return compareFormulaArgMatrix(lhs, rhs, matchMode, caseSensitive)
 	}
 	return criteriaErr
 }
 
 // compareFormulaArgList compares the left-hand sides and the right-hand sides
 // list type formula arguments.
-func compareFormulaArgList(lhs, rhs formulaArg, caseSensitive, exactMatch bool) byte {
+func compareFormulaArgList(lhs, rhs, matchMode formulaArg, caseSensitive bool) byte {
 	if len(lhs.List) < len(rhs.List) {
 		return criteriaL
 	}
@@ -6872,7 +9070,7 @@ func compareFormulaArgList(lhs, rhs formulaArg, caseSensitive, exactMatch bool) 
 		return criteriaG
 	}
 	for arg := range lhs.List {
-		criteria := compareFormulaArg(lhs.List[arg], rhs.List[arg], caseSensitive, exactMatch)
+		criteria := compareFormulaArg(lhs.List[arg], rhs.List[arg], matchMode, caseSensitive)
 		if criteria != criteriaEq {
 			return criteria
 		}
@@ -6882,7 +9080,7 @@ func compareFormulaArgList(lhs, rhs formulaArg, caseSensitive, exactMatch bool) 
 
 // compareFormulaArgMatrix compares the left-hand sides and the right-hand sides
 // matrix type formula arguments.
-func compareFormulaArgMatrix(lhs, rhs formulaArg, caseSensitive, exactMatch bool) byte {
+func compareFormulaArgMatrix(lhs, rhs, matchMode formulaArg, caseSensitive bool) byte {
 	if len(lhs.Matrix) < len(rhs.Matrix) {
 		return criteriaL
 	}
@@ -6899,7 +9097,7 @@ func compareFormulaArgMatrix(lhs, rhs formulaArg, caseSensitive, exactMatch bool
 			return criteriaG
 		}
 		for arg := range left {
-			criteria := compareFormulaArg(left[arg], right[arg], caseSensitive, exactMatch)
+			criteria := compareFormulaArg(left[arg], right[arg], matchMode, caseSensitive)
 			if criteria != criteriaEq {
 				return criteria
 			}
@@ -6930,16 +9128,9 @@ func (fn *formulaFuncs) COLUMN(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(float64(col))
 }
 
-// COLUMNS function receives an Excel range and returns the number of columns
-// that are contained within the range. The syntax of the function is:
-//
-//    COLUMNS(array)
-//
-func (fn *formulaFuncs) COLUMNS(argsList *list.List) formulaArg {
-	if argsList.Len() != 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "COLUMNS requires 1 argument")
-	}
-	var min, max int
+// calcColumnsMinMax calculation min and max value for given formula arguments
+// sequence of the formula function COLUMNS.
+func calcColumnsMinMax(argsList *list.List) (min, max int) {
 	if argsList.Front().Value.(formulaArg).cellRanges != nil && argsList.Front().Value.(formulaArg).cellRanges.Len() > 0 {
 		crs := argsList.Front().Value.(formulaArg).cellRanges
 		for cr := crs.Front(); cr != nil; cr = cr.Next() {
@@ -6974,6 +9165,19 @@ func (fn *formulaFuncs) COLUMNS(argsList *list.List) formulaArg {
 			}
 		}
 	}
+	return
+}
+
+// COLUMNS function receives an Excel range and returns the number of columns
+// that are contained within the range. The syntax of the function is:
+//
+//    COLUMNS(array)
+//
+func (fn *formulaFuncs) COLUMNS(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "COLUMNS requires 1 argument")
+	}
+	min, max := calcColumnsMinMax(argsList)
 	if max == TotalColumns {
 		return newNumberFormulaArg(float64(TotalColumns))
 	}
@@ -6987,6 +9191,46 @@ func (fn *formulaFuncs) COLUMNS(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(float64(result))
 }
 
+// checkHVLookupArgs checking arguments, prepare extract mode, lookup value,
+// and data for the formula functions HLOOKUP and VLOOKUP.
+func checkHVLookupArgs(name string, argsList *list.List) (idx int, lookupValue, tableArray, matchMode, errArg formulaArg) {
+	unit := map[string]string{
+		"HLOOKUP": "row",
+		"VLOOKUP": "col",
+	}[name]
+	if argsList.Len() < 3 {
+		errArg = newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 3 arguments", name))
+		return
+	}
+	if argsList.Len() > 4 {
+		errArg = newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at most 4 arguments", name))
+		return
+	}
+	lookupValue = argsList.Front().Value.(formulaArg)
+	tableArray = argsList.Front().Next().Value.(formulaArg)
+	if tableArray.Type != ArgMatrix {
+		errArg = newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires second argument of table array", name))
+		return
+	}
+	arg := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if arg.Type != ArgNumber {
+		errArg = newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires numeric %s argument", name, unit))
+		return
+	}
+	idx, matchMode = int(arg.Number)-1, newNumberFormulaArg(matchModeMaxLess)
+	if argsList.Len() == 4 {
+		rangeLookup := argsList.Back().Value.(formulaArg).ToBool()
+		if rangeLookup.Type == ArgError {
+			errArg = newErrorFormulaArg(formulaErrorVALUE, rangeLookup.Error)
+			return
+		}
+		if rangeLookup.Number == 0 {
+			matchMode = newNumberFormulaArg(matchModeWildcard)
+		}
+	}
+	return
+}
+
 // HLOOKUP function 'looks up' a given value in the top row of a data array
 // (or table), and returns the corresponding value from another row of the
 // array. The syntax of the function is:
@@ -6994,55 +9238,16 @@ func (fn *formulaFuncs) COLUMNS(argsList *list.List) formulaArg {
 //    HLOOKUP(lookup_value,table_array,row_index_num,[range_lookup])
 //
 func (fn *formulaFuncs) HLOOKUP(argsList *list.List) formulaArg {
-	if argsList.Len() < 3 {
-		return newErrorFormulaArg(formulaErrorVALUE, "HLOOKUP requires at least 3 arguments")
+	rowIdx, lookupValue, tableArray, matchMode, errArg := checkHVLookupArgs("HLOOKUP", argsList)
+	if errArg.Type == ArgError {
+		return errArg
 	}
-	if argsList.Len() > 4 {
-		return newErrorFormulaArg(formulaErrorVALUE, "HLOOKUP requires at most 4 arguments")
-	}
-	lookupValue := argsList.Front().Value.(formulaArg)
-	tableArray := argsList.Front().Next().Value.(formulaArg)
-	if tableArray.Type != ArgMatrix {
-		return newErrorFormulaArg(formulaErrorVALUE, "HLOOKUP requires second argument of table array")
-	}
-	rowArg := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
-	if rowArg.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, "HLOOKUP requires numeric row argument")
-	}
-	rowIdx, matchIdx, wasExact, exactMatch := int(rowArg.Number)-1, -1, false, false
-	if argsList.Len() == 4 {
-		rangeLookup := argsList.Back().Value.(formulaArg).ToBool()
-		if rangeLookup.Type == ArgError {
-			return newErrorFormulaArg(formulaErrorVALUE, rangeLookup.Error)
-		}
-		if rangeLookup.Number == 0 {
-			exactMatch = true
-		}
-	}
-	row := tableArray.Matrix[0]
-	if exactMatch || len(tableArray.Matrix) == TotalRows {
-	start:
-		for idx, mtx := range row {
-			lhs := mtx
-			switch lookupValue.Type {
-			case ArgNumber:
-				if !lookupValue.Boolean {
-					lhs = mtx.ToNumber()
-					if lhs.Type == ArgError {
-						lhs = mtx
-					}
-				}
-			case ArgMatrix:
-				lhs = tableArray
-			}
-			if compareFormulaArg(lhs, lookupValue, false, exactMatch) == criteriaEq {
-				matchIdx = idx
-				wasExact = true
-				break start
-			}
-		}
+	var matchIdx int
+	var wasExact bool
+	if matchMode.Number == matchModeWildcard || len(tableArray.Matrix) == TotalRows {
+		matchIdx, wasExact = lookupLinearSearch(false, lookupValue, tableArray, matchMode, newNumberFormulaArg(searchModeLinear))
 	} else {
-		matchIdx, wasExact = hlookupBinarySearch(row, lookupValue)
+		matchIdx, wasExact = lookupBinarySearch(false, lookupValue, tableArray, matchMode, newNumberFormulaArg(searchModeAscBinary))
 	}
 	if matchIdx == -1 {
 		return newErrorFormulaArg(formulaErrorNA, "HLOOKUP no result found")
@@ -7050,11 +9255,161 @@ func (fn *formulaFuncs) HLOOKUP(argsList *list.List) formulaArg {
 	if rowIdx < 0 || rowIdx >= len(tableArray.Matrix) {
 		return newErrorFormulaArg(formulaErrorNA, "HLOOKUP has invalid row index")
 	}
-	row = tableArray.Matrix[rowIdx]
-	if wasExact || !exactMatch {
+	row := tableArray.Matrix[rowIdx]
+	if wasExact || matchMode.Number == matchModeWildcard {
 		return row[matchIdx]
 	}
 	return newErrorFormulaArg(formulaErrorNA, "HLOOKUP no result found")
+}
+
+// calcMatch returns the position of the value by given match type, criteria
+// and lookup array for the formula function MATCH.
+func calcMatch(matchType int, criteria *formulaCriteria, lookupArray []formulaArg) formulaArg {
+	switch matchType {
+	case 0:
+		for i, arg := range lookupArray {
+			if ok, _ := formulaCriteriaEval(arg.Value(), criteria); ok {
+				return newNumberFormulaArg(float64(i + 1))
+			}
+		}
+	case -1:
+		for i, arg := range lookupArray {
+			if ok, _ := formulaCriteriaEval(arg.Value(), criteria); ok {
+				return newNumberFormulaArg(float64(i + 1))
+			}
+			if ok, _ := formulaCriteriaEval(arg.Value(), &formulaCriteria{
+				Type: criteriaL, Condition: criteria.Condition,
+			}); ok {
+				if i == 0 {
+					return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+				}
+				return newNumberFormulaArg(float64(i))
+			}
+		}
+	case 1:
+		for i, arg := range lookupArray {
+			if ok, _ := formulaCriteriaEval(arg.Value(), criteria); ok {
+				return newNumberFormulaArg(float64(i + 1))
+			}
+			if ok, _ := formulaCriteriaEval(arg.Value(), &formulaCriteria{
+				Type: criteriaG, Condition: criteria.Condition,
+			}); ok {
+				if i == 0 {
+					return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+				}
+				return newNumberFormulaArg(float64(i))
+			}
+		}
+	}
+	return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+}
+
+// MATCH function looks up a value in an array, and returns the position of
+// the value within the array. The user can specify that the function should
+// only return a result if an exact match is found, or that the function
+// should return the position of the closest match (above or below), if an
+// exact match is not found. The syntax of the Match function is:
+//
+//    MATCH(lookup_value,lookup_array,[match_type])
+//
+func (fn *formulaFuncs) MATCH(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 && argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MATCH requires 1 or 2 arguments")
+	}
+	var (
+		matchType      = 1
+		lookupArray    []formulaArg
+		lookupArrayArg = argsList.Front().Next().Value.(formulaArg)
+		lookupArrayErr = "MATCH arguments lookup_array should be one-dimensional array"
+	)
+	if argsList.Len() == 3 {
+		matchTypeArg := argsList.Back().Value.(formulaArg).ToNumber()
+		if matchTypeArg.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, "MATCH requires numeric match_type argument")
+		}
+		if matchTypeArg.Number == -1 || matchTypeArg.Number == 0 {
+			matchType = int(matchTypeArg.Number)
+		}
+	}
+	switch lookupArrayArg.Type {
+	case ArgMatrix:
+		if len(lookupArrayArg.Matrix[0]) != 1 {
+			return newErrorFormulaArg(formulaErrorNA, lookupArrayErr)
+		}
+		lookupArray = lookupArrayArg.ToList()
+	default:
+		return newErrorFormulaArg(formulaErrorNA, lookupArrayErr)
+	}
+	return calcMatch(matchType, formulaCriteriaParser(argsList.Front().Value.(formulaArg).String), lookupArray)
+}
+
+// TRANSPOSE function 'transposes' an array of cells (i.e. the function copies
+// a horizontal range of cells into a vertical range and vice versa). The
+// syntax of the function is:
+//
+//    TRANSPOSE(array)
+//
+func (fn *formulaFuncs) TRANSPOSE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TRANSPOSE requires 1 argument")
+	}
+	args := argsList.Back().Value.(formulaArg).ToList()
+	rmin, rmax := calcRowsMinMax(argsList)
+	cmin, cmax := calcColumnsMinMax(argsList)
+	cols, rows := cmax-cmin+1, rmax-rmin+1
+	src := make([][]formulaArg, 0)
+	for i := 0; i < len(args); i += cols {
+		src = append(src, args[i:i+cols])
+	}
+	mtx := make([][]formulaArg, cols)
+	for r, row := range src {
+		colIdx := r % rows
+		for c, cell := range row {
+			rowIdx := c % cols
+			if len(mtx[rowIdx]) == 0 {
+				mtx[rowIdx] = make([]formulaArg, rows)
+			}
+			mtx[rowIdx][colIdx] = cell
+		}
+	}
+	return newMatrixFormulaArg(mtx)
+}
+
+// lookupLinearSearch sequentially checks each look value of the lookup array until
+// a match is found or the whole list has been searched.
+func lookupLinearSearch(vertical bool, lookupValue, lookupArray, matchMode, searchMode formulaArg) (int, bool) {
+	tableArray := []formulaArg{}
+	if vertical {
+		for _, row := range lookupArray.Matrix {
+			tableArray = append(tableArray, row[0])
+		}
+	} else {
+		tableArray = lookupArray.Matrix[0]
+	}
+	matchIdx, wasExact := -1, false
+start:
+	for i, cell := range tableArray {
+		lhs := cell
+		if lookupValue.Type == ArgNumber {
+			if lhs = cell.ToNumber(); lhs.Type == ArgError {
+				lhs = cell
+			}
+		} else if lookupValue.Type == ArgMatrix {
+			lhs = lookupArray
+		}
+		if compareFormulaArg(lhs, lookupValue, matchMode, false) == criteriaEq {
+			matchIdx = i
+			wasExact = true
+			if searchMode.Number == searchModeLinear {
+				break start
+			}
+		}
+		if matchMode.Number == matchModeMinGreater || matchMode.Number == matchModeMaxLess {
+			matchIdx = int(calcMatch(int(matchMode.Number), formulaCriteriaParser(lookupValue.Value()), tableArray).Number)
+			continue
+		}
+	}
+	return matchIdx, wasExact
 }
 
 // VLOOKUP function 'looks up' a given value in the left-hand column of a
@@ -7064,99 +9419,70 @@ func (fn *formulaFuncs) HLOOKUP(argsList *list.List) formulaArg {
 //    VLOOKUP(lookup_value,table_array,col_index_num,[range_lookup])
 //
 func (fn *formulaFuncs) VLOOKUP(argsList *list.List) formulaArg {
-	if argsList.Len() < 3 {
-		return newErrorFormulaArg(formulaErrorVALUE, "VLOOKUP requires at least 3 arguments")
+	colIdx, lookupValue, tableArray, matchMode, errArg := checkHVLookupArgs("VLOOKUP", argsList)
+	if errArg.Type == ArgError {
+		return errArg
 	}
-	if argsList.Len() > 4 {
-		return newErrorFormulaArg(formulaErrorVALUE, "VLOOKUP requires at most 4 arguments")
-	}
-	lookupValue := argsList.Front().Value.(formulaArg)
-	tableArray := argsList.Front().Next().Value.(formulaArg)
-	if tableArray.Type != ArgMatrix {
-		return newErrorFormulaArg(formulaErrorVALUE, "VLOOKUP requires second argument of table array")
-	}
-	colIdx := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
-	if colIdx.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, "VLOOKUP requires numeric col argument")
-	}
-	col, matchIdx, wasExact, exactMatch := int(colIdx.Number)-1, -1, false, false
-	if argsList.Len() == 4 {
-		rangeLookup := argsList.Back().Value.(formulaArg).ToBool()
-		if rangeLookup.Type == ArgError {
-			return newErrorFormulaArg(formulaErrorVALUE, rangeLookup.Error)
-		}
-		if rangeLookup.Number == 0 {
-			exactMatch = true
-		}
-	}
-	if exactMatch || len(tableArray.Matrix) == TotalRows {
-	start:
-		for idx, mtx := range tableArray.Matrix {
-			lhs := mtx[0]
-			switch lookupValue.Type {
-			case ArgNumber:
-				if !lookupValue.Boolean {
-					lhs = mtx[0].ToNumber()
-					if lhs.Type == ArgError {
-						lhs = mtx[0]
-					}
-				}
-			case ArgMatrix:
-				lhs = tableArray
-			}
-			if compareFormulaArg(lhs, lookupValue, false, exactMatch) == criteriaEq {
-				matchIdx = idx
-				wasExact = true
-				break start
-			}
-		}
+	var matchIdx int
+	var wasExact bool
+	if matchMode.Number == matchModeWildcard || len(tableArray.Matrix) == TotalRows {
+		matchIdx, wasExact = lookupLinearSearch(true, lookupValue, tableArray, matchMode, newNumberFormulaArg(searchModeLinear))
 	} else {
-		matchIdx, wasExact = vlookupBinarySearch(tableArray, lookupValue)
+		matchIdx, wasExact = lookupBinarySearch(true, lookupValue, tableArray, matchMode, newNumberFormulaArg(searchModeAscBinary))
 	}
 	if matchIdx == -1 {
 		return newErrorFormulaArg(formulaErrorNA, "VLOOKUP no result found")
 	}
 	mtx := tableArray.Matrix[matchIdx]
-	if col < 0 || col >= len(mtx) {
+	if colIdx < 0 || colIdx >= len(mtx) {
 		return newErrorFormulaArg(formulaErrorNA, "VLOOKUP has invalid column index")
 	}
-	if wasExact || !exactMatch {
-		return mtx[col]
+	if wasExact || matchMode.Number == matchModeWildcard {
+		return mtx[colIdx]
 	}
 	return newErrorFormulaArg(formulaErrorNA, "VLOOKUP no result found")
 }
 
-// vlookupBinarySearch finds the position of a target value when range lookup
+// lookupBinarySearch finds the position of a target value when range lookup
 // is TRUE, if the data of table array can't guarantee be sorted, it will
 // return wrong result.
-func vlookupBinarySearch(tableArray, lookupValue formulaArg) (matchIdx int, wasExact bool) {
-	var low, high, lastMatchIdx int = 0, len(tableArray.Matrix) - 1, -1
-	for low <= high {
-		var mid int = low + (high-low)/2
-		mtx := tableArray.Matrix[mid]
-		lhs := mtx[0]
-		switch lookupValue.Type {
-		case ArgNumber:
-			if !lookupValue.Boolean {
-				lhs = mtx[0].ToNumber()
-				if lhs.Type == ArgError {
-					lhs = mtx[0]
-				}
-			}
-		case ArgMatrix:
-			lhs = tableArray
+func lookupBinarySearch(vertical bool, lookupValue, lookupArray, matchMode, searchMode formulaArg) (matchIdx int, wasExact bool) {
+	tableArray := []formulaArg{}
+	if vertical {
+		for _, row := range lookupArray.Matrix {
+			tableArray = append(tableArray, row[0])
 		}
-		result := compareFormulaArg(lhs, lookupValue, false, false)
+	} else {
+		tableArray = lookupArray.Matrix[0]
+	}
+	var low, high, lastMatchIdx int = 0, len(tableArray) - 1, -1
+	count := high
+	for low <= high {
+		mid := low + (high-low)/2
+		cell := tableArray[mid]
+		lhs := cell
+		if lookupValue.Type == ArgNumber {
+			if lhs = cell.ToNumber(); lhs.Type == ArgError {
+				lhs = cell
+			}
+		} else if lookupValue.Type == ArgMatrix && vertical {
+			lhs = lookupArray
+		}
+		result := compareFormulaArg(lhs, lookupValue, matchMode, false)
 		if result == criteriaEq {
 			matchIdx, wasExact = mid, true
+			if searchMode.Number == searchModeDescBinary {
+				matchIdx = count - matchIdx
+			}
 			return
 		} else if result == criteriaG {
 			high = mid - 1
 		} else if result == criteriaL {
-			matchIdx, low = mid, mid+1
+			matchIdx = mid
 			if lhs.Value() != "" {
 				lastMatchIdx = matchIdx
 			}
+			low = mid + 1
 		} else {
 			return -1, false
 		}
@@ -7165,49 +9491,34 @@ func vlookupBinarySearch(tableArray, lookupValue formulaArg) (matchIdx int, wasE
 	return
 }
 
-// vlookupBinarySearch finds the position of a target value when range lookup
-// is TRUE, if the data of table array can't guarantee be sorted, it will
-// return wrong result.
-func hlookupBinarySearch(row []formulaArg, lookupValue formulaArg) (matchIdx int, wasExact bool) {
-	var low, high, lastMatchIdx int = 0, len(row) - 1, -1
-	for low <= high {
-		var mid int = low + (high-low)/2
-		mtx := row[mid]
-		result := compareFormulaArg(mtx, lookupValue, false, false)
-		if result == criteriaEq {
-			matchIdx, wasExact = mid, true
-			return
-		} else if result == criteriaG {
-			high = mid - 1
-		} else if result == criteriaL {
-			low, lastMatchIdx = mid+1, mid
-		} else {
-			return -1, false
-		}
-	}
-	matchIdx, wasExact = lastMatchIdx, true
-	return
-}
-
-// LOOKUP function performs an approximate match lookup in a one-column or
-// one-row range, and returns the corresponding value from another one-column
-// or one-row range. The syntax of the function is:
-//
-//    LOOKUP(lookup_value,lookup_vector,[result_vector])
-//
-func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
+// checkLookupArgs checking arguments, prepare lookup value, and data for the
+// formula function LOOKUP.
+func checkLookupArgs(argsList *list.List) (arrayForm bool, lookupValue, lookupVector, errArg formulaArg) {
 	if argsList.Len() < 2 {
-		return newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires at least 2 arguments")
+		errArg = newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires at least 2 arguments")
+		return
 	}
 	if argsList.Len() > 3 {
-		return newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires at most 3 arguments")
+		errArg = newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires at most 3 arguments")
+		return
 	}
-	lookupValue := argsList.Front().Value.(formulaArg)
-	lookupVector := argsList.Front().Next().Value.(formulaArg)
+	lookupValue = argsList.Front().Value.(formulaArg)
+	lookupVector = argsList.Front().Next().Value.(formulaArg)
 	if lookupVector.Type != ArgMatrix && lookupVector.Type != ArgList {
-		return newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires second argument of table array")
+		errArg = newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires second argument of table array")
+		return
 	}
-	cols, matchIdx := lookupCol(lookupVector), -1
+	arrayForm = lookupVector.Type == ArgMatrix
+	if arrayForm && len(lookupVector.Matrix) == 0 {
+		errArg = newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires not empty range as second argument")
+	}
+	return
+}
+
+// iterateLookupArgs iterate arguments to extract columns and calculate match
+// index for the formula function LOOKUP.
+func iterateLookupArgs(lookupValue, lookupVector formulaArg) ([]formulaArg, int, bool) {
+	cols, matchIdx, ok := lookupCol(lookupVector, 0), -1, false
 	for idx, col := range cols {
 		lhs := lookupValue
 		switch col.Type {
@@ -7219,14 +9530,244 @@ func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
 				}
 			}
 		}
-		if compareFormulaArg(lhs, col, false, false) == criteriaEq {
+		compare := compareFormulaArg(lhs, col, newNumberFormulaArg(matchModeMaxLess), false)
+		// Find exact match
+		if compare == criteriaEq {
 			matchIdx = idx
 			break
 		}
+		// Find nearest match if lookup value is more than or equal to the first value in lookup vector
+		if idx == 0 {
+			ok = compare == criteriaG
+		} else if ok && compare == criteriaL && matchIdx == -1 {
+			matchIdx = idx - 1
+		}
 	}
-	column := cols
+	return cols, matchIdx, ok
+}
+
+// index is an implementation of the formula function INDEX.
+func (fn *formulaFuncs) index(array formulaArg, rowIdx, colIdx int) formulaArg {
+	var cells []formulaArg
+	if array.Type == ArgMatrix {
+		cellMatrix := array.Matrix
+		if rowIdx < -1 || rowIdx >= len(cellMatrix) {
+			return newErrorFormulaArg(formulaErrorREF, "INDEX row_num out of range")
+		}
+		if rowIdx == -1 {
+			if colIdx >= len(cellMatrix[0]) {
+				return newErrorFormulaArg(formulaErrorREF, "INDEX col_num out of range")
+			}
+			column := [][]formulaArg{}
+			for _, cells = range cellMatrix {
+				column = append(column, []formulaArg{cells[colIdx]})
+			}
+			return newMatrixFormulaArg(column)
+		}
+		cells = cellMatrix[rowIdx]
+	}
+	if colIdx < -1 || colIdx >= len(cells) {
+		return newErrorFormulaArg(formulaErrorREF, "INDEX col_num out of range")
+	}
+	return newListFormulaArg(cells)
+}
+
+// validateMatchMode check the number of match mode if be equal to 0, 1, -1 or
+// 2.
+func validateMatchMode(mode float64) bool {
+	return mode == matchModeExact || mode == matchModeMinGreater || mode == matchModeMaxLess || mode == matchModeWildcard
+}
+
+// validateSearchMode check the number of search mode if be equal to 1, -1, 2
+// or -2.
+func validateSearchMode(mode float64) bool {
+	return mode == searchModeLinear || mode == searchModeReverseLinear || mode == searchModeAscBinary || mode == searchModeDescBinary
+}
+
+// prepareXlookupArgs checking and prepare arguments for the formula function
+// XLOOKUP.
+func (fn *formulaFuncs) prepareXlookupArgs(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "XLOOKUP requires at least 3 arguments")
+	}
+	if argsList.Len() > 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, "XLOOKUP allows at most 6 arguments")
+	}
+	lookupValue := argsList.Front().Value.(formulaArg)
+	lookupArray := argsList.Front().Next().Value.(formulaArg)
+	returnArray := argsList.Front().Next().Next().Value.(formulaArg)
+	ifNotFond := newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	matchMode, searchMode := newNumberFormulaArg(matchModeExact), newNumberFormulaArg(searchModeLinear)
+	if argsList.Len() > 3 {
+		ifNotFond = argsList.Front().Next().Next().Next().Value.(formulaArg)
+	}
+	if argsList.Len() > 4 {
+		if matchMode = argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber(); matchMode.Type != ArgNumber {
+			return matchMode
+		}
+	}
+	if argsList.Len() > 5 {
+		if searchMode = argsList.Back().Value.(formulaArg).ToNumber(); searchMode.Type != ArgNumber {
+			return searchMode
+		}
+	}
+	if lookupArray.Type != ArgMatrix || returnArray.Type != ArgMatrix {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	if !validateMatchMode(matchMode.Number) || !validateSearchMode(searchMode.Number) {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return newListFormulaArg([]formulaArg{lookupValue, lookupArray, returnArray, ifNotFond, matchMode, searchMode})
+}
+
+// xlookup is an implementation of the formula function XLOOKUP.
+func (fn *formulaFuncs) xlookup(lookupRows, lookupCols, returnArrayRows, returnArrayCols, matchIdx int,
+	condition1, condition2, condition3, condition4 bool, returnArray formulaArg) formulaArg {
+	result := [][]formulaArg{}
+	for rowIdx, row := range returnArray.Matrix {
+		for colIdx, cell := range row {
+			if condition1 {
+				if condition2 {
+					result = append(result, []formulaArg{cell})
+					continue
+				}
+				if returnArrayRows > 1 && returnArrayCols > 1 {
+					return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+				}
+			}
+			if condition3 {
+				if returnArrayCols != lookupCols {
+					return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+				}
+				if colIdx == matchIdx {
+					result = append(result, []formulaArg{cell})
+					continue
+				}
+			}
+			if condition4 {
+				if returnArrayRows != lookupRows {
+					return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+				}
+				if rowIdx == matchIdx {
+					if len(result) == 0 {
+						result = append(result, []formulaArg{cell})
+						continue
+					}
+					result[0] = append(result[0], cell)
+				}
+			}
+		}
+	}
+	array := newMatrixFormulaArg(result)
+	cells := array.ToList()
+	if len(cells) == 1 {
+		return cells[0]
+	}
+	return array
+}
+
+// XLOOKUP function searches a range or an array, and then returns the item
+// corresponding to the first match it finds. If no match exists, then
+// XLOOKUP can return the closest (approximate) match. The syntax of the
+// function is:
+//
+//    XLOOKUP(lookup_value,lookup_array,return_array,[if_not_found],[match_mode],[search_mode])
+//
+func (fn *formulaFuncs) XLOOKUP(argsList *list.List) formulaArg {
+	args := fn.prepareXlookupArgs(argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	lookupValue, lookupArray, returnArray, ifNotFond, matchMode, searchMode := args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5]
+	lookupRows, lookupCols := len(lookupArray.Matrix), 0
+	if lookupRows > 0 {
+		lookupCols = len(lookupArray.Matrix[0])
+	}
+	if lookupRows != 1 && lookupCols != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	verticalLookup := lookupRows >= lookupCols
+	var matchIdx int
+	switch searchMode.Number {
+	case searchModeLinear, searchModeReverseLinear:
+		matchIdx, _ = lookupLinearSearch(verticalLookup, lookupValue, lookupArray, matchMode, searchMode)
+	default:
+		matchIdx, _ = lookupBinarySearch(verticalLookup, lookupValue, lookupArray, matchMode, searchMode)
+	}
+	if matchIdx == -1 {
+		return ifNotFond
+	}
+	returnArrayRows, returnArrayCols := len(returnArray.Matrix), len(returnArray.Matrix[0])
+	condition1 := lookupRows == 1 && lookupCols == 1
+	condition2 := returnArrayRows == 1 || returnArrayCols == 1
+	condition3 := lookupRows == 1 && lookupCols > 1
+	condition4 := lookupRows > 1 && lookupCols == 1
+	return fn.xlookup(lookupRows, lookupCols, returnArrayRows, returnArrayCols, matchIdx, condition1, condition2, condition3, condition4, returnArray)
+}
+
+// INDEX function returns a reference to a cell that lies in a specified row
+// and column of a range of cells. The syntax of the function is:
+//
+//    INDEX(array,row_num,[col_num])
+//
+func (fn *formulaFuncs) INDEX(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 || argsList.Len() > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "INDEX requires 2 or 3 arguments")
+	}
+	array := argsList.Front().Value.(formulaArg)
+	if array.Type != ArgMatrix && array.Type != ArgList {
+		array = newMatrixFormulaArg([][]formulaArg{{array}})
+	}
+	rowArg := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if rowArg.Type != ArgNumber {
+		return rowArg
+	}
+	rowIdx, colIdx := int(rowArg.Number)-1, -1
 	if argsList.Len() == 3 {
-		column = lookupCol(argsList.Back().Value.(formulaArg))
+		colArg := argsList.Back().Value.(formulaArg).ToNumber()
+		if colArg.Type != ArgNumber {
+			return colArg
+		}
+		colIdx = int(colArg.Number) - 1
+	}
+	if rowIdx == -1 && colIdx == -1 {
+		if len(array.ToList()) != 1 {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+		return array.ToList()[0]
+	}
+	cells := fn.index(array, rowIdx, colIdx)
+	if cells.Type != ArgList {
+		return cells
+	}
+	if colIdx == -1 {
+		return newMatrixFormulaArg([][]formulaArg{cells.List})
+	}
+	return cells.List[colIdx]
+}
+
+// LOOKUP function performs an approximate match lookup in a one-column or
+// one-row range, and returns the corresponding value from another one-column
+// or one-row range. The syntax of the function is:
+//
+//    LOOKUP(lookup_value,lookup_vector,[result_vector])
+//
+func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
+	arrayForm, lookupValue, lookupVector, errArg := checkLookupArgs(argsList)
+	if errArg.Type == ArgError {
+		return errArg
+	}
+	cols, matchIdx, ok := iterateLookupArgs(lookupValue, lookupVector)
+	if ok && matchIdx == -1 {
+		matchIdx = len(cols) - 1
+	}
+	var column []formulaArg
+	if argsList.Len() == 3 {
+		column = lookupCol(argsList.Back().Value.(formulaArg), 0)
+	} else if arrayForm && len(lookupVector.Matrix[0]) > 1 {
+		column = lookupCol(lookupVector, 1)
+	} else {
+		column = cols
 	}
 	if matchIdx < 0 || matchIdx >= len(column) {
 		return newErrorFormulaArg(formulaErrorNA, "LOOKUP no result found")
@@ -7235,13 +9776,13 @@ func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
 }
 
 // lookupCol extract columns for LOOKUP.
-func lookupCol(arr formulaArg) []formulaArg {
+func lookupCol(arr formulaArg, idx int) []formulaArg {
 	col := arr.List
 	if arr.Type == ArgMatrix {
 		col = nil
 		for _, r := range arr.Matrix {
 			if len(r) > 0 {
-				col = append(col, r[0])
+				col = append(col, r[idx])
 				continue
 			}
 			col = append(col, newEmptyFormulaArg())
@@ -7272,16 +9813,9 @@ func (fn *formulaFuncs) ROW(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(float64(row))
 }
 
-// ROWS function takes an Excel range and returns the number of rows that are
-// contained within the range. The syntax of the function is:
-//
-//    ROWS(array)
-//
-func (fn *formulaFuncs) ROWS(argsList *list.List) formulaArg {
-	if argsList.Len() != 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "ROWS requires 1 argument")
-	}
-	var min, max int
+// calcRowsMinMax calculation min and max value for given formula arguments
+// sequence of the formula function ROWS.
+func calcRowsMinMax(argsList *list.List) (min, max int) {
 	if argsList.Front().Value.(formulaArg).cellRanges != nil && argsList.Front().Value.(formulaArg).cellRanges.Len() > 0 {
 		crs := argsList.Front().Value.(formulaArg).cellRanges
 		for cr := crs.Front(); cr != nil; cr = cr.Next() {
@@ -7316,6 +9850,19 @@ func (fn *formulaFuncs) ROWS(argsList *list.List) formulaArg {
 			}
 		}
 	}
+	return
+}
+
+// ROWS function takes an Excel range and returns the number of rows that are
+// contained within the range. The syntax of the function is:
+//
+//    ROWS(array)
+//
+func (fn *formulaFuncs) ROWS(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ROWS requires 1 argument")
+	}
+	min, max := calcRowsMinMax(argsList)
 	if max == TotalRows {
 		return newStringFormulaArg(strconv.Itoa(TotalRows))
 	}
@@ -7347,6 +9894,454 @@ func (fn *formulaFuncs) ENCODEURL(argsList *list.List) formulaArg {
 
 // Financial Functions
 
+// validateFrequency check the number of coupon payments per year if be equal to 1, 2 or 4.
+func validateFrequency(freq float64) bool {
+	return freq == 1 || freq == 2 || freq == 4
+}
+
+// ACCRINT function returns the accrued interest for a security that pays
+// periodic interest. The syntax of the function is:
+//
+//    ACCRINT(issue,first_interest,settlement,rate,par,frequency,[basis],[calc_method])
+//
+func (fn *formulaFuncs) ACCRINT(argsList *list.List) formulaArg {
+	if argsList.Len() < 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ACCRINT requires at least 6 arguments")
+	}
+	if argsList.Len() > 8 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ACCRINT allows at most 8 arguments")
+	}
+	args := fn.prepareDataValueArgs(3, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	issue, settlement := args.List[0], args.List[2]
+	rate := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	par := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	frequency := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber || par.Type != ArgNumber || frequency.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if !validateFrequency(frequency.Number) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() >= 7 {
+		if basis = argsList.Front().Next().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	cm := newBoolFormulaArg(true)
+	if argsList.Len() == 8 {
+		if cm = argsList.Back().Value.(formulaArg).ToBool(); cm.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	frac1 := yearFrac(issue.Number, settlement.Number, int(basis.Number))
+	if frac1.Type != ArgNumber {
+		return frac1
+	}
+	return newNumberFormulaArg(par.Number * rate.Number * frac1.Number)
+}
+
+// ACCRINTM function returns the accrued interest for a security that pays
+// interest at maturity. The syntax of the function is:
+//
+//    ACCRINTM(issue,settlement,rate,[par],[basis])
+//
+func (fn *formulaFuncs) ACCRINTM(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 && argsList.Len() != 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ACCRINTM requires 4 or 5 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	issue, settlement := args.List[0], args.List[1]
+	if settlement.Number < issue.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	rate := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	par := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber || par.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if par.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 5 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	frac := yearFrac(issue.Number, settlement.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	return newNumberFormulaArg(frac.Number * rate.Number * par.Number)
+}
+
+// prepareAmorArgs checking and prepare arguments for the formula functions
+// AMORDEGRC and AMORLINC.
+func (fn *formulaFuncs) prepareAmorArgs(name string, argsList *list.List) formulaArg {
+	cost := argsList.Front().Value.(formulaArg).ToNumber()
+	if cost.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires cost to be number argument", name))
+	}
+	if cost.Number < 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires cost >= 0", name))
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	datePurchased := fn.DATEVALUE(args)
+	if datePurchased.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Next().Value.(formulaArg))
+	firstPeriod := fn.DATEVALUE(args)
+	if firstPeriod.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if firstPeriod.Number < datePurchased.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	salvage := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if salvage.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if salvage.Number < 0 || salvage.Number > cost.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	period := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if period.Type != ArgNumber || period.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	rate := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber || rate.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 7 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return newListFormulaArg([]formulaArg{cost, datePurchased, firstPeriod, salvage, period, rate, basis})
+}
+
+// AMORDEGRC function is provided for users of the French accounting system.
+// The function calculates the prorated linear depreciation of an asset for a
+// specified accounting period. The syntax of the function is:
+//
+//    AMORDEGRC(cost,date_purchased,first_period,salvage,period,rate,[basis])
+//
+func (fn *formulaFuncs) AMORDEGRC(argsList *list.List) formulaArg {
+	if argsList.Len() != 6 && argsList.Len() != 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, "AMORDEGRC requires 6 or 7 arguments")
+	}
+	args := fn.prepareAmorArgs("AMORDEGRC", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	cost, datePurchased, firstPeriod, salvage, period, rate, basis := args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5], args.List[6]
+	if rate.Number >= 0.5 {
+		return newErrorFormulaArg(formulaErrorNUM, "AMORDEGRC requires rate to be < 0.5")
+	}
+	assetsLife, amorCoeff := 1/rate.Number, 2.5
+	if assetsLife < 3 {
+		amorCoeff = 1
+	} else if assetsLife < 5 {
+		amorCoeff = 1.5
+	} else if assetsLife <= 6 {
+		amorCoeff = 2
+	}
+	rate.Number *= amorCoeff
+	frac := yearFrac(datePurchased.Number, firstPeriod.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	nRate := float64(int((frac.Number * cost.Number * rate.Number) + 0.5))
+	cost.Number -= nRate
+	rest := cost.Number - salvage.Number
+	for n := 0; n < int(period.Number); n++ {
+		nRate = float64(int((cost.Number * rate.Number) + 0.5))
+		rest -= nRate
+		if rest < 0 {
+			switch int(period.Number) - n {
+			case 0:
+			case 1:
+				return newNumberFormulaArg(float64(int((cost.Number * 0.5) + 0.5)))
+			default:
+				return newNumberFormulaArg(0)
+			}
+		}
+		cost.Number -= nRate
+	}
+	return newNumberFormulaArg(nRate)
+}
+
+// AMORLINC function is provided for users of the French accounting system.
+// The function calculates the prorated linear depreciation of an asset for a
+// specified accounting period. The syntax of the function is:
+//
+//    AMORLINC(cost,date_purchased,first_period,salvage,period,rate,[basis])
+//
+func (fn *formulaFuncs) AMORLINC(argsList *list.List) formulaArg {
+	if argsList.Len() != 6 && argsList.Len() != 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, "AMORLINC requires 6 or 7 arguments")
+	}
+	args := fn.prepareAmorArgs("AMORLINC", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	cost, datePurchased, firstPeriod, salvage, period, rate, basis := args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5], args.List[6]
+	frac := yearFrac(datePurchased.Number, firstPeriod.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	rate1 := frac.Number * cost.Number * rate.Number
+	if period.Number == 0 {
+		return newNumberFormulaArg(rate1)
+	}
+	rate2 := cost.Number * rate.Number
+	delta := cost.Number - salvage.Number
+	periods := int((delta - rate1) / rate2)
+	if int(period.Number) <= periods {
+		return newNumberFormulaArg(rate2)
+	} else if int(period.Number)-1 == periods {
+		return newNumberFormulaArg(delta - rate2*float64(periods) - rate1)
+	}
+	return newNumberFormulaArg(0)
+}
+
+// prepareCouponArgs checking and prepare arguments for the formula functions
+// COUPDAYBS, COUPDAYS, COUPDAYSNC, COUPPCD, COUPNUM and COUPNCD.
+func (fn *formulaFuncs) prepareCouponArgs(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 3 && argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 3 or 4 arguments", name))
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	if settlement.Number >= maturity.Number {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires maturity > settlement", name))
+	}
+	frequency := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if frequency.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if !validateFrequency(frequency.Number) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 4 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return newListFormulaArg([]formulaArg{settlement, maturity, frequency, basis})
+}
+
+// is30BasisMethod determine if the financial day count basis rules is 30/360
+// methods.
+func is30BasisMethod(basis int) bool {
+	return basis == 0 || basis == 4
+}
+
+// getDaysInMonthRange return the day by given year, month range and day count
+// basis.
+func getDaysInMonthRange(year, fromMonth, toMonth, basis int) int {
+	if fromMonth > toMonth {
+		return 0
+	}
+	return (toMonth - fromMonth + 1) * 30
+}
+
+// getDayOnBasis returns the day by given date and day count basis.
+func getDayOnBasis(y, m, d, basis int) int {
+	if !is30BasisMethod(basis) {
+		return d
+	}
+	day := d
+	dim := getDaysInMonth(y, m)
+	if day > 30 || d >= dim || day >= dim {
+		day = 30
+	}
+	return day
+}
+
+// coupdays returns the number of days that base on date range and the day
+// count basis to be used.
+func coupdays(from, to time.Time, basis int) float64 {
+	days := 0
+	fromY, fromM, fromD := from.Date()
+	toY, toM, toD := to.Date()
+	fromDay, toDay := getDayOnBasis(fromY, int(fromM), fromD, basis), getDayOnBasis(toY, int(toM), toD, basis)
+	if !is30BasisMethod(basis) {
+		return (daysBetween(excelMinTime1900.Unix(), makeDate(toY, toM, toDay)) + 1) - (daysBetween(excelMinTime1900.Unix(), makeDate(fromY, fromM, fromDay)) + 1)
+	}
+	if basis == 0 {
+		if (int(fromM) == 2 || fromDay < 30) && toD == 31 {
+			toDay = 31
+		}
+	} else {
+		if int(fromM) == 2 && fromDay == 30 {
+			fromDay = getDaysInMonth(fromY, 2)
+		}
+		if int(toM) == 2 && toDay == 30 {
+			toDay = getDaysInMonth(toY, 2)
+		}
+	}
+	if fromY < toY || (fromY == toY && int(fromM) < int(toM)) {
+		days = 30 - fromDay + 1
+		fromD = 1
+		fromDay = 1
+		date := time.Date(fromY, fromM, fromD, 0, 0, 0, 0, time.UTC).AddDate(0, 1, 0)
+		if date.Year() < toY {
+			days += getDaysInMonthRange(date.Year(), int(date.Month()), 12, basis)
+			date = date.AddDate(0, 13-int(date.Month()), 0)
+		}
+		days += getDaysInMonthRange(toY, int(date.Month()), int(toM)-1, basis)
+		date = date.AddDate(0, int(toM)-int(date.Month()), 0)
+	}
+	days += toDay - fromDay
+	if days > 0 {
+		return float64(days)
+	}
+	return 0
+}
+
+// COUPDAYBS function calculates the number of days from the beginning of a
+// coupon's period to the settlement date. The syntax of the function is:
+//
+//    COUPDAYBS(settlement,maturity,frequency,[basis])
+//
+func (fn *formulaFuncs) COUPDAYBS(argsList *list.List) formulaArg {
+	args := fn.prepareCouponArgs("COUPDAYBS", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement := timeFromExcelTime(args.List[0].Number, false)
+	pcd := timeFromExcelTime(fn.COUPPCD(argsList).Number, false)
+	return newNumberFormulaArg(coupdays(pcd, settlement, int(args.List[3].Number)))
+}
+
+// COUPDAYS function calculates the number of days in a coupon period that
+// contains the settlement date. The syntax of the function is:
+//
+//    COUPDAYS(settlement,maturity,frequency,[basis])
+//
+func (fn *formulaFuncs) COUPDAYS(argsList *list.List) formulaArg {
+	args := fn.prepareCouponArgs("COUPDAYS", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	freq := args.List[2].Number
+	basis := int(args.List[3].Number)
+	if basis == 1 {
+		pcd := timeFromExcelTime(fn.COUPPCD(argsList).Number, false)
+		next := pcd.AddDate(0, 12/int(freq), 0)
+		return newNumberFormulaArg(coupdays(pcd, next, basis))
+	}
+	return newNumberFormulaArg(float64(getYearDays(0, basis)) / freq)
+}
+
+// COUPDAYSNC function calculates the number of days from the settlement date
+// to the next coupon date. The syntax of the function is:
+//
+//    COUPDAYSNC(settlement,maturity,frequency,[basis])
+//
+func (fn *formulaFuncs) COUPDAYSNC(argsList *list.List) formulaArg {
+	args := fn.prepareCouponArgs("COUPDAYSNC", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement := timeFromExcelTime(args.List[0].Number, false)
+	basis := int(args.List[3].Number)
+	ncd := timeFromExcelTime(fn.COUPNCD(argsList).Number, false)
+	return newNumberFormulaArg(coupdays(settlement, ncd, basis))
+}
+
+// coupons is an implementation of the formula functions COUPNCD and COUPPCD.
+func (fn *formulaFuncs) coupons(name string, arg formulaArg) formulaArg {
+	settlement := timeFromExcelTime(arg.List[0].Number, false)
+	maturity := timeFromExcelTime(arg.List[1].Number, false)
+	maturityDays := (maturity.Year()-settlement.Year())*12 + (int(maturity.Month()) - int(settlement.Month()))
+	coupon := 12 / int(arg.List[2].Number)
+	mod := maturityDays % coupon
+	year := settlement.Year()
+	month := int(settlement.Month())
+	if mod == 0 && settlement.Day() >= maturity.Day() {
+		month += coupon
+	} else {
+		month += mod
+	}
+	if name != "COUPNCD" {
+		month -= coupon
+	}
+	if month > 11 {
+		year += 1
+		month -= 12
+	} else if month < 0 {
+		year -= 1
+		month += 12
+	}
+	day, lastDay := maturity.Day(), time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	days := getDaysInMonth(lastDay.Year(), int(lastDay.Month()))
+	if getDaysInMonth(maturity.Year(), int(maturity.Month())) == maturity.Day() {
+		day = days
+	} else if day > 27 && day > days {
+		day = days
+	}
+	return newNumberFormulaArg(daysBetween(excelMinTime1900.Unix(), makeDate(year, time.Month(month), day)) + 1)
+}
+
+// COUPNCD function calculates the number of coupons payable, between a
+// security's settlement date and maturity date, rounded up to the nearest
+// whole coupon. The syntax of the function is:
+//
+//    COUPNCD(settlement,maturity,frequency,[basis])
+//
+func (fn *formulaFuncs) COUPNCD(argsList *list.List) formulaArg {
+	args := fn.prepareCouponArgs("COUPNCD", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	return fn.coupons("COUPNCD", args)
+}
+
+// COUPNUM function calculates the number of coupons payable, between a
+// security's settlement date and maturity date, rounded up to the nearest
+// whole coupon. The syntax of the function is:
+//
+//    COUPNUM(settlement,maturity,frequency,[basis])
+//
+func (fn *formulaFuncs) COUPNUM(argsList *list.List) formulaArg {
+	args := fn.prepareCouponArgs("COUPNUM", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	frac := yearFrac(args.List[0].Number, args.List[1].Number, 0)
+	return newNumberFormulaArg(math.Ceil(frac.Number * args.List[2].Number))
+}
+
+// COUPPCD function returns the previous coupon date, before the settlement
+// date for a security. The syntax of the function is:
+//
+//    COUPPCD(settlement,maturity,frequency,[basis])
+//
+func (fn *formulaFuncs) COUPPCD(argsList *list.List) formulaArg {
+	args := fn.prepareCouponArgs("COUPPCD", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	return fn.coupons("COUPPCD", args)
+}
+
 // CUMIPMT function calculates the cumulative interest paid on a loan or
 // investment, between two specified periods. The syntax of the function is:
 //
@@ -7366,7 +10361,7 @@ func (fn *formulaFuncs) CUMPRINC(argsList *list.List) formulaArg {
 	return fn.cumip("CUMPRINC", argsList)
 }
 
-// cumip is an implementation of the formula function CUMIPMT and CUMPRINC.
+// cumip is an implementation of the formula functions CUMIPMT and CUMPRINC.
 func (fn *formulaFuncs) cumip(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 6 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 6 arguments", name))
@@ -7419,6 +10414,11 @@ func (fn *formulaFuncs) cumip(name string, argsList *list.List) formulaArg {
 	return newNumberFormulaArg(num)
 }
 
+// calcDbArgsCompare implements common arguments comparison for DB and DDB.
+func calcDbArgsCompare(cost, salvage, life, period formulaArg) bool {
+	return (cost.Number <= 0) || ((salvage.Number / cost.Number) < 0) || (life.Number <= 0) || (period.Number < 1)
+}
+
 // DB function calculates the depreciation of an asset, using the Fixed
 // Declining Balance Method, for each period of the asset's lifetime. The
 // syntax of the function is:
@@ -7457,7 +10457,7 @@ func (fn *formulaFuncs) DB(argsList *list.List) formulaArg {
 	if cost.Number == 0 {
 		return newNumberFormulaArg(0)
 	}
-	if (cost.Number <= 0) || ((salvage.Number / cost.Number) < 0) || (life.Number <= 0) || (period.Number < 1) || (month.Number < 1) {
+	if calcDbArgsCompare(cost, salvage, life, period) || (month.Number < 1) {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	dr := 1 - math.Pow(salvage.Number/cost.Number, 1/life.Number)
@@ -7514,7 +10514,7 @@ func (fn *formulaFuncs) DDB(argsList *list.List) formulaArg {
 	if cost.Number == 0 {
 		return newNumberFormulaArg(0)
 	}
-	if (cost.Number <= 0) || ((salvage.Number / cost.Number) < 0) || (life.Number <= 0) || (period.Number < 1) || (factor.Number <= 0.0) || (period.Number > life.Number) {
+	if calcDbArgsCompare(cost, salvage, life, period) || (factor.Number <= 0.0) || (period.Number > life.Number) {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	pd, depreciation := 0.0, 0.0
@@ -7523,6 +10523,87 @@ func (fn *formulaFuncs) DDB(argsList *list.List) formulaArg {
 		pd += depreciation
 	}
 	return newNumberFormulaArg(depreciation)
+}
+
+// prepareDataValueArgs convert first N arguments to data value for the
+// formula functions.
+func (fn *formulaFuncs) prepareDataValueArgs(n int, argsList *list.List) formulaArg {
+	l := list.New()
+	dataValues := []formulaArg{}
+	getDateValue := func(arg formulaArg, l *list.List) formulaArg {
+		switch arg.Type {
+		case ArgNumber:
+			break
+		case ArgString:
+			num := arg.ToNumber()
+			if num.Type == ArgNumber {
+				arg = num
+				break
+			}
+			l.Init()
+			l.PushBack(arg)
+			arg = fn.DATEVALUE(l)
+			if arg.Type == ArgError {
+				return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+			}
+		default:
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+		return arg
+	}
+	for i, arg := 0, argsList.Front(); i < n; arg = arg.Next() {
+		dataValue := getDateValue(arg.Value.(formulaArg), l)
+		if dataValue.Type != ArgNumber {
+			return dataValue
+		}
+		dataValues = append(dataValues, dataValue)
+		i++
+	}
+	return newListFormulaArg(dataValues)
+}
+
+// DISC function calculates the Discount Rate for a security. The syntax of
+// the function is:
+//
+//    DISC(settlement,maturity,pr,redemption,[basis])
+//
+func (fn *formulaFuncs) DISC(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 && argsList.Len() != 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DISC requires 4 or 5 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	if maturity.Number <= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "DISC requires maturity > settlement")
+	}
+	pr := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if pr.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if pr.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "DISC requires pr > 0")
+	}
+	redemption := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if redemption.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "DISC requires redemption > 0")
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 5 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	frac := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	return newNumberFormulaArg((redemption.Number - pr.Number) / redemption.Number / frac.Number)
 }
 
 // DOLLARDE function converts a dollar value in fractional notation, into a
@@ -7544,7 +10625,7 @@ func (fn *formulaFuncs) DOLLARFR(argsList *list.List) formulaArg {
 	return fn.dollar("DOLLARFR", argsList)
 }
 
-// dollar is an implementation of the formula function DOLLARDE and DOLLARFR.
+// dollar is an implementation of the formula functions DOLLARDE and DOLLARFR.
 func (fn *formulaFuncs) dollar(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 arguments", name))
@@ -7572,6 +10653,96 @@ func (fn *formulaFuncs) dollar(name string, argsList *list.List) formulaArg {
 		cents *= math.Pow(10, -math.Ceil(math.Log10(frac.Number)))
 	}
 	return newNumberFormulaArg(math.Floor(dollar.Number) + cents)
+}
+
+// prepareDurationArgs checking and prepare arguments for the formula
+// functions DURATION and MDURATION.
+func (fn *formulaFuncs) prepareDurationArgs(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 5 && argsList.Len() != 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 5 or 6 arguments", name))
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	if settlement.Number >= maturity.Number {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires maturity > settlement", name))
+	}
+	coupon := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if coupon.Type != ArgNumber {
+		return coupon
+	}
+	if coupon.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires coupon >= 0", name))
+	}
+	yld := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if yld.Type != ArgNumber {
+		return yld
+	}
+	if yld.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires yld >= 0", name))
+	}
+	frequency := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if frequency.Type != ArgNumber {
+		return frequency
+	}
+	if !validateFrequency(frequency.Number) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 6 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return newListFormulaArg([]formulaArg{settlement, maturity, coupon, yld, frequency, basis})
+}
+
+// duration is an implementation of the formula function DURATION.
+func (fn *formulaFuncs) duration(settlement, maturity, coupon, yld, frequency, basis formulaArg) formulaArg {
+	frac := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	argumments := list.New().Init()
+	argumments.PushBack(settlement)
+	argumments.PushBack(maturity)
+	argumments.PushBack(frequency)
+	argumments.PushBack(basis)
+	coups := fn.COUPNUM(argumments)
+	duration := 0.0
+	p := 0.0
+	coupon.Number *= 100 / frequency.Number
+	yld.Number /= frequency.Number
+	yld.Number++
+	diff := frac.Number*frequency.Number - coups.Number
+	for t := 1.0; t < coups.Number; t++ {
+		tDiff := t + diff
+		add := coupon.Number / math.Pow(yld.Number, tDiff)
+		p += add
+		duration += tDiff * add
+	}
+	add := (coupon.Number + 100) / math.Pow(yld.Number, coups.Number+diff)
+	p += add
+	duration += (coups.Number + diff) * add
+	duration /= p
+	duration /= frequency.Number
+	return newNumberFormulaArg(duration)
+}
+
+// DURATION function calculates the Duration (specifically, the Macaulay
+// Duration) of a security that pays periodic interest, assuming a par value
+// of $100. The syntax of the function is:
+//
+//    DURATION(settlement,maturity,coupon,yld,frequency,[basis])
+//
+func (fn *formulaFuncs) DURATION(argsList *list.List) formulaArg {
+	args := fn.prepareDurationArgs("DURATION", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	return fn.duration(args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5])
 }
 
 // EFFECT function returns the effective annual interest rate for a given
@@ -7670,6 +10841,50 @@ func (fn *formulaFuncs) FVSCHEDULE(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(principal)
 }
 
+// INTRATE function calculates the interest rate for a fully invested
+// security. The syntax of the function is:
+//
+//    INTRATE(settlement,maturity,investment,redemption,[basis])
+//
+func (fn *formulaFuncs) INTRATE(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 && argsList.Len() != 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "INTRATE requires 4 or 5 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	if maturity.Number <= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "INTRATE requires maturity > settlement")
+	}
+	investment := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if investment.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if investment.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "INTRATE requires investment > 0")
+	}
+	redemption := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if redemption.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "INTRATE requires redemption > 0")
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 5 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	frac := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	return newNumberFormulaArg((redemption.Number - investment.Number) / investment.Number / frac.Number)
+}
+
 // IPMT function calculates the interest payment, during a specific period of a
 // loan or investment that is paid in constant periodic payments, with a
 // constant interest rate. The syntax of the function is:
@@ -7680,7 +10895,25 @@ func (fn *formulaFuncs) IPMT(argsList *list.List) formulaArg {
 	return fn.ipmt("IPMT", argsList)
 }
 
-// ipmt is an implementation of the formula function IPMT and PPMT.
+// calcIpmt is part of the implementation ipmt.
+func calcIpmt(name string, typ, per, pmt, pv, rate formulaArg) formulaArg {
+	capital, interest, principal := pv.Number, 0.0, 0.0
+	for i := 1; i <= int(per.Number); i++ {
+		if typ.Number != 0 && i == 1 {
+			interest = 0
+		} else {
+			interest = -capital * rate.Number
+		}
+		principal = pmt.Number - interest
+		capital += principal
+	}
+	if name == "IPMT" {
+		return newNumberFormulaArg(interest)
+	}
+	return newNumberFormulaArg(principal)
+}
+
+// ipmt is an implementation of the formula functions IPMT and PPMT.
 func (fn *formulaFuncs) ipmt(name string, argsList *list.List) formulaArg {
 	if argsList.Len() < 4 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 4 arguments", name))
@@ -7727,20 +10960,8 @@ func (fn *formulaFuncs) ipmt(name string, argsList *list.List) formulaArg {
 	args.PushBack(pv)
 	args.PushBack(fv)
 	args.PushBack(typ)
-	pmt, capital, interest, principal := fn.PMT(args), pv.Number, 0.0, 0.0
-	for i := 1; i <= int(per.Number); i++ {
-		if typ.Number != 0 && i == 1 {
-			interest = 0
-		} else {
-			interest = -capital * rate.Number
-		}
-		principal = pmt.Number - interest
-		capital += principal
-	}
-	if name == "IPMT" {
-		return newNumberFormulaArg(interest)
-	}
-	return newNumberFormulaArg(principal)
+	pmt := fn.PMT(args)
+	return calcIpmt(name, typ, per, pmt, pv, rate)
 }
 
 // IRR function returns the Internal Rate of Return for a supplied series of
@@ -7847,6 +11068,24 @@ func (fn *formulaFuncs) ISPMT(argsList *list.List) formulaArg {
 		}
 	}
 	return newNumberFormulaArg(num)
+}
+
+// MDURATION function calculates the Modified Macaulay Duration of a security
+// that pays periodic interest, assuming a par value of $100. The syntax of
+// the function is:
+//
+//    MDURATION(settlement,maturity,coupon,yld,frequency,[basis])
+//
+func (fn *formulaFuncs) MDURATION(argsList *list.List) formulaArg {
+	args := fn.prepareDurationArgs("MDURATION", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	duration := fn.duration(args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5])
+	if duration.Type != ArgNumber {
+		return duration
+	}
+	return newNumberFormulaArg(duration.Number / (1 + args.List[3].Number/args.List[4].Number))
 }
 
 // MIRR function returns the Modified Internal Rate of Return for a supplied
@@ -7983,6 +11222,276 @@ func (fn *formulaFuncs) NPV(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(val)
 }
 
+// aggrBetween is a part of implementation of the formula function ODDFPRICE.
+func aggrBetween(startPeriod, endPeriod float64, initialValue []float64, f func(acc []float64, index float64) []float64) []float64 {
+	s := []float64{}
+	if startPeriod <= endPeriod {
+		for i := startPeriod; i <= endPeriod; i++ {
+			s = append(s, i)
+		}
+	} else {
+		for i := startPeriod; i >= endPeriod; i-- {
+			s = append(s, i)
+		}
+	}
+	return fold(f, initialValue, s)
+}
+
+// fold is a part of implementation of the formula function ODDFPRICE.
+func fold(f func(acc []float64, index float64) []float64, state []float64, source []float64) []float64 {
+	length, value := len(source), state
+	for index := 0; length > index; index++ {
+		value = f(value, source[index])
+	}
+	return value
+}
+
+// changeMonth is a part of implementation of the formula function ODDFPRICE.
+func changeMonth(date time.Time, numMonths float64, returnLastMonth bool) time.Time {
+	offsetDay := 0
+	if returnLastMonth && date.Day() == getDaysInMonth(date.Year(), int(date.Month())) {
+		offsetDay--
+	}
+	newDate := date.AddDate(0, int(numMonths), offsetDay)
+	if returnLastMonth {
+		lastDay := getDaysInMonth(newDate.Year(), int(newDate.Month()))
+		return timeFromExcelTime(daysBetween(excelMinTime1900.Unix(), makeDate(newDate.Year(), newDate.Month(), lastDay))+1, false)
+	}
+	return newDate
+}
+
+// datesAggregate is a part of implementation of the formula function
+// ODDFPRICE.
+func datesAggregate(startDate, endDate time.Time, numMonths, basis float64, f func(pcd, ncd time.Time) float64, acc float64, returnLastMonth bool) (time.Time, time.Time, float64) {
+	frontDate, trailingDate := startDate, endDate
+	s1 := frontDate.After(endDate) || frontDate.Equal(endDate)
+	s2 := endDate.After(frontDate) || endDate.Equal(frontDate)
+	stop := s2
+	if numMonths > 0 {
+		stop = s1
+	}
+	for !stop {
+		trailingDate = frontDate
+		frontDate = changeMonth(frontDate, numMonths, returnLastMonth)
+		fn := f(frontDate, trailingDate)
+		acc += fn
+		s1 = frontDate.After(endDate) || frontDate.Equal(endDate)
+		s2 = endDate.After(frontDate) || endDate.Equal(frontDate)
+		stop = s2
+		if numMonths > 0 {
+			stop = s1
+		}
+	}
+	return frontDate, trailingDate, acc
+}
+
+// coupNumber is a part of implementation of the formula function ODDFPRICE.
+func coupNumber(maturity, settlement, numMonths, basis float64) float64 {
+	maturityTime, settlementTime := timeFromExcelTime(maturity, false), timeFromExcelTime(settlement, false)
+	my, mm, md := maturityTime.Year(), maturityTime.Month(), maturityTime.Day()
+	sy, sm, sd := settlementTime.Year(), settlementTime.Month(), settlementTime.Day()
+	couponsTemp, endOfMonthTemp := 0.0, getDaysInMonth(my, int(mm)) == md
+	endOfMonth := endOfMonthTemp
+	if !endOfMonthTemp && mm != 2 && md > 28 && md < getDaysInMonth(my, int(mm)) {
+		endOfMonth = getDaysInMonth(sy, int(sm)) == sd
+	}
+	startDate := changeMonth(settlementTime, 0, endOfMonth)
+	coupons := couponsTemp
+	if startDate.After(settlementTime) {
+		coupons++
+	}
+	date := changeMonth(startDate, numMonths, endOfMonth)
+	f := func(pcd, ncd time.Time) float64 {
+		return 1
+	}
+	_, _, result := datesAggregate(date, maturityTime, numMonths, basis, f, coupons, endOfMonth)
+	return result
+}
+
+// prepareOddfpriceArgs checking and prepare arguments for the formula
+// function ODDFPRICE.
+func (fn *formulaFuncs) prepareOddfpriceArgs(argsList *list.List) formulaArg {
+	dateValues := fn.prepareDataValueArgs(4, argsList)
+	if dateValues.Type != ArgList {
+		return dateValues
+	}
+	settlement, maturity, issue, firstCoupon := dateValues.List[0], dateValues.List[1], dateValues.List[2], dateValues.List[3]
+	if issue.Number >= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires settlement > issue")
+	}
+	if settlement.Number >= firstCoupon.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires first_coupon > settlement")
+	}
+	if firstCoupon.Number >= maturity.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires maturity > first_coupon")
+	}
+	rate := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	if rate.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires rate >= 0")
+	}
+	yld := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if yld.Type != ArgNumber {
+		return yld
+	}
+	if yld.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires yld >= 0")
+	}
+	redemption := argsList.Front().Next().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return redemption
+	}
+	if redemption.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires redemption > 0")
+	}
+	frequency := argsList.Front().Next().Next().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if frequency.Type != ArgNumber {
+		return frequency
+	}
+	if !validateFrequency(frequency.Number) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 9 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return newListFormulaArg([]formulaArg{settlement, maturity, issue, firstCoupon, rate, yld, redemption, frequency, basis})
+}
+
+// ODDFPRICE function calculates the price per $100 face value of a security
+// with an odd (short or long) first period. The syntax of the function is:
+//
+//    ODDFPRICE(settlement,maturity,issue,first_coupon,rate,yld,redemption,frequency,[basis])
+//
+func (fn *formulaFuncs) ODDFPRICE(argsList *list.List) formulaArg {
+	if argsList.Len() != 8 && argsList.Len() != 9 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ODDFPRICE requires 8 or 9 arguments")
+	}
+	args := fn.prepareOddfpriceArgs(argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity, issue, firstCoupon, rate, yld, redemption, frequency, basisArg :=
+		args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5], args.List[6], args.List[7], args.List[8]
+	if basisArg.Number < 0 || basisArg.Number > 4 {
+		return newErrorFormulaArg(formulaErrorNUM, "invalid basis")
+	}
+	issueTime := timeFromExcelTime(issue.Number, false)
+	settlementTime := timeFromExcelTime(settlement.Number, false)
+	maturityTime := timeFromExcelTime(maturity.Number, false)
+	firstCouponTime := timeFromExcelTime(firstCoupon.Number, false)
+	basis := int(basisArg.Number)
+	monthDays := getDaysInMonth(maturityTime.Year(), int(maturityTime.Month()))
+	returnLastMonth := monthDays == maturityTime.Day()
+	numMonths := 12 / frequency.Number
+	numMonthsNeg := -numMonths
+	mat := changeMonth(maturityTime, numMonthsNeg, returnLastMonth)
+	pcd, _, _ := datesAggregate(mat, firstCouponTime, numMonthsNeg, basisArg.Number, func(d1, d2 time.Time) float64 {
+		return 0
+	}, 0, returnLastMonth)
+	if !pcd.Equal(firstCouponTime) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	fnArgs := list.New().Init()
+	fnArgs.PushBack(settlement)
+	fnArgs.PushBack(maturity)
+	fnArgs.PushBack(frequency)
+	fnArgs.PushBack(basisArg)
+	e := fn.COUPDAYS(fnArgs)
+	n := fn.COUPNUM(fnArgs)
+	m := frequency.Number
+	dfc := coupdays(issueTime, firstCouponTime, basis)
+	if dfc < e.Number {
+		dsc := coupdays(settlementTime, firstCouponTime, basis)
+		a := coupdays(issueTime, settlementTime, basis)
+		x := yld.Number/m + 1
+		y := dsc / e.Number
+		p1 := x
+		p3 := math.Pow(p1, n.Number-1+y)
+		term1 := redemption.Number / p3
+		term2 := 100 * rate.Number / m * dfc / e.Number / math.Pow(p1, y)
+		f := func(acc []float64, index float64) []float64 {
+			return []float64{acc[0] + 100*rate.Number/m/math.Pow(p1, index-1+y)}
+		}
+		term3 := aggrBetween(2, math.Floor(n.Number), []float64{0}, f)
+		p2 := rate.Number / m
+		term4 := a / e.Number * p2 * 100
+		return newNumberFormulaArg(term1 + term2 + term3[0] - term4)
+	}
+	fnArgs.Init()
+	fnArgs.PushBack(issue)
+	fnArgs.PushBack(firstCoupon)
+	fnArgs.PushBack(frequency)
+	nc := fn.COUPNUM(fnArgs)
+	lastCoupon := firstCoupon.Number
+	aggrFunc := func(acc []float64, index float64) []float64 {
+		lastCouponTime := timeFromExcelTime(lastCoupon, false)
+		earlyCoupon := daysBetween(excelMinTime1900.Unix(), makeDate(lastCouponTime.Year(), time.Month(float64(lastCouponTime.Month())+numMonthsNeg), lastCouponTime.Day())) + 1
+		earlyCouponTime := timeFromExcelTime(earlyCoupon, false)
+		nl := e.Number
+		if basis == 1 {
+			nl = coupdays(earlyCouponTime, lastCouponTime, basis)
+		}
+		dci := coupdays(issueTime, lastCouponTime, basis)
+		if index > 1 {
+			dci = nl
+		}
+		startDate := earlyCoupon
+		if issue.Number > earlyCoupon {
+			startDate = issue.Number
+		}
+		endDate := lastCoupon
+		if settlement.Number < lastCoupon {
+			endDate = settlement.Number
+		}
+		startDateTime := timeFromExcelTime(startDate, false)
+		endDateTime := timeFromExcelTime(endDate, false)
+		a := coupdays(startDateTime, endDateTime, basis)
+		lastCoupon = earlyCoupon
+		dcnl := acc[0]
+		anl := acc[1]
+		return []float64{dcnl + dci/nl, anl + a/nl}
+	}
+	ag := aggrBetween(math.Floor(nc.Number), 1, []float64{0, 0}, aggrFunc)
+	dcnl, anl := ag[0], ag[1]
+	dsc := 0.0
+	fnArgs.Init()
+	fnArgs.PushBack(settlement)
+	fnArgs.PushBack(firstCoupon)
+	fnArgs.PushBack(frequency)
+	if basis == 2 || basis == 3 {
+		d := timeFromExcelTime(fn.COUPNCD(fnArgs).Number, false)
+		dsc = coupdays(settlementTime, d, basis)
+	} else {
+		d := timeFromExcelTime(fn.COUPPCD(fnArgs).Number, false)
+		a := coupdays(d, settlementTime, basis)
+		dsc = e.Number - a
+	}
+	nq := coupNumber(firstCoupon.Number, settlement.Number, numMonths, basisArg.Number)
+	fnArgs.Init()
+	fnArgs.PushBack(firstCoupon)
+	fnArgs.PushBack(maturity)
+	fnArgs.PushBack(frequency)
+	fnArgs.PushBack(basisArg)
+	n = fn.COUPNUM(fnArgs)
+	x := yld.Number/m + 1
+	y := dsc / e.Number
+	p1 := x
+	p3 := math.Pow(p1, y+nq+n.Number)
+	term1 := redemption.Number / p3
+	term2 := 100 * rate.Number / m * dcnl / math.Pow(p1, nq+y)
+	f := func(acc []float64, index float64) []float64 {
+		return []float64{acc[0] + 100*rate.Number/m/math.Pow(p1, index+nq+y)}
+	}
+	term3 := aggrBetween(1, math.Floor(n.Number), []float64{0}, f)
+	term4 := 100 * rate.Number / m * anl
+	return newNumberFormulaArg(term1 + term2 + term3[0] - term4)
+}
+
 // PDURATION function calculates the number of periods required for an
 // investment to reach a specified future value. The syntax of the function
 // is:
@@ -8065,4 +11574,974 @@ func (fn *formulaFuncs) PMT(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) PPMT(argsList *list.List) formulaArg {
 	return fn.ipmt("PPMT", argsList)
+}
+
+// price is an implementation of the formula function PRICE.
+func (fn *formulaFuncs) price(settlement, maturity, rate, yld, redemption, frequency, basis formulaArg) formulaArg {
+	if basis.Number < 0 || basis.Number > 4 {
+		return newErrorFormulaArg(formulaErrorNUM, "invalid basis")
+	}
+	argsList := list.New().Init()
+	argsList.PushBack(settlement)
+	argsList.PushBack(maturity)
+	argsList.PushBack(frequency)
+	argsList.PushBack(basis)
+	e := fn.COUPDAYS(argsList)
+	dsc := fn.COUPDAYSNC(argsList).Number / e.Number
+	n := fn.COUPNUM(argsList)
+	a := fn.COUPDAYBS(argsList)
+	ret := 0.0
+	if n.Number > 1 {
+		ret = redemption.Number / math.Pow(1+yld.Number/frequency.Number, n.Number-1+dsc)
+		ret -= 100 * rate.Number / frequency.Number * a.Number / e.Number
+		t1 := 100 * rate.Number / frequency.Number
+		t2 := 1 + yld.Number/frequency.Number
+		for k := 0.0; k < n.Number; k++ {
+			ret += t1 / math.Pow(t2, k+dsc)
+		}
+	} else {
+		dsc = e.Number - a.Number
+		t1 := 100*(rate.Number/frequency.Number) + redemption.Number
+		t2 := (yld.Number/frequency.Number)*(dsc/e.Number) + 1
+		t3 := 100 * (rate.Number / frequency.Number) * (a.Number / e.Number)
+		ret = t1/t2 - t3
+	}
+	return newNumberFormulaArg(ret)
+}
+
+// PRICE function calculates the price, per $100 face value of a security that
+// pays periodic interest. The syntax of the function is:
+//
+//    PRICE(settlement,maturity,rate,yld,redemption,frequency,[basis])
+//
+func (fn *formulaFuncs) PRICE(argsList *list.List) formulaArg {
+	if argsList.Len() != 6 && argsList.Len() != 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PRICE requires 6 or 7 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	rate := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	if rate.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires rate >= 0")
+	}
+	yld := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if yld.Type != ArgNumber {
+		return yld
+	}
+	if yld.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires yld >= 0")
+	}
+	redemption := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return redemption
+	}
+	if redemption.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires redemption > 0")
+	}
+	frequency := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if frequency.Type != ArgNumber {
+		return frequency
+	}
+	if !validateFrequency(frequency.Number) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 7 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return fn.price(settlement, maturity, rate, yld, redemption, frequency, basis)
+}
+
+// PRICEDISC function calculates the price, per $100 face value of a
+// discounted security. The syntax of the function is:
+//
+//    PRICEDISC(settlement,maturity,discount,redemption,[basis])
+//
+func (fn *formulaFuncs) PRICEDISC(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 && argsList.Len() != 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PRICEDISC requires 4 or 5 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	if maturity.Number <= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICEDISC requires maturity > settlement")
+	}
+	discount := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if discount.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if discount.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICEDISC requires discount > 0")
+	}
+	redemption := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if redemption.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICEDISC requires redemption > 0")
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 5 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	frac := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	return newNumberFormulaArg(redemption.Number * (1 - discount.Number*frac.Number))
+}
+
+// PRICEMAT function calculates the price, per $100 face value of a security
+// that pays interest at maturity. The syntax of the function is:
+//
+//    PRICEMAT(settlement,maturity,issue,rate,yld,[basis])
+//
+func (fn *formulaFuncs) PRICEMAT(argsList *list.List) formulaArg {
+	if argsList.Len() != 5 && argsList.Len() != 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PRICEMAT requires 5 or 6 arguments")
+	}
+	args := fn.prepareDataValueArgs(3, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity, issue := args.List[0], args.List[1], args.List[2]
+	if settlement.Number >= maturity.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICEMAT requires maturity > settlement")
+	}
+	if issue.Number >= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICEMAT requires settlement > issue")
+	}
+	rate := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	if rate.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICEMAT requires rate >= 0")
+	}
+	yld := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if yld.Type != ArgNumber {
+		return yld
+	}
+	if yld.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICEMAT requires yld >= 0")
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 6 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	dsm := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	if dsm.Type != ArgNumber {
+		return dsm
+	}
+	dis := yearFrac(issue.Number, settlement.Number, int(basis.Number))
+	dim := yearFrac(issue.Number, maturity.Number, int(basis.Number))
+	return newNumberFormulaArg(((1+dim.Number*rate.Number)/(1+dsm.Number*yld.Number) - dis.Number*rate.Number) * 100)
+}
+
+// PV function calculates the Present Value of an investment, based on a
+// series of future payments. The syntax of the function is:
+//
+//    PV(rate,nper,pmt,[fv],[type])
+//
+func (fn *formulaFuncs) PV(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PV requires at least 3 arguments")
+	}
+	if argsList.Len() > 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PV allows at most 5 arguments")
+	}
+	rate := argsList.Front().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	nper := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if nper.Type != ArgNumber {
+		return nper
+	}
+	pmt := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if pmt.Type != ArgNumber {
+		return pmt
+	}
+	fv := newNumberFormulaArg(0)
+	if argsList.Len() >= 4 {
+		if fv = argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber(); fv.Type != ArgNumber {
+			return fv
+		}
+	}
+	t := newNumberFormulaArg(0)
+	if argsList.Len() == 5 {
+		if t = argsList.Back().Value.(formulaArg).ToNumber(); t.Type != ArgNumber {
+			return t
+		}
+		if t.Number != 0 {
+			t.Number = 1
+		}
+	}
+	if rate.Number == 0 {
+		return newNumberFormulaArg(-pmt.Number*nper.Number - fv.Number)
+	}
+	return newNumberFormulaArg((((1-math.Pow(1+rate.Number, nper.Number))/rate.Number)*pmt.Number*(1+rate.Number*t.Number) - fv.Number) / math.Pow(1+rate.Number, nper.Number))
+}
+
+// rate is an implementation of the formula function RATE.
+func (fn *formulaFuncs) rate(nper, pmt, pv, fv, t, guess formulaArg, argsList *list.List) formulaArg {
+	maxIter, iter, close, epsMax, rate := 100, 0, false, 1e-6, guess.Number
+	for iter < maxIter && !close {
+		t1 := math.Pow(rate+1, nper.Number)
+		t2 := math.Pow(rate+1, nper.Number-1)
+		rt := rate*t.Number + 1
+		p0 := pmt.Number * (t1 - 1)
+		f1 := fv.Number + t1*pv.Number + p0*rt/rate
+		f2 := nper.Number*t2*pv.Number - p0*rt/math.Pow(rate, 2)
+		f3 := (nper.Number*pmt.Number*t2*rt + p0*t.Number) / rate
+		delta := f1 / (f2 + f3)
+		if math.Abs(delta) < epsMax {
+			close = true
+		}
+		iter++
+		rate -= delta
+	}
+	return newNumberFormulaArg(rate)
+}
+
+// RATE function calculates the interest rate required to pay off a specified
+// amount of a loan, or to reach a target amount on an investment, over a
+// given period. The syntax of the function is:
+//
+//    RATE(nper,pmt,pv,[fv],[type],[guess])
+//
+func (fn *formulaFuncs) RATE(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "RATE requires at least 3 arguments")
+	}
+	if argsList.Len() > 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, "RATE allows at most 6 arguments")
+	}
+	nper := argsList.Front().Value.(formulaArg).ToNumber()
+	if nper.Type != ArgNumber {
+		return nper
+	}
+	pmt := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if pmt.Type != ArgNumber {
+		return pmt
+	}
+	pv := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if pv.Type != ArgNumber {
+		return pv
+	}
+	fv := newNumberFormulaArg(0)
+	if argsList.Len() >= 4 {
+		if fv = argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber(); fv.Type != ArgNumber {
+			return fv
+		}
+	}
+	t := newNumberFormulaArg(0)
+	if argsList.Len() >= 5 {
+		if t = argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber(); t.Type != ArgNumber {
+			return t
+		}
+		if t.Number != 0 {
+			t.Number = 1
+		}
+	}
+	guess := newNumberFormulaArg(0.1)
+	if argsList.Len() == 6 {
+		if guess = argsList.Back().Value.(formulaArg).ToNumber(); guess.Type != ArgNumber {
+			return guess
+		}
+	}
+	return fn.rate(nper, pmt, pv, fv, t, guess, argsList)
+}
+
+// RECEIVED function calculates the amount received at maturity for a fully
+// invested security. The syntax of the function is:
+//
+//    RECEIVED(settlement,maturity,investment,discount,[basis])
+//
+func (fn *formulaFuncs) RECEIVED(argsList *list.List) formulaArg {
+	if argsList.Len() < 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "RECEIVED requires at least 4 arguments")
+	}
+	if argsList.Len() > 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "RECEIVED allows at most 5 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	investment := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if investment.Type != ArgNumber {
+		return investment
+	}
+	discount := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if discount.Type != ArgNumber {
+		return discount
+	}
+	if discount.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "RECEIVED requires discount > 0")
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 5 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	frac := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	return newNumberFormulaArg(investment.Number / (1 - discount.Number*frac.Number))
+}
+
+// RRI function calculates the equivalent interest rate for an investment with
+// specified present value, future value and duration. The syntax of the
+// function is:
+//
+//    RRI(nper,pv,fv)
+//
+func (fn *formulaFuncs) RRI(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "RRI requires 3 arguments")
+	}
+	nper := argsList.Front().Value.(formulaArg).ToNumber()
+	pv := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	fv := argsList.Back().Value.(formulaArg).ToNumber()
+	if nper.Type != ArgNumber || pv.Type != ArgNumber || fv.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if nper.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "RRI requires nper argument to be > 0")
+	}
+	if pv.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "RRI requires pv argument to be > 0")
+	}
+	if fv.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "RRI requires fv argument to be >= 0")
+	}
+	return newNumberFormulaArg(math.Pow(fv.Number/pv.Number, 1/nper.Number) - 1)
+}
+
+// SLN function calculates the straight line depreciation of an asset for one
+// period. The syntax of the function is:
+//
+//    SLN(cost,salvage,life)
+//
+func (fn *formulaFuncs) SLN(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SLN requires 3 arguments")
+	}
+	cost := argsList.Front().Value.(formulaArg).ToNumber()
+	salvage := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	life := argsList.Back().Value.(formulaArg).ToNumber()
+	if cost.Type != ArgNumber || salvage.Type != ArgNumber || life.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if life.Number == 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "SLN requires life argument to be > 0")
+	}
+	return newNumberFormulaArg((cost.Number - salvage.Number) / life.Number)
+}
+
+// SYD function calculates the sum-of-years' digits depreciation for a
+// specified period in the lifetime of an asset. The syntax of the function
+// is:
+//
+//    SYD(cost,salvage,life,per)
+//
+func (fn *formulaFuncs) SYD(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SYD requires 4 arguments")
+	}
+	cost := argsList.Front().Value.(formulaArg).ToNumber()
+	salvage := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	life := argsList.Back().Prev().Value.(formulaArg).ToNumber()
+	per := argsList.Back().Value.(formulaArg).ToNumber()
+	if cost.Type != ArgNumber || salvage.Type != ArgNumber || life.Type != ArgNumber || per.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if life.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "SYD requires life argument to be > 0")
+	}
+	if per.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "SYD requires per argument to be > 0")
+	}
+	if per.Number > life.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(((cost.Number - salvage.Number) * (life.Number - per.Number + 1) * 2) / (life.Number * (life.Number + 1)))
+}
+
+// TBILLEQ function calculates the bond-equivalent yield for a Treasury Bill.
+// The syntax of the function is:
+//
+//    TBILLEQ(settlement,maturity,discount)
+//
+func (fn *formulaFuncs) TBILLEQ(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TBILLEQ requires 3 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	dsm := maturity.Number - settlement.Number
+	if dsm > 365 || maturity.Number <= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	discount := argsList.Back().Value.(formulaArg).ToNumber()
+	if discount.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if discount.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg((365 * discount.Number) / (360 - discount.Number*dsm))
+}
+
+// TBILLPRICE function returns the price, per $100 face value, of a Treasury
+// Bill. The syntax of the function is:
+//
+//    TBILLPRICE(settlement,maturity,discount)
+//
+func (fn *formulaFuncs) TBILLPRICE(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TBILLPRICE requires 3 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	dsm := maturity.Number - settlement.Number
+	if dsm > 365 || maturity.Number <= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	discount := argsList.Back().Value.(formulaArg).ToNumber()
+	if discount.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if discount.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(100 * (1 - discount.Number*dsm/360))
+}
+
+// TBILLYIELD function calculates the yield of a Treasury Bill. The syntax of
+// the function is:
+//
+//    TBILLYIELD(settlement,maturity,pr)
+//
+func (fn *formulaFuncs) TBILLYIELD(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TBILLYIELD requires 3 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	dsm := maturity.Number - settlement.Number
+	if dsm > 365 || maturity.Number <= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	pr := argsList.Back().Value.(formulaArg).ToNumber()
+	if pr.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if pr.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(((100 - pr.Number) / pr.Number) * (360 / dsm))
+}
+
+// prepareVdbArgs checking and prepare arguments for the formula function
+// VDB.
+func (fn *formulaFuncs) prepareVdbArgs(argsList *list.List) formulaArg {
+	cost := argsList.Front().Value.(formulaArg).ToNumber()
+	if cost.Type != ArgNumber {
+		return cost
+	}
+	if cost.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "VDB requires cost >= 0")
+	}
+	salvage := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if salvage.Type != ArgNumber {
+		return salvage
+	}
+	if salvage.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "VDB requires salvage >= 0")
+	}
+	life := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if life.Type != ArgNumber {
+		return life
+	}
+	if life.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "VDB requires life > 0")
+	}
+	startPeriod := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if startPeriod.Type != ArgNumber {
+		return startPeriod
+	}
+	if startPeriod.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "VDB requires start_period > 0")
+	}
+	endPeriod := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if endPeriod.Type != ArgNumber {
+		return endPeriod
+	}
+	if startPeriod.Number > endPeriod.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "VDB requires start_period <= end_period")
+	}
+	if endPeriod.Number > life.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "VDB requires end_period <= life")
+	}
+	factor := newNumberFormulaArg(2)
+	if argsList.Len() > 5 {
+		if factor = argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber(); factor.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		if factor.Number < 0 {
+			return newErrorFormulaArg(formulaErrorVALUE, "VDB requires factor >= 0")
+		}
+	}
+	return newListFormulaArg([]formulaArg{cost, salvage, life, startPeriod, endPeriod, factor})
+}
+
+// vdb is a part of implementation of the formula function VDB.
+func (fn *formulaFuncs) vdb(cost, salvage, life, life1, period, factor formulaArg) formulaArg {
+	var ddb, vdb, sln, term float64
+	endInt, cs, nowSln := math.Ceil(period.Number), cost.Number-salvage.Number, false
+	ddbArgs := list.New()
+	for i := 1.0; i <= endInt; i++ {
+		if !nowSln {
+			ddbArgs.Init()
+			ddbArgs.PushBack(cost)
+			ddbArgs.PushBack(salvage)
+			ddbArgs.PushBack(life)
+			ddbArgs.PushBack(newNumberFormulaArg(i))
+			ddbArgs.PushBack(factor)
+			ddb = fn.DDB(ddbArgs).Number
+			sln = cs / (life1.Number - i + 1)
+			if sln > ddb {
+				term = sln
+				nowSln = true
+			} else {
+				term = ddb
+				cs -= ddb
+			}
+		} else {
+			term = sln
+		}
+		if i == endInt {
+			term *= period.Number + 1 - endInt
+		}
+		vdb += term
+	}
+	return newNumberFormulaArg(vdb)
+}
+
+// VDB function calculates the depreciation of an asset, using the Double
+// Declining Balance Method, or another specified depreciation rate, for a
+// specified period (including partial periods). The syntax of the function
+// is:
+//
+//    VDB(cost,salvage,life,start_period,end_period,[factor],[no_switch])
+//
+func (fn *formulaFuncs) VDB(argsList *list.List) formulaArg {
+	if argsList.Len() < 5 || argsList.Len() > 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, "VDB requires 5 or 7 arguments")
+	}
+	args := fn.prepareVdbArgs(argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	cost, salvage, life, startPeriod, endPeriod, factor := args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5]
+	noSwitch := newBoolFormulaArg(false)
+	if argsList.Len() > 6 {
+		if noSwitch = argsList.Back().Value.(formulaArg).ToBool(); noSwitch.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	startInt, endInt, vdb, ddbArgs := math.Floor(startPeriod.Number), math.Ceil(endPeriod.Number), newNumberFormulaArg(0), list.New()
+	if noSwitch.Number == 1 {
+		for i := startInt + 1; i <= endInt; i++ {
+			ddbArgs.Init()
+			ddbArgs.PushBack(cost)
+			ddbArgs.PushBack(salvage)
+			ddbArgs.PushBack(life)
+			ddbArgs.PushBack(newNumberFormulaArg(i))
+			ddbArgs.PushBack(factor)
+			term := fn.DDB(ddbArgs)
+			if i == startInt+1 {
+				term.Number *= math.Min(endPeriod.Number, startInt+1) - startPeriod.Number
+			} else if i == endInt {
+				term.Number *= endPeriod.Number + 1 - endInt
+			}
+			vdb.Number += term.Number
+		}
+		return vdb
+	}
+	life1, part := life, 0.0
+	if startPeriod.Number != math.Floor(startPeriod.Number) && factor.Number > 1.0 && startPeriod.Number >= life.Number/2.0 {
+		part = startPeriod.Number - life.Number/2.0
+		startPeriod.Number = life.Number / 2.0
+		endPeriod.Number -= part
+	}
+	cost.Number -= fn.vdb(cost, salvage, life, life1, startPeriod, factor).Number
+	return fn.vdb(cost, salvage, life, newNumberFormulaArg(life.Number-startPeriod.Number), newNumberFormulaArg(endPeriod.Number-startPeriod.Number), factor)
+}
+
+// prepareXArgs prepare arguments for the formula function XIRR and XNPV.
+func (fn *formulaFuncs) prepareXArgs(name string, values, dates formulaArg) (valuesArg, datesArg []float64, err formulaArg) {
+	for _, arg := range values.ToList() {
+		if numArg := arg.ToNumber(); numArg.Type == ArgNumber {
+			valuesArg = append(valuesArg, numArg.Number)
+			continue
+		}
+		err = newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		return
+	}
+	if len(valuesArg) < 2 {
+		err = newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		return
+	}
+	args, date := list.New(), 0.0
+	for _, arg := range dates.ToList() {
+		args.Init()
+		args.PushBack(arg)
+		dateValue := fn.DATEVALUE(args)
+		if dateValue.Type != ArgNumber {
+			err = newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+			return
+		}
+		if dateValue.Number < date {
+			err = newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+			return
+		}
+		datesArg = append(datesArg, dateValue.Number)
+		date = dateValue.Number
+	}
+	if len(valuesArg) != len(datesArg) {
+		err = newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		return
+	}
+	err = newEmptyFormulaArg()
+	return
+}
+
+// xirr is an implementation of the formula function XIRR.
+func (fn *formulaFuncs) xirr(values, dates []float64, guess float64) formulaArg {
+	positive, negative := false, false
+	for i := 0; i < len(values); i++ {
+		if values[i] > 0 {
+			positive = true
+		}
+		if values[i] < 0 {
+			negative = true
+		}
+	}
+	if !positive || !negative {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	result, epsMax, count, maxIterate, err := guess, 1e-10, 0, 50, false
+	for {
+		resultValue := xirrPart1(values, dates, result)
+		newRate := result - resultValue/xirrPart2(values, dates, result)
+		epsRate := math.Abs(newRate - result)
+		result = newRate
+		count++
+		if epsRate <= epsMax || math.Abs(resultValue) <= epsMax {
+			break
+		}
+		if count > maxIterate {
+			err = true
+			break
+		}
+	}
+	if err || math.IsNaN(result) || math.IsInf(result, 0) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(result)
+}
+
+// xirrPart1 is a part of implementation of the formula function XIRR.
+func xirrPart1(values, dates []float64, rate float64) float64 {
+	r := rate + 1
+	result := values[0]
+	vlen := len(values)
+	firstDate := dates[0]
+	for i := 1; i < vlen; i++ {
+		result += values[i] / math.Pow(r, (dates[i]-firstDate)/365)
+	}
+	return result
+}
+
+// xirrPart2 is a part of implementation of the formula function XIRR.
+func xirrPart2(values, dates []float64, rate float64) float64 {
+	r := rate + 1
+	result := 0.0
+	vlen := len(values)
+	firstDate := dates[0]
+	for i := 1; i < vlen; i++ {
+		frac := (dates[i] - firstDate) / 365
+		result -= frac * values[i] / math.Pow(r, frac+1)
+	}
+	return result
+}
+
+// XIRR function returns the Internal Rate of Return for a supplied series of
+// cash flows (i.e. a set of values, which includes an initial investment
+// value and a series of net income values) occurring at a series of supplied
+// dates. The syntax of the function is:
+//
+//    XIRR(values,dates,[guess])
+//
+func (fn *formulaFuncs) XIRR(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 && argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "XIRR requires 2 or 3 arguments")
+	}
+	values, dates, err := fn.prepareXArgs("XIRR", argsList.Front().Value.(formulaArg), argsList.Front().Next().Value.(formulaArg))
+	if err.Type != ArgEmpty {
+		return err
+	}
+	guess := newNumberFormulaArg(0)
+	if argsList.Len() == 3 {
+		if guess = argsList.Back().Value.(formulaArg).ToNumber(); guess.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		if guess.Number <= -1 {
+			return newErrorFormulaArg(formulaErrorVALUE, "XIRR requires guess > -1")
+		}
+	}
+	return fn.xirr(values, dates, guess.Number)
+}
+
+// XNPV function calculates the Net Present Value for a schedule of cash flows
+// that is not necessarily periodic. The syntax of the function is:
+//
+//    XNPV(rate,values,dates)
+//
+func (fn *formulaFuncs) XNPV(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "XNPV requires 3 arguments")
+	}
+	rate := argsList.Front().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	if rate.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "XNPV requires rate > 0")
+	}
+	values, dates, err := fn.prepareXArgs("XNPV", argsList.Front().Next().Value.(formulaArg), argsList.Back().Value.(formulaArg))
+	if err.Type != ArgEmpty {
+		return err
+	}
+	date1, xnpv := dates[0], 0.0
+	for idx, value := range values {
+		xnpv += value / math.Pow(1+rate.Number, (dates[idx]-date1)/365)
+	}
+	return newNumberFormulaArg(xnpv)
+}
+
+// yield is an implementation of the formula function YIELD.
+func (fn *formulaFuncs) yield(settlement, maturity, rate, pr, redemption, frequency, basis formulaArg) formulaArg {
+	priceN, yield1, yield2 := newNumberFormulaArg(0), newNumberFormulaArg(0), newNumberFormulaArg(1)
+	price1 := fn.price(settlement, maturity, rate, yield1, redemption, frequency, basis)
+	if price1.Type != ArgNumber {
+		return price1
+	}
+	price2 := fn.price(settlement, maturity, rate, yield2, redemption, frequency, basis)
+	yieldN := newNumberFormulaArg((yield2.Number - yield1.Number) * 0.5)
+	for iter := 0; iter < 100 && priceN.Number != pr.Number; iter++ {
+		priceN = fn.price(settlement, maturity, rate, yieldN, redemption, frequency, basis)
+		if pr.Number == price1.Number {
+			return yield1
+		} else if pr.Number == price2.Number {
+			return yield2
+		} else if pr.Number == priceN.Number {
+			return yieldN
+		} else if pr.Number < price2.Number {
+			yield2.Number *= 2.0
+			price2 = fn.price(settlement, maturity, rate, yield2, redemption, frequency, basis)
+			yieldN.Number = (yield2.Number - yield1.Number) * 0.5
+		} else {
+			if pr.Number < priceN.Number {
+				yield1 = yieldN
+				price1 = priceN
+			} else {
+				yield2 = yieldN
+				price2 = priceN
+			}
+			yieldN.Number = yield2.Number - (yield2.Number-yield1.Number)*((pr.Number-price2.Number)/(price1.Number-price2.Number))
+		}
+	}
+	return yieldN
+}
+
+// YIELD function calculates the Yield of a security that pays periodic
+// interest. The syntax of the function is:
+//
+//    YIELD(settlement,maturity,rate,pr,redemption,frequency,[basis])
+//
+func (fn *formulaFuncs) YIELD(argsList *list.List) formulaArg {
+	if argsList.Len() != 6 && argsList.Len() != 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, "YIELD requires 6 or 7 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	rate := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	if rate.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires rate >= 0")
+	}
+	pr := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if pr.Type != ArgNumber {
+		return pr
+	}
+	if pr.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires pr > 0")
+	}
+	redemption := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return redemption
+	}
+	if redemption.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires redemption >= 0")
+	}
+	frequency := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if frequency.Type != ArgNumber {
+		return frequency
+	}
+	if !validateFrequency(frequency.Number) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 7 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return fn.yield(settlement, maturity, rate, pr, redemption, frequency, basis)
+}
+
+// YIELDDISC function calculates the annual yield of a discounted security.
+// The syntax of the function is:
+//
+//    YIELDDISC(settlement,maturity,pr,redemption,[basis])
+//
+func (fn *formulaFuncs) YIELDDISC(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 && argsList.Len() != 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "YIELDDISC requires 4 or 5 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	pr := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if pr.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if pr.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "YIELDDISC requires pr > 0")
+	}
+	redemption := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if redemption.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "YIELDDISC requires redemption > 0")
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 5 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	frac := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	return newNumberFormulaArg((redemption.Number/pr.Number - 1) / frac.Number)
+}
+
+// YIELDMAT function calculates the annual yield of a security that pays
+// interest at maturity. The syntax of the function is:
+//
+//    YIELDMAT(settlement,maturity,issue,rate,pr,[basis])
+//
+func (fn *formulaFuncs) YIELDMAT(argsList *list.List) formulaArg {
+	if argsList.Len() != 5 && argsList.Len() != 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, "YIELDMAT requires 5 or 6 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	arg := list.New().Init()
+	issue := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if issue.Type != ArgNumber {
+		arg.PushBack(argsList.Front().Next().Next().Value.(formulaArg))
+		issue = fn.DATEVALUE(arg)
+		if issue.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	if issue.Number >= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "YIELDMAT requires settlement > issue")
+	}
+	rate := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	if rate.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "YIELDMAT requires rate >= 0")
+	}
+	pr := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if pr.Type != ArgNumber {
+		return pr
+	}
+	if pr.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "YIELDMAT requires pr > 0")
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 6 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	dim := yearFrac(issue.Number, maturity.Number, int(basis.Number))
+	if dim.Type != ArgNumber {
+		return dim
+	}
+	dis := yearFrac(issue.Number, settlement.Number, int(basis.Number))
+	dsm := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	result := 1 + dim.Number*rate.Number
+	result /= pr.Number/100 + dis.Number*rate.Number
+	result--
+	result /= dsm.Number
+	return newNumberFormulaArg(result)
 }

@@ -23,7 +23,7 @@ Excelize is a library written in pure Go providing a set of functions that allow
 go get github.com/xuri/excelize
 ```
 
-- If your packages are managed using [Go Modules](https://blog.golang.org/using-go-modules), please install with following command.
+- If your packages are managed using [Go Modules](https://go.dev/blog/using-go-modules), please install with following command.
 
 ```bash
 go get github.com/xuri/excelize/v2
@@ -77,6 +77,12 @@ func main() {
         fmt.Println(err)
         return
     }
+    defer func() {
+        // Close the spreadsheet.
+        if err := f.Close(); err != nil {
+            fmt.Println(err)
+        }
+    }()
     // Get value from cell by given worksheet name and axis.
     cell, err := f.GetCellValue("Sheet1", "B2")
     if err != nil {
@@ -180,6 +186,12 @@ func main() {
         fmt.Println(err)
         return
     }
+    defer func() {
+        // Close the spreadsheet.
+        if err := f.Close(); err != nil {
+            fmt.Println(err)
+        }
+    }()
     // Insert a picture.
     if err := f.AddPicture("Sheet1", "A2", "image.png", ""); err != nil {
         fmt.Println(err)

@@ -19,19 +19,20 @@ import (
 // Source relationship and namespace list, associated prefixes and schema in which it was
 // introduced.
 var (
-	SourceRelationship                = xml.Attr{Name: xml.Name{Local: "r", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
-	SourceRelationshipCompatibility   = xml.Attr{Name: xml.Name{Local: "mc", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/markup-compatibility/2006"}
-	SourceRelationshipChart20070802   = xml.Attr{Name: xml.Name{Local: "c14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2007/8/2/chart"}
-	SourceRelationshipChart2014       = xml.Attr{Name: xml.Name{Local: "c16", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2014/chart"}
-	SourceRelationshipChart201506     = xml.Attr{Name: xml.Name{Local: "c16r2", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2015/06/chart"}
-	NameSpaceSpreadSheet              = xml.Attr{Name: xml.Name{Local: "xmlns"}, Value: "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
-	NameSpaceSpreadSheetX14           = xml.Attr{Name: xml.Name{Local: "x14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"}
-	NameSpaceDrawingML                = xml.Attr{Name: xml.Name{Local: "a", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/main"}
-	NameSpaceDrawingMLChart           = xml.Attr{Name: xml.Name{Local: "c", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/chart"}
-	NameSpaceDrawingMLSpreadSheet     = xml.Attr{Name: xml.Name{Local: "xdr", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"}
-	NameSpaceSpreadSheetX15           = xml.Attr{Name: xml.Name{Local: "x15", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main"}
-	NameSpaceSpreadSheetExcel2006Main = xml.Attr{Name: xml.Name{Local: "xne", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/excel/2006/main"}
-	NameSpaceMacExcel2008Main         = xml.Attr{Name: xml.Name{Local: "mx", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/mac/excel/2008/main"}
+	SourceRelationship                      = xml.Attr{Name: xml.Name{Local: "r", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
+	SourceRelationshipCompatibility         = xml.Attr{Name: xml.Name{Local: "mc", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/markup-compatibility/2006"}
+	SourceRelationshipChart20070802         = xml.Attr{Name: xml.Name{Local: "c14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2007/8/2/chart"}
+	SourceRelationshipChart2014             = xml.Attr{Name: xml.Name{Local: "c16", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2014/chart"}
+	SourceRelationshipChart201506           = xml.Attr{Name: xml.Name{Local: "c16r2", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2015/06/chart"}
+	NameSpaceSpreadSheet                    = xml.Attr{Name: xml.Name{Local: "xmlns"}, Value: "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+	NameSpaceSpreadSheetX14                 = xml.Attr{Name: xml.Name{Local: "x14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"}
+	NameSpaceDrawingML                      = xml.Attr{Name: xml.Name{Local: "a", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/main"}
+	NameSpaceDrawingMLChart                 = xml.Attr{Name: xml.Name{Local: "c", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/chart"}
+	NameSpaceDrawingMLSpreadSheet           = xml.Attr{Name: xml.Name{Local: "xdr", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"}
+	NameSpaceSpreadSheetX15                 = xml.Attr{Name: xml.Name{Local: "x15", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main"}
+	NameSpaceSpreadSheetExcel2006Main       = xml.Attr{Name: xml.Name{Local: "xne", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/excel/2006/main"}
+	NameSpaceMacExcel2008Main               = xml.Attr{Name: xml.Name{Local: "mx", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/mac/excel/2008/main"}
+	NameSpaceDocumentPropertiesVariantTypes = xml.Attr{Name: xml.Name{Local: "vt", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"}
 )
 
 // Source relationship and namespace.
@@ -94,10 +95,12 @@ const (
 
 // Excel specifications and limits
 const (
+	UnzipSizeLimit       = 1000 << 24
 	StreamChunkSize      = 1 << 24
 	MaxFontFamilyLength  = 31
 	MaxFontSize          = 409
 	MaxFileNameLength    = 207
+	MaxFieldLength       = 255
 	MaxColumnWidth       = 255
 	MaxRowHeight         = 409
 	TotalRows            = 1048576
@@ -233,14 +236,22 @@ type xlsxBlipFill struct {
 	Stretch xlsxStretch `xml:"a:stretch"`
 }
 
+// xlsxLineProperties specifies the width of a line in EMUs. This simple type
+// has a minimum value of greater than or equal to 0. This simple type has a
+// maximum value of less than or equal to 20116800.
+type xlsxLineProperties struct {
+	W int `xml:"w,attr,omitempty"`
+}
+
 // xlsxSpPr directly maps the spPr (Shape Properties). This element specifies
 // the visual shape properties that can be applied to a picture. These are the
 // same properties that are allowed to describe the visual properties of a shape
 // but are used here to describe the visual appearance of a picture within a
 // document.
 type xlsxSpPr struct {
-	Xfrm     xlsxXfrm     `xml:"a:xfrm"`
-	PrstGeom xlsxPrstGeom `xml:"a:prstGeom"`
+	Xfrm     xlsxXfrm           `xml:"a:xfrm"`
+	PrstGeom xlsxPrstGeom       `xml:"a:prstGeom"`
+	Ln       xlsxLineProperties `xml:"a:ln"`
 }
 
 // xlsxPic elements encompass the definition of pictures within the DrawingML
@@ -468,6 +479,7 @@ type formatShape struct {
 	Height    int                    `json:"height"`
 	Format    formatPicture          `json:"format"`
 	Color     formatShapeColor       `json:"color"`
+	Line      formatLine             `json:"line"`
 	Paragraph []formatShapeParagraph `json:"paragraph"`
 }
 
@@ -483,4 +495,9 @@ type formatShapeColor struct {
 	Line   string `json:"line"`
 	Fill   string `json:"fill"`
 	Effect string `json:"effect"`
+}
+
+// formatLine directly maps the line settings of the shape.
+type formatLine struct {
+	Width float64 `json:"width"`
 }

@@ -18,38 +18,75 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
-	"unicode"
 )
 
-// ReadZipReader can be used to read the spreadsheet in memory without touching the
-// filesystem.
-func ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
-	var err error
-	var docPart = map[string]string{
-		"[content_types].xml":  "[Content_Types].xml",
-		"xl/sharedstrings.xml": "xl/sharedStrings.xml",
-	}
-	fileList := make(map[string][]byte, len(r.File))
-	worksheets := 0
+// ReadZipReader extract spreadsheet with given options.
+func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
+	var (
+		err     error
+		docPart = map[string]string{
+			"[content_types].xml":  defaultXMLPathContentTypes,
+			"xl/sharedstrings.xml": dafaultXMLPathSharedStrings,
+		}
+		fileList   = make(map[string][]byte, len(r.File))
+		worksheets int
+		unzipSize  int64
+	)
 	for _, v := range r.File {
+		fileSize := v.FileInfo().Size()
+		unzipSize += fileSize
+		if unzipSize > f.options.UnzipSizeLimit {
+			return fileList, worksheets, newUnzipSizeLimitError(f.options.UnzipSizeLimit)
+		}
 		fileName := strings.Replace(v.Name, "\\", "/", -1)
 		if partName, ok := docPart[strings.ToLower(fileName)]; ok {
 			fileName = partName
 		}
-		if fileList[fileName], err = readFile(v); err != nil {
-			return nil, 0, err
+		if strings.EqualFold(fileName, dafaultXMLPathSharedStrings) && fileSize > f.options.UnzipXMLSizeLimit {
+			if tempFile, err := f.unzipToTemp(v); err == nil {
+				f.tempFiles.Store(fileName, tempFile)
+				continue
+			}
 		}
 		if strings.HasPrefix(fileName, "xl/worksheets/sheet") {
 			worksheets++
+			if fileSize > f.options.UnzipXMLSizeLimit && !v.FileInfo().IsDir() {
+				if tempFile, err := f.unzipToTemp(v); err == nil {
+					f.tempFiles.Store(fileName, tempFile)
+					continue
+				}
+			}
+		}
+		if fileList[fileName], err = readFile(v); err != nil {
+			return nil, 0, err
 		}
 	}
 	return fileList, worksheets, nil
 }
 
-// readXML provides a function to read XML content as string.
+// unzipToTemp unzip the zip entity to the system temporary directory and
+// returned the unzipped file path.
+func (f *File) unzipToTemp(zipFile *zip.File) (string, error) {
+	tmp, err := ioutil.TempFile(os.TempDir(), "excelize-")
+	if err != nil {
+		return "", err
+	}
+	rc, err := zipFile.Open()
+	if err != nil {
+		return tmp.Name(), err
+	}
+	_, err = io.Copy(tmp, rc)
+	rc.Close()
+	tmp.Close()
+	return tmp.Name(), err
+}
+
+// readXML provides a function to read XML content as bytes.
 func (f *File) readXML(name string) []byte {
 	if content, _ := f.Pkg.Load(name); content != nil {
 		return content.([]byte)
@@ -60,10 +97,36 @@ func (f *File) readXML(name string) []byte {
 	return []byte{}
 }
 
+// readBytes read file as bytes by given path.
+func (f *File) readBytes(name string) []byte {
+	content := f.readXML(name)
+	if len(content) != 0 {
+		return content
+	}
+	file, err := f.readTemp(name)
+	if err != nil {
+		return content
+	}
+	content, _ = ioutil.ReadAll(file)
+	f.Pkg.Store(name, content)
+	file.Close()
+	return content
+}
+
+// readTemp read file from system temporary directory by given path.
+func (f *File) readTemp(name string) (file *os.File, err error) {
+	path, ok := f.tempFiles.Load(name)
+	if !ok {
+		return
+	}
+	file, err = os.Open(path.(string))
+	return
+}
+
 // saveFileList provides a function to update given file content in file list
-// of XLSX.
+// of spreadsheet.
 func (f *File) saveFileList(name string, content []byte) {
-	f.Pkg.Store(name, append([]byte(XMLHeader), content...))
+	f.Pkg.Store(name, append([]byte(xml.Header), content...))
 }
 
 // Read file content as string in a archive file.
@@ -75,8 +138,7 @@ func readFile(file *zip.File) ([]byte, error) {
 	dat := make([]byte, 0, file.FileInfo().Size())
 	buff := bytes.NewBuffer(dat)
 	_, _ = io.Copy(buff, rc)
-	rc.Close()
-	return buff.Bytes(), nil
+	return buff.Bytes(), rc.Close()
 }
 
 // SplitCellName splits cell name to column name and row number.
@@ -87,13 +149,12 @@ func readFile(file *zip.File) ([]byte, error) {
 //
 func SplitCellName(cell string) (string, int, error) {
 	alpha := func(r rune) bool {
-		return ('A' <= r && r <= 'Z') || ('a' <= r && r <= 'z')
+		return ('A' <= r && r <= 'Z') || ('a' <= r && r <= 'z') || (r == 36)
 	}
-
 	if strings.IndexFunc(cell, alpha) == 0 {
 		i := strings.LastIndexFunc(cell, alpha)
 		if i >= 0 && i < len(cell)-1 {
-			col, rowstr := cell[:i+1], cell[i+1:]
+			col, rowstr := strings.ReplaceAll(cell[:i+1], "$", ""), cell[i+1:]
 			if row, err := strconv.Atoi(rowstr); err == nil && row > 0 {
 				return col, row, nil
 			}
@@ -184,14 +245,12 @@ func ColumnNumberToName(num int) (string, error) {
 //    excelize.CellNameToCoordinates("Z3") // returns 26, 3, nil
 //
 func CellNameToCoordinates(cell string) (int, int, error) {
-	const msg = "cannot convert cell %q to coordinates: %v"
-
 	colname, row, err := SplitCellName(cell)
 	if err != nil {
-		return -1, -1, fmt.Errorf(msg, cell, err)
+		return -1, -1, newCellNameToCoordinatesError(cell, err)
 	}
 	if row > TotalRows {
-		return -1, -1, fmt.Errorf("row number exceeds maximum limit")
+		return -1, -1, ErrMaxRows
 	}
 	col, err := ColumnNameToNumber(colname)
 	return col, row, err
@@ -219,13 +278,131 @@ func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 	return sign + colname + sign + strconv.Itoa(row), err
 }
 
+// areaRefToCoordinates provides a function to convert area reference to a
+// pair of coordinates.
+func areaRefToCoordinates(ref string) ([]int, error) {
+	rng := strings.Split(strings.Replace(ref, "$", "", -1), ":")
+	if len(rng) < 2 {
+		return nil, ErrParameterInvalid
+	}
+	return areaRangeToCoordinates(rng[0], rng[1])
+}
+
+// areaRangeToCoordinates provides a function to convert cell range to a
+// pair of coordinates.
+func areaRangeToCoordinates(firstCell, lastCell string) ([]int, error) {
+	coordinates := make([]int, 4)
+	var err error
+	coordinates[0], coordinates[1], err = CellNameToCoordinates(firstCell)
+	if err != nil {
+		return coordinates, err
+	}
+	coordinates[2], coordinates[3], err = CellNameToCoordinates(lastCell)
+	return coordinates, err
+}
+
+// sortCoordinates provides a function to correct the coordinate area, such
+// correct C1:B3 to B1:C3.
+func sortCoordinates(coordinates []int) error {
+	if len(coordinates) != 4 {
+		return ErrCoordinates
+	}
+	if coordinates[2] < coordinates[0] {
+		coordinates[2], coordinates[0] = coordinates[0], coordinates[2]
+	}
+	if coordinates[3] < coordinates[1] {
+		coordinates[3], coordinates[1] = coordinates[1], coordinates[3]
+	}
+	return nil
+}
+
+// coordinatesToAreaRef provides a function to convert a pair of coordinates
+// to area reference.
+func (f *File) coordinatesToAreaRef(coordinates []int) (string, error) {
+	if len(coordinates) != 4 {
+		return "", ErrCoordinates
+	}
+	firstCell, err := CoordinatesToCellName(coordinates[0], coordinates[1])
+	if err != nil {
+		return "", err
+	}
+	lastCell, err := CoordinatesToCellName(coordinates[2], coordinates[3])
+	if err != nil {
+		return "", err
+	}
+	return firstCell + ":" + lastCell, err
+}
+
+// flatSqref convert reference sequence to cell coordinates list.
+func (f *File) flatSqref(sqref string) (cells map[int][][]int, err error) {
+	var coordinates []int
+	cells = make(map[int][][]int)
+	for _, ref := range strings.Fields(sqref) {
+		rng := strings.Split(ref, ":")
+		switch len(rng) {
+		case 1:
+			var col, row int
+			col, row, err = CellNameToCoordinates(rng[0])
+			if err != nil {
+				return
+			}
+			cells[col] = append(cells[col], []int{col, row})
+		case 2:
+			if coordinates, err = areaRefToCoordinates(ref); err != nil {
+				return
+			}
+			_ = sortCoordinates(coordinates)
+			for c := coordinates[0]; c <= coordinates[2]; c++ {
+				for r := coordinates[1]; r <= coordinates[3]; r++ {
+					cells[c] = append(cells[c], []int{c, r})
+				}
+			}
+		}
+	}
+	return
+}
+
+// inCoordinates provides a method to check if an coordinate is present in
+// coordinates array, and return the index of its location, otherwise
+// return -1.
+func inCoordinates(a [][]int, x []int) int {
+	for idx, n := range a {
+		if x[0] == n[0] && x[1] == n[1] {
+			return idx
+		}
+	}
+	return -1
+}
+
+// inStrSlice provides a method to check if an element is present in an array,
+// and return the index of its location, otherwise return -1.
+func inStrSlice(a []string, x string) int {
+	for idx, n := range a {
+		if x == n {
+			return idx
+		}
+	}
+	return -1
+}
+
+// inFloat64Slice provides a method to check if an element is present in an
+// float64 array, and return the index of its location, otherwise return -1.
+func inFloat64Slice(a []float64, x float64) int {
+	for idx, n := range a {
+		if x == n {
+			return idx
+		}
+	}
+	return -1
+}
+
 // boolPtr returns a pointer to a bool with the given value.
 func boolPtr(b bool) *bool { return &b }
 
 // intPtr returns a pointer to a int with the given value.
 func intPtr(i int) *int { return &i }
 
-// float64Ptr returns a pofloat64er to a float64 with the given value.
+// float64Ptr returns a pointer to a float64 with the given value.
 func float64Ptr(f float64) *float64 { return &f }
 
 // stringPtr returns a pointer to a string with the given value.
@@ -237,6 +414,66 @@ func defaultTrue(b *bool) bool {
 		return true
 	}
 	return *b
+}
+
+// MarshalXML convert the boolean data type to literal values 0 or 1 on
+// serialization.
+func (avb attrValBool) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	attr := xml.Attr{
+		Name: xml.Name{
+			Space: start.Name.Space,
+			Local: "val",
+		},
+		Value: "0",
+	}
+	if avb.Val != nil {
+		if *avb.Val {
+			attr.Value = "1"
+		} else {
+			attr.Value = "0"
+		}
+	}
+	start.Attr = []xml.Attr{attr}
+	e.EncodeToken(start)
+	e.EncodeToken(start.End())
+	return nil
+}
+
+// UnmarshalXML convert the literal values true, false, 1, 0 of the XML
+// attribute to boolean data type on deserialization.
+func (avb *attrValBool) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	for {
+		t, err := d.Token()
+		if err != nil {
+			return err
+		}
+		found := false
+		switch t.(type) {
+		case xml.StartElement:
+			return ErrAttrValBool
+		case xml.EndElement:
+			found = true
+		}
+		if found {
+			break
+		}
+	}
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "val" {
+			if attr.Value == "" {
+				val := true
+				avb.Val = &val
+			} else {
+				val, err := strconv.ParseBool(attr.Value)
+				if err != nil {
+					return err
+				}
+				avb.Val = &val
+			}
+			return nil
+		}
+	}
+	return nil
 }
 
 // parseFormatSet provides a method to convert format string to []byte and
@@ -292,7 +529,7 @@ func bytesReplace(s, old, new []byte, n int) []byte {
 	}
 
 	w += copy(s[w:], s[i:])
-	return s[0:w]
+	return s[:w]
 }
 
 // genSheetPasswd provides a method to generate password for worksheet
@@ -476,10 +713,6 @@ func bstrUnmarshal(s string) (result string) {
 		subStr := s[match[0]:match[1]]
 		if subStr == "_x005F_" {
 			cursor = match[1]
-			if l > match[1]+6 && !bstrEscapeExp.MatchString(s[match[1]:match[1]+6]) {
-				result += subStr
-				continue
-			}
 			result += "_"
 			continue
 		}
@@ -495,15 +728,7 @@ func bstrUnmarshal(s string) (result string) {
 				result += subStr
 				continue
 			}
-			hasRune := false
-			for _, c := range v {
-				if unicode.IsControl(c) {
-					hasRune = true
-				}
-			}
-			if !hasRune {
-				result += v
-			}
+			result += v
 		}
 	}
 	if cursor < l {

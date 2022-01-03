@@ -35,11 +35,6 @@ const (
 	DataValidationTypeWhole
 )
 
-const (
-	// dataValidationFormulaStrLen 255 characters
-	dataValidationFormulaStrLen = 255
-)
-
 // DataValidationErrorStyle defined the style of data validation error alert.
 type DataValidationErrorStyle int
 
@@ -120,7 +115,7 @@ func (dd *DataValidation) SetInput(title, msg string) {
 // SetDropList data validation list.
 func (dd *DataValidation) SetDropList(keys []string) error {
 	formula := strings.Join(keys, ",")
-	if dataValidationFormulaStrLen < len(utf16.Encode([]rune(formula))) {
+	if MaxFieldLength < len(utf16.Encode([]rune(formula))) {
 		return ErrDataValidationFormulaLenth
 	}
 	dd.Formula1 = fmt.Sprintf(`<formula1>"%s"</formula1>`, formulaEscaper.Replace(formula))
@@ -128,13 +123,37 @@ func (dd *DataValidation) SetDropList(keys []string) error {
 	return nil
 }
 
-// SetRange provides function to set data validation range in drop list.
-func (dd *DataValidation) SetRange(f1, f2 float64, t DataValidationType, o DataValidationOperator) error {
-	if math.Abs(f1) > math.MaxFloat32 || math.Abs(f2) > math.MaxFloat32 {
-		return ErrDataValidationRange
+// SetRange provides function to set data validation range in drop list, only
+// accepts int, float64, or string data type formula argument.
+func (dd *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o DataValidationOperator) error {
+	var formula1, formula2 string
+	switch v := f1.(type) {
+	case int:
+		formula1 = fmt.Sprintf("<formula1>%d</formula1>", int(v))
+	case float64:
+		if math.Abs(float64(v)) > math.MaxFloat32 {
+			return ErrDataValidationRange
+		}
+		formula1 = fmt.Sprintf("<formula1>%.17g</formula1>", float64(v))
+	case string:
+		formula1 = fmt.Sprintf("<formula1>%s</formula1>", string(v))
+	default:
+		return ErrParameterInvalid
 	}
-	dd.Formula1 = fmt.Sprintf("<formula1>%.17g</formula1>", f1)
-	dd.Formula2 = fmt.Sprintf("<formula2>%.17g</formula2>", f2)
+	switch v := f2.(type) {
+	case int:
+		formula2 = fmt.Sprintf("<formula2>%d</formula2>", int(v))
+	case float64:
+		if math.Abs(float64(v)) > math.MaxFloat32 {
+			return ErrDataValidationRange
+		}
+		formula2 = fmt.Sprintf("<formula2>%.17g</formula2>", float64(v))
+	case string:
+		formula2 = fmt.Sprintf("<formula2>%s</formula2>", string(v))
+	default:
+		return ErrParameterInvalid
+	}
+	dd.Formula1, dd.Formula2 = formula1, formula2
 	dd.Type = convDataValidationType(t)
 	dd.Operator = convDataValidationOperatior(o)
 	return nil
@@ -154,7 +173,7 @@ func (dd *DataValidation) SetRange(f1, f2 float64, t DataValidationType, o DataV
 //
 func (dd *DataValidation) SetSqrefDropList(sqref string, isCurrentSheet bool) error {
 	if isCurrentSheet {
-		dd.Formula1 = sqref
+		dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", sqref)
 		dd.Type = convDataValidationType(typeList)
 		return nil
 	}
@@ -258,9 +277,30 @@ func (f *File) DeleteDataValidation(sheet, sqref string) error {
 	if ws.DataValidations == nil {
 		return nil
 	}
+	delCells, err := f.flatSqref(sqref)
+	if err != nil {
+		return err
+	}
 	dv := ws.DataValidations
 	for i := 0; i < len(dv.DataValidation); i++ {
-		if dv.DataValidation[i].Sqref == sqref {
+		applySqref := []string{}
+		colCells, err := f.flatSqref(dv.DataValidation[i].Sqref)
+		if err != nil {
+			return err
+		}
+		for col, cells := range delCells {
+			for _, cell := range cells {
+				idx := inCoordinates(colCells[col], cell)
+				if idx != -1 {
+					colCells[col] = append(colCells[col][:idx], colCells[col][idx+1:]...)
+				}
+			}
+		}
+		for _, col := range colCells {
+			applySqref = append(applySqref, f.squashSqref(col)...)
+		}
+		dv.DataValidation[i].Sqref = strings.Join(applySqref, " ")
+		if len(applySqref) == 0 {
 			dv.DataValidation = append(dv.DataValidation[:i], dv.DataValidation[i+1:]...)
 			i--
 		}
@@ -270,4 +310,32 @@ func (f *File) DeleteDataValidation(sheet, sqref string) error {
 		ws.DataValidations = nil
 	}
 	return nil
+}
+
+// squashSqref generates cell reference sequence by given cells coordinates list.
+func (f *File) squashSqref(cells [][]int) []string {
+	if len(cells) == 1 {
+		cell, _ := CoordinatesToCellName(cells[0][0], cells[0][1])
+		return []string{cell}
+	} else if len(cells) == 0 {
+		return []string{}
+	}
+	l, r, res := 0, 0, []string{}
+	for i := 1; i < len(cells); i++ {
+		if cells[i][0] == cells[r][0] && cells[i][1]-cells[r][1] > 1 {
+			curr, _ := f.coordinatesToAreaRef(append(cells[l], cells[r]...))
+			if l == r {
+				curr, _ = CoordinatesToCellName(cells[l][0], cells[l][1])
+			}
+			res = append(res, curr)
+			l, r = i, i
+		} else {
+			r++
+		}
+	}
+	curr, _ := f.coordinatesToAreaRef(append(cells[l], cells[r]...))
+	if l == r {
+		curr, _ = CoordinatesToCellName(cells[l][0], cells[l][1])
+	}
+	return append(res, curr)
 }

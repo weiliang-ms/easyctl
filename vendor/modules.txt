@@ -134,7 +134,7 @@ github.com/vbauerster/mpb/v6/decor
 github.com/vbauerster/mpb/v6/internal
 # github.com/xuri/efp v0.0.0-20210322160811-ab561f5b45e3
 github.com/xuri/efp
-# github.com/xuri/excelize/v2 v2.4.1
+# github.com/xuri/excelize/v2 v2.5.0
 ## explicit
 github.com/xuri/excelize/v2
 # golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
@@ -152,7 +152,6 @@ golang.org/x/crypto/ripemd160
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 # golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d
-## explicit
 golang.org/x/net/bpf
 golang.org/x/net/html
 golang.org/x/net/html/atom

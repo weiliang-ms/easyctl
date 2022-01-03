@@ -23,7 +23,7 @@ Excelize 是 Go 语言编写的用于操作 Office Excel 文档基础库，基�
 go get github.com/xuri/excelize
 ```
 
-- 如果您使用 [Go Modules](https://blog.golang.org/using-go-modules) 管理软件包，请使用下面的命令来安装最新版本。
+- 如果您使用 [Go Modules](https://go.dev/blog/using-go-modules) 管理软件包，请使用下面的命令来安装最新版本。
 
 ```bash
 go get github.com/xuri/excelize/v2
@@ -77,6 +77,12 @@ func main() {
         fmt.Println(err)
         return
     }
+    defer func() {
+        // 关闭工作簿
+        if err := f.Close(); err != nil {
+            fmt.Println(err)
+        }
+    }()
     // 获取工作表中指定单元格的值
     cell, err := f.GetCellValue("Sheet1", "B2")
     if err != nil {
@@ -180,6 +186,12 @@ func main() {
         fmt.Println(err)
         return
     }
+    defer func() {
+        // 关闭工作簿
+        if err := f.Close(); err != nil {
+            fmt.Println(err)
+        }
+    }()
     // 插入图片
     if err := f.AddPicture("Sheet1", "A2", "image.png", ""); err != nil {
         fmt.Println(err)
@@ -199,7 +211,7 @@ func main() {
     }`); err != nil {
         fmt.Println(err)
     }
-    // 保存文件
+    // 保存工作簿
     if err = f.Save(); err != nil {
         fmt.Println(err)
     }
