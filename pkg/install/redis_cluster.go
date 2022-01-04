@@ -275,10 +275,8 @@ func (config *redisClusterConfig) Install() (err command.RunErr) {
 		}
 	}()
 
-	// todo: if nit set value
-	if config.Logger == nil {
-		config.Logger = logrus.New()
-	}
+	log.SetDefault(config.Logger)
+
 	config.Logger.Infoln("开始编译redis")
 	compileCmd, _ := tmplutil.Render(tmpl.RedisCompileTmpl, tmplutil.TmplRenderData{
 		"PackageName": strings2.SubFileName(config.Package),

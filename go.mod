@@ -18,12 +18,14 @@ require (
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.4
+	github.com/schollz/progressbar/v3 v3.8.5
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
 	github.com/vbauerster/mpb/v6 v6.0.4
+	github.com/vbauerster/mpb/v7 v7.3.0
 	github.com/xuri/excelize/v2 v2.5.0
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )

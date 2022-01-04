@@ -27,8 +27,8 @@ package runner
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"github.com/vbauerster/mpb/v6"
-	"github.com/vbauerster/mpb/v6/decor"
+	"github.com/vbauerster/mpb/v7"
+	"github.com/vbauerster/mpb/v7/decor"
 	"io"
 	"os"
 	"sync"
@@ -71,64 +71,62 @@ func (server ServerInternal) Scp(item ScpItem) error {
 	defer dstFile.Close()
 
 	if createErr != nil {
-		return fmt.Errorf("创建远程主机：%s文件句柄: %s失败 ->%s",
+		return fmt.Errorf("创建远程主机：%s文件: %s失败 ->%s",
 			server.Host, item.DstPath, createErr.Error())
 	}
 
 	modErr := sftp.Chmod(item.DstPath, item.Mode)
 	if modErr != nil {
-		return fmt.Errorf("修改%s:%s文件句柄权限失败 ->%s",
+		return fmt.Errorf("修改%s:%s文件权限失败 ->%s",
 			server.Host, item.DstPath, createErr.Error())
 	}
 
 	f, _ := os.Open(item.SrcPath)
 	defer f.Close()
 
-	if item.ShowProcessBar {
-		// 获取文件大小信息
-		ff, _ := os.Stat(item.SrcPath)
-		item.Logger.Infof("文件大小为：%d", ff.Size())
-		reader := io.LimitReader(f, ff.Size())
+	// 获取文件大小信息
+	ff, _ := os.Stat(item.SrcPath)
+	item.Logger.Infof("文件大小为：%d", ff.Size())
+	reader := io.LimitReader(f, ff.Size())
 
-		// 初始化进度条
-		p := mpb.New(
-			mpb.WithWidth(60),                  // 进度条长度
-			mpb.WithRefreshRate(1*time.Second), // 刷新速度
-		)
+	// 初始化进度条
+	p := mpb.New(
+		mpb.WithWidth(80),                // 进度条长度
+		mpb.WithRefreshRate(time.Second), // 刷新速度
+	)
 
-		//
-		bar := p.Add(ff.Size(),
-			mpb.NewBarFiller("[=>-|"),
-			mpb.PrependDecorators(
-				decor.Name(fmt.Sprintf("-> %s | ", server.Host)),
-				decor.CountersKibiByte("% .2f / % .2f"),
+	start := time.Now()
+
+	bar := p.New(ff.Size(),
+		// BarFillerBuilder with custom style
+		mpb.BarStyle().Lbound("[").Filler("=").Tip(">").Padding("-").Rbound("|"),
+		mpb.PrependDecorators(
+			// display our name with one space on the right
+			decor.Name(server.Host, decor.WC{W: len(server.Host) + 1, C: decor.DidentRight}),
+			decor.CountersKibiByte("[ % .2f / % .2f ]"),
+			// replace ETA decorator with "done" message, OnComplete event
+			decor.NewAverageSpeed(decor.UnitKB, " % .1f", time.Now(), decor.WC{W: 6}),
+			decor.OnComplete(
+				decor.AverageETA(decor.ET_STYLE_GO, decor.WC{W: 6}), fmt.Sprintf("done"),
 			),
-			mpb.AppendDecorators(
-				decor.EwmaETA(decor.ET_STYLE_GO, 90),
-				decor.Name(" ] "),
-				decor.EwmaSpeed(decor.UnitKiB, "% .2f", 60),
-			),
-		)
-		// create proxy reader
-		proxyReader := bar.ProxyReader(reader)
-		_, ioErr := io.Copy(dstFile, proxyReader)
-		if ioErr != nil {
-			return fmt.Errorf("传输%s:%s失败 ->%s",
-				server.Host, item.DstPath, createErr.Error())
-		}
+		),
+		mpb.AppendDecorators(decor.NewPercentage("%.2f", decor.WC{W: 6})),
+	)
 
-		p.Wait()
+	// create proxy reader
+	proxyReader := bar.ProxyReader(reader)
+	_, ioErr := io.Copy(dstFile, proxyReader)
 
-		defer proxyReader.Close()
-	} else {
-		// create proxy reader
-		_, ioErr := io.Copy(dstFile, f)
-		if ioErr != nil {
-			return fmt.Errorf("传输%s:%s失败 ->%s",
-				server.Host, item.DstPath, createErr.Error())
-		}
+	if ioErr != nil {
+		return fmt.Errorf("传输%s:%s失败 ->%s",
+			server.Host, item.DstPath, createErr.Error())
 	}
-	item.Logger.Infof("<- %s:%s 传输完毕...", server.Host, item.DstPath)
+
+	p.Wait()
+
+	defer proxyReader.Close()
+
+	item.Logger.Infof("<- %s:%s %s传输完毕...", server.Host, item.DstPath, time.Since(start).String())
 	return nil
 }
 

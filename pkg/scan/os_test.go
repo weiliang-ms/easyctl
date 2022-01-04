@@ -1,24 +1,42 @@
 package scan
 
 import (
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/weiliang-ms/easyctl/pkg/runner"
+	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"testing"
 )
 
-//func TestOS(t *testing.T) {
-//	b := `
-//server:
-//  - host: 192.168.109.157
-//    username: root
-//    # privateKeyPath: "" # ~/.ssh/id_rsa，为空默认走password登录；不为空默认走密钥登录
-//    password: 1
-//    port: 22
-//`
-//	OS(command.OperationItem{
-//		B:          []byte(b),
-//		Logger:     logrus.New(),
-//	})
-//}
+func TestOS(t *testing.T) {
+	b := `
+server:
+ #- host: 192.168.109.157
+  #username: root
+  # privateKeyPath: "" # ~/.ssh/id_rsa，为空默认走password登录；不为空默认走密钥登录
+  #password: 1
+  #port: 22
+`
+	UnitTest = true
+	err := OS(command.OperationItem{
+		B:      []byte(b),
+		Logger: logrus.New(),
+	})
+	if err.Err != nil {
+		panic(err.Err)
+	}
+}
+
+func TestOSINFO(t *testing.T) {
+
+	UnitTest = true
+
+	_, err := osInfo(runner.ServerInternal{}, logrus.New())
+	if err != nil {
+		panic(err)
+	}
+
+}
 
 func TestNewCPUInfoItem(t *testing.T) {
 	content := `

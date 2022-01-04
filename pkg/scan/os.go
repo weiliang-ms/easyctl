@@ -39,6 +39,8 @@ const (
 	PrintMountInfoShell     = "df -h|grep -v Filesystem"
 )
 
+var UnitTest bool
+
 type OSInfoSlice []OSInfo
 
 type BaseOSInfo struct {
@@ -79,6 +81,7 @@ type DiskInfo struct {
 // OS 扫描系统信息
 func OS(item command.OperationItem) command.RunErr {
 	servers, err := runner.ParseServerList(item.B, item.Logger)
+
 	if err != nil {
 		return command.RunErr{Err: err, Msg: "解析异常"}
 	}
@@ -89,18 +92,23 @@ func OS(item command.OperationItem) command.RunErr {
 	var result OSInfoSlice
 
 	ch := make(chan OSInfo, len(servers))
+	errCh := make(chan error)
 	wg := sync.WaitGroup{}
 	wg.Add(len(servers))
 
 	for _, v := range servers {
 		go func(s runner.ServerInternal) {
-			ch <- osInfo(s, item.Logger)
+			re, scanErr := osInfo(s, item.Logger)
+			errCh <- fmt.Errorf("[%s] 扫描异常: %s", s.Host, scanErr)
+			ch <- re
 			defer wg.Done()
 		}(v)
 	}
 
 	wg.Wait()
 	close(ch)
+	close(errCh)
+
 	for v := range ch {
 		result = append(result, v)
 	}
@@ -113,11 +121,18 @@ func OS(item command.OperationItem) command.RunErr {
 	}
 
 	item.Logger.Infof("系统信息：\n%v", out.String())
+
+	for v := range errCh {
+		item.Logger.Error(v)
+	}
+
 	return command.RunErr{Err: SaveAsExcel(result)}
 }
 
 // 获取操作系统信息
-func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
+func osInfo(s runner.ServerInternal, logger *logrus.Logger) (osInfo OSInfo, err error) {
+
+	defer HandleTestErr(UnitTest, &err)
 
 	var cpuInfo CPUInfo
 	var memInfo MemoryInfo
@@ -128,8 +143,8 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 	if re := s.ReturnRunResult(runner.RunItem{
 		Logger: logger,
 		Cmd:    PrintHostnameShell,
-	}); re.Err != nil {
-		panic(re.Err)
+	}); re.Err != nil && !UnitTest {
+		return osInfo, err
 	} else {
 		hostname := strings.TrimSuffix(re.StdOut, "\n")
 		logger.Debugf("[%s] 主机名为：%s", s.Host, hostname)
@@ -139,8 +154,8 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 	if re := s.ReturnRunResult(runner.RunItem{
 		Logger: logger,
 		Cmd:    PrintKernelVersionShell,
-	}); re.Err != nil {
-		panic(re.Err)
+	}); re.Err != nil && !UnitTest {
+		return osInfo, err
 	} else {
 		baseInfo.KernelV = strings.TrimSuffix(re.StdOut, "\n")
 	}
@@ -148,8 +163,8 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 	if re := s.ReturnRunResult(runner.RunItem{
 		Logger: logger,
 		Cmd:    PrintOSVersionShell,
-	}); re.Err != nil {
-		panic(re.Err)
+	}); re.Err != nil && !UnitTest {
+		return osInfo, err
 	} else {
 		baseInfo.OSV = strings.TrimSuffix(re.StdOut, "\n")
 	}
@@ -157,8 +172,8 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 	if re := s.ReturnRunResult(runner.RunItem{
 		Logger: logger,
 		Cmd:    PrintCPUInfoShell,
-	}); re.Err != nil {
-		panic(re.Err)
+	}); re.Err != nil && !UnitTest {
+		return osInfo, err
 	} else {
 		cpuInfo = NewCPUInfoItem(re.StdOut)
 	}
@@ -166,8 +181,8 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 	if re := s.ReturnRunResult(runner.RunItem{
 		Logger: logger,
 		Cmd:    PrintCPULoadavgShell,
-	}); re.Err != nil {
-		panic(re.Err)
+	}); re.Err != nil && !UnitTest {
+		return osInfo, err
 	} else {
 		cpuInfo.CPULoadAverage = strings.TrimSpace(re.StdOut)
 	}
@@ -175,8 +190,8 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 	if re := s.ReturnRunResult(runner.RunItem{
 		Logger: logger,
 		Cmd:    PrintMemInfoShell,
-	}); re.Err != nil {
-		panic(re.Err)
+	}); re.Err != nil && !UnitTest {
+		return osInfo, err
 	} else {
 		memInfo = NewMemInfoItem(strings.TrimSpace(re.StdOut))
 	}
@@ -184,8 +199,8 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 	if re := s.ReturnRunResult(runner.RunItem{
 		Logger: logger,
 		Cmd:    PrintMountInfoShell,
-	}); re.Err != nil {
-		panic(re.Err)
+	}); re.Err != nil && !UnitTest {
+		return osInfo, err
 	} else {
 		diskInfo = NewDiskInfoItem(strings.TrimSpace(re.StdOut))
 	}
@@ -195,7 +210,7 @@ func osInfo(s runner.ServerInternal, logger *logrus.Logger) OSInfo {
 		CPUInfo:    cpuInfo,
 		DiskInfo:   diskInfo,
 		MemoryInfo: memInfo,
-	}
+	}, nil
 }
 
 func (re OSInfoSlice) Len() int { return len(re) }
@@ -371,4 +386,15 @@ func SaveAsExcel(data []OSInfo) error {
 	}
 
 	return f.Save()
+}
+
+func HandleTestErr(unitTest bool, err *error) {
+
+	if v := recover(); v != nil {
+		if unitTest {
+			*err = nil
+		} else {
+			panic(v)
+		}
+	}
 }

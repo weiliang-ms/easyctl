@@ -25,6 +25,8 @@ SOFTWARE.
 package runner
 
 import (
+	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"runtime"
@@ -62,4 +64,28 @@ func TestConnectErr(t *testing.T) {
 	assert.NotNil(t, err)
 	_ = f.Close()
 	_ = os.Remove("1.txt")
+}
+
+//func TestParallelScp(t *testing.T) {
+//
+//}
+
+func TestScpLimitRate(t *testing.T) {
+	s := ServerInternal{
+		Host:     "192.168.109.160",
+		Port:     "22",
+		Username: "root",
+		Password: "1",
+	}
+	fmt.Println(s)
+	s.Scp(ScpItem{
+		Servers: nil,
+		SrcPath: "C:\\Users\\weiliang\\Downloads\\CentOS-7-x86_64-DVD-2009.iso",
+		//SrcPath: "D:\\kubernetes\\redis-deploy-go-latest.tar.gz",
+		DstPath: "/root/CentOS-7-x86_64-DVD-2009.iso",
+		//DstPath: "redis-deploy-go-latest.tar.gz",
+		Mode:           0644,
+		Logger:         logrus.New(),
+		ShowProcessBar: true,
+	})
 }

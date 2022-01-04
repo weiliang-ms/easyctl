@@ -307,8 +307,6 @@ func parseServerListWithRange(server ServerInternal, logger *logrus.Logger) (ser
 	flysnowRegexp := regexp.MustCompile("^((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})(\\.((2(5[0-5]|[0-4]\\d))|[0-1]?\\d{1,2})){2}\\.")
 	cidr := flysnowRegexp.FindString(server.Host)
 	if cidr == "" {
-		// todo: 确认该case场景
-		// 10.10.[1:2].1
 		return servers, fmt.Errorf("%s 地址区间非法", server.Host)
 	}
 

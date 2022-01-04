@@ -30,6 +30,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util/constant"
+	"github.com/weiliang-ms/easyctl/pkg/util/log"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"net"
@@ -87,11 +88,10 @@ func LocalRun(shell string, logger *logrus.Logger) ShellResult {
 }
 
 // ParallelRun 并发执行
+// todo: 添加缓冲队列，避免过多goroutine
 func (executor ExecutorInternal) ParallelRun() chan ShellResult {
 
-	if executor.Logger == nil {
-		executor.Logger = logrus.New()
-	}
+	log.SetDefault(executor.Logger)
 
 	executor.Logger.Infoln("开始并行执行命令...")
 	wg := sync.WaitGroup{}
@@ -99,6 +99,10 @@ func (executor ExecutorInternal) ParallelRun() chan ShellResult {
 
 	// todo: 屏蔽rm -rf
 	// 判断入参为文件还是shell
+
+	if executor.Script == "rm -rf /" {
+		panic(fmt.Errorf("执行命令: %s 存在重大安全隐患", executor.Script))
+	}
 
 	if _, err := os.Stat(executor.Script); err == nil {
 		b, _ := os.ReadFile(executor.Script)
