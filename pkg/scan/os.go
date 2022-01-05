@@ -86,7 +86,7 @@ func OS(item command.OperationItem) command.RunErr {
 		return command.RunErr{Err: err, Msg: "解析异常"}
 	}
 
-	serversOut, _ := format.Object(servers)
+	serversOut := format.ObjectToJson(servers)
 	item.Logger.Debugf("列表信息：%s", &serversOut)
 
 	var result OSInfoSlice
@@ -115,10 +115,7 @@ func OS(item command.OperationItem) command.RunErr {
 
 	// 排序
 	sort.Sort(result)
-	out, err := format.Object(result)
-	if err != nil {
-		panic(err)
-	}
+	out := format.ObjectToJson(result)
 
 	item.Logger.Infof("系统信息：\n%v", out.String())
 

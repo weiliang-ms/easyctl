@@ -36,7 +36,7 @@ import (
 // TailFile all & real time
 func (server ServerInternal) TailFile(path string, offset int64, whence int, stopCh <-chan struct{}) {
 	// init sftp
-	sftp, err := sftpConnect(server.Username, server.Password, server.Host, server.Port)
+	sftp, err := SftpConnect(server.Username, server.Password, server.Host, server.Port)
 	if err != nil {
 		log.Println(err)
 	}

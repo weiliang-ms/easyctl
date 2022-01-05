@@ -51,7 +51,7 @@ type RunItem struct {
 	Cmd    string
 }
 
-func sftpConnect(user, password, host string, port string) (sftpClient *sftp.Client, err error) { //参数: 远程服务器用户名, 密码, ip, 端口
+func SftpConnect(user, password, host string, port string) (sftpClient *sftp.Client, err error) { //参数: 远程服务器用户名, 密码, ip, 端口
 	auth := make([]ssh.AuthMethod, 0)
 	auth = append(auth, ssh.Password(password))
 

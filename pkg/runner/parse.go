@@ -133,7 +133,7 @@ func ParseExecutor(b []byte, logger *logrus.Logger) (ExecutorInternal, error) {
 	executorInternal.Servers = filter.Servers
 
 	// 格式化输出结构体
-	out, _ := format.Object(executorInternal.Servers)
+	out := format.ObjectToJson(executorInternal.Servers)
 	logger.Debugf("主机列表：\n%v", out.String())
 
 	return executorInternal, nil

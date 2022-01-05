@@ -3,6 +3,7 @@ module github.com/weiliang-ms/easyctl
 go 1.16
 
 require (
+	github.com/agiledragon/gomonkey v2.0.2+incompatible // indirect
 	github.com/containerd/cgroups v1.0.2
 	github.com/containerd/containerd v1.5.8 // indirect
 	github.com/docker/docker v20.10.12+incompatible
@@ -16,14 +17,16 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417
+	github.com/oscarzhao/oscarzhao.github.io v0.0.0-20200406055212-9108a70663f3
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.4
-	github.com/schollz/progressbar/v3 v3.8.5
+	github.com/schollz/progressbar/v3 v3.8.5 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
-	github.com/vbauerster/mpb/v6 v6.0.4
+	github.com/vbauerster/mpb/v6 v6.0.4 // indirect
 	github.com/vbauerster/mpb/v7 v7.3.0
+	github.com/vektra/mockery/v2 v2.9.4 // indirect
 	github.com/xuri/excelize/v2 v2.5.0
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
 	gopkg.in/yaml.v2 v2.4.0

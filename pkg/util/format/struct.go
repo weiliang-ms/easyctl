@@ -5,16 +5,10 @@ import (
 	"encoding/json"
 )
 
-func Object(v interface{}) (bytes.Buffer, error) {
-	bs, err := json.Marshal(v)
-	if err != nil {
-		return bytes.Buffer{}, err
-	}
+func ObjectToJson(v interface{}) bytes.Buffer {
+	bs, _ := json.Marshal(v)
 	var out bytes.Buffer
-	err = json.Indent(&out, bs, "", "\t")
-	if err != nil {
-		return bytes.Buffer{}, err
-	}
+	_ = json.Indent(&out, bs, "", "\t")
 
-	return out, nil
+	return out
 }

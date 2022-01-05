@@ -5,6 +5,8 @@ github.com/Microsoft/go-winio/pkg/guid
 github.com/VividCortex/ewma
 # github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 github.com/acarl005/stripansi
+# github.com/agiledragon/gomonkey v2.0.2+incompatible
+## explicit
 # github.com/containerd/cgroups v1.0.2
 ## explicit
 github.com/containerd/cgroups
@@ -77,8 +79,6 @@ github.com/kr/fs
 github.com/lithammer/dedent
 # github.com/mattn/go-runewidth v0.0.13
 github.com/mattn/go-runewidth
-# github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
-github.com/mitchellh/colorstring
 # github.com/mitchellh/go-homedir v1.1.0
 ## explicit
 github.com/mitchellh/go-homedir
@@ -102,6 +102,10 @@ github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417
 ## explicit
 github.com/opencontainers/runtime-spec/specs-go
+# github.com/oscarzhao/oscarzhao.github.io v0.0.0-20200406055212-9108a70663f3
+## explicit
+github.com/oscarzhao/oscarzhao.github.io/examples/testing/thirdpartyapi
+github.com/oscarzhao/oscarzhao.github.io/examples/testing/thirdpartyapi/mocks
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
@@ -119,7 +123,6 @@ github.com/richardlehane/msoleps/types
 github.com/rivo/uniseg
 # github.com/schollz/progressbar/v3 v3.8.5
 ## explicit
-github.com/schollz/progressbar/v3
 # github.com/sirupsen/logrus v1.8.1
 ## explicit
 github.com/sirupsen/logrus
@@ -128,21 +131,23 @@ github.com/sirupsen/logrus
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
+# github.com/stretchr/objx v0.2.0
+github.com/stretchr/objx
 # github.com/stretchr/testify v1.7.0
 ## explicit
 github.com/stretchr/testify/assert
+github.com/stretchr/testify/mock
+github.com/stretchr/testify/require
 # github.com/vbauerster/mpb/v6 v6.0.4
 ## explicit
-github.com/vbauerster/mpb/v6
-github.com/vbauerster/mpb/v6/cwriter
-github.com/vbauerster/mpb/v6/decor
-github.com/vbauerster/mpb/v6/internal
 # github.com/vbauerster/mpb/v7 v7.3.0
 ## explicit
 github.com/vbauerster/mpb/v7
 github.com/vbauerster/mpb/v7/cwriter
 github.com/vbauerster/mpb/v7/decor
 github.com/vbauerster/mpb/v7/internal
+# github.com/vektra/mockery/v2 v2.9.4
+## explicit
 # github.com/xuri/efp v0.0.0-20210322160811-ab561f5b45e3
 github.com/xuri/efp
 # github.com/xuri/excelize/v2 v2.5.0
@@ -162,7 +167,6 @@ golang.org/x/crypto/md4
 golang.org/x/crypto/ripemd160
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
-golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 golang.org/x/net/bpf
 golang.org/x/net/html
@@ -180,11 +184,8 @@ golang.org/x/sync/errgroup
 # golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
-golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
-golang.org/x/term
 # golang.org/x/text v0.3.7
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
