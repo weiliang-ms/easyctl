@@ -278,7 +278,7 @@ func (config *redisClusterConfig) Install() (err command.RunErr) {
 		}
 	}()
 
-	log.SetDefault(config.Logger)
+	config.Logger = log.SetDefault(config.Logger)
 
 	config.Logger.Infoln("开始编译redis")
 	compileCmd, _ := tmplutil.Render(tmpl.RedisCompileTmpl, tmplutil.TmplRenderData{

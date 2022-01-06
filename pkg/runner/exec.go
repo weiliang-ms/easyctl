@@ -92,9 +92,8 @@ func LocalRun(shell string, logger *logrus.Logger) ShellResult {
 // todo: 添加缓冲队列，避免过多goroutine
 func (executor ExecutorInternal) ParallelRun() chan ShellResult {
 
-	log.SetDefault(executor.Logger)
-
-	executor.Logger.Infoln("开始并行执行命令...")
+	executor.Logger = log.SetDefault(executor.Logger)
+	executor.Logger.Info("开始并行执行命令...")
 	wg := sync.WaitGroup{}
 	ch := make(chan ShellResult, len(executor.Servers))
 
