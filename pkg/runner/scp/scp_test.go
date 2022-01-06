@@ -47,10 +47,10 @@ func TestScpErrorPathFile(t *testing.T) {
 
 	err := Scp(item)
 	switch runtime.GOOS {
-	//case "windows":
-	//	assert.EqualError(t, err, "CreateFile 1.tt: The system cannot find the file specified.")
+	case "windows":
+		require.Equal(t, err.Error(), "open 1.txt: The system cannot find the file specified.")
 	case "linux":
-		assert.EqualError(t, err, "stat 1.tt: no such file or directory")
+		require.Equal(t, err.Error(), "open 1.txt: no such file or directory")
 	}
 }
 
