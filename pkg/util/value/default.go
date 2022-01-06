@@ -41,9 +41,8 @@ func SetStructDefaultValue(obj interface{}, key string, value interface{}) error
 		//}
 
 		if fieldValue.CanInterface() && fieldValue.CanSet() {
-			fmt.Printf("exported fieldName:%v value:%v\n", fieldName, fieldValue.Interface())
-
-			if defaultValueType.Kind() == fieldValue.Kind() {
+			//fmt.Printf("exported fieldName:%v value:%v\n", fieldName, fieldValue.Interface())
+			if defaultValueType.Kind() == fieldValue.Kind() && key == fieldName {
 				switch defaultValueType.Kind() {
 				case reflect.String:
 					fieldValue.SetString(fmt.Sprintf("%s", value))

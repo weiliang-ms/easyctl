@@ -46,6 +46,13 @@ func TestSetDefaultValue(t *testing.T) {
 	require.Equal(t, 22, p.Age)
 	require.Equal(t, int32(32), p.Age32)
 	require.Equal(t, int64(64), p.Age64)
+
+	err = SetStructDefaultValue(&p, "Bool", "ddd")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	require.Equal(t, false, p.Bool)
 }
 
 func TestSetDefaultValue_ErrCase(t *testing.T) {
