@@ -34,16 +34,17 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/log"
 	"io"
 	"os"
+	"sync"
 	"time"
 )
 
 // ScpItem 定义跨主机拷贝属性
 type ScpItem struct {
-	Servers []runner.ServerInternal
-	Logger  *logrus.Logger
+	Logger *logrus.Logger
 	SftpInterface
 	SftpExecutor
-	mock bool
+	SftpConnectTimeout time.Duration
+	mock               bool
 }
 
 type SftpExecutor struct {
@@ -51,6 +52,7 @@ type SftpExecutor struct {
 	DstPath string
 	Mode    os.FileMode
 	runner.ServerInternal
+	sync.Mutex
 	SftpClient  *sftp.Client
 	srcFile     *os.File
 	dstFile     *sftp.File
@@ -70,23 +72,26 @@ func Scp(sftpItem *ScpItem) error {
 }
 
 // ParallelScp 并发拷贝
-//func ParallelScp(sftpItem ScpItem) chan error {
-//
-//	ch := make(chan error, len(sftpItem.Servers))
-//	wg := sync.WaitGroup{}
-//	wg.Add(len(sftpItem.Servers))
-//
-//	for _, s := range sftpItem.Servers {
-//		go func(server runner.ServerInternal) {
-//			sftpItem.ServerInternal = server
-//			ch <- Scp(&sftpItem)
-//			defer wg.Done()
-//		}(s)
-//	}
-//	wg.Wait()
-//	close(ch)
-//	return ch
-//}
+// todo: Modify
+func ParallelScp(sftpItem ScpItem, servers []runner.ServerInternal) chan error {
+
+	ch := make(chan error, len(servers))
+	wg := sync.WaitGroup{}
+	wg.Add(len(servers))
+
+	for _, s := range servers {
+		go func(server runner.ServerInternal) {
+			sftpItem.Lock()
+			sftpItem.ServerInternal = server
+			sftpItem.Unlock()
+			ch <- Scp(&sftpItem)
+			defer wg.Done()
+		}(s)
+	}
+	wg.Wait()
+	close(ch)
+	return ch
+}
 
 type NewSftpClientErr struct {
 	Host string
@@ -141,7 +146,7 @@ func sftpWithProcessBar(scpItem *ScpItem) (err error) {
 		scpItem.SftpInterface = new(ScpItem)
 	}
 
-	if err := scpItem.SftpInterface.NewSftpClient(scpItem.ServerInternal); err != nil {
+	if err := scpItem.SftpInterface.NewSftpClient(scpItem.ServerInternal, scpItem.SftpConnectTimeout); err != nil {
 		return NewSftpClientErr{
 			Host: scpItem.Host,
 			Err:  err,

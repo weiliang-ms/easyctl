@@ -50,7 +50,7 @@ func TestParallelRun(t *testing.T) {
 		Host:     "10.10.10.10",
 		Port:     "22",
 		Password: "123",
-		Username: "root",
+		UserName: "root",
 	}
 
 	script := "ls"
@@ -91,7 +91,7 @@ func TestCompleteDefault(t *testing.T) {
 	}
 	s := server.completeDefault()
 	assert.Equal(t, "22", s.Port)
-	assert.Equal(t, constant.Root, s.Username)
+	assert.Equal(t, constant.Root, s.UserName)
 	assert.Equal(t, constant.RsaPrvPath, s.PrivateKeyPath)
 }
 
@@ -110,7 +110,7 @@ func TestPublicKeyAuthFunc(t *testing.T) {
 //		Host:     "192.168.109.160",
 //		Port:     "22",
 //		Password: "1",
-//		Username: "root",
+//		UserName: "root",
 //	}
 //
 //	re := server.ReturnRunResult(RunItem{

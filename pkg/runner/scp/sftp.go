@@ -38,15 +38,15 @@ type SftpItem struct{}
 
 //go:generate mockery --name=SftpInterface
 type SftpInterface interface {
-	NewSftpClient(server runner.ServerInternal) (err error)
+	NewSftpClient(server runner.ServerInternal, timeout time.Duration) (err error)
 	SftpCreate(path string) (err error)
 	SftpChmod(dstPath string, mode os.FileMode) error
 	IOCopy64(size int64, srcPath string, dstPath string, hostSign string, logger *logrus.Logger) (err error)
 }
 
 // NewSftpClient sftp客户端
-func (sftp *ScpItem) NewSftpClient(server runner.ServerInternal) (err error) {
-	sftp.SftpClient, err = runner.SftpConnect(server.Username, server.Password, server.Host, server.Port)
+func (sftp *ScpItem) NewSftpClient(server runner.ServerInternal, timeout time.Duration) (err error) {
+	sftp.SftpClient, err = runner.SftpConnect(server.UserName, server.Password, server.Host, server.Port, timeout)
 	return
 }
 

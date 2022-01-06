@@ -213,7 +213,7 @@ func (server ServerInternal) parseIPRangeServer(filter *serverFilter, logger *lo
 			servers, err := newValidHostServerItem(ServerInternal{
 				Host:           v,
 				Port:           server.Port,
-				Username:       server.Username,
+				UserName:       server.UserName,
 				Password:       server.Password,
 				PrivateKeyPath: server.PrivateKeyPath,
 			}, logger)
@@ -276,7 +276,7 @@ func parseServerListWithFile(filePath string, server ServerInternal, logger *log
 		s := ServerInternal{
 			Host:           line,
 			Port:           server.Port,
-			Username:       server.Username,
+			UserName:       server.UserName,
 			Password:       server.Password,
 			PrivateKeyPath: server.PrivateKeyPath,
 		}
@@ -337,7 +337,7 @@ func packageIPRange(server ServerInternal, interval addressInterval) []ServerInt
 		s := ServerInternal{
 			Host:           fmt.Sprintf("%s%d", interval.Cidr, i),
 			Port:           server.Port,
-			Username:       server.Username,
+			UserName:       server.UserName,
 			Password:       server.Password,
 			PrivateKeyPath: server.PrivateKeyPath,
 		}

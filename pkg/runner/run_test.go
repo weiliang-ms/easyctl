@@ -31,6 +31,7 @@ import (
 	"os"
 	"runtime"
 	"testing"
+	"time"
 )
 
 func TestGetResult(t *testing.T) {
@@ -99,8 +100,7 @@ excludes:
 
 // ssh连接异常error
 func TestSFtpConnectSSHError(t *testing.T) {
-	os.Setenv(constant.SshNoTimeout, "true")
-	sftp, err := SftpConnect("root", "ddd", "1.1.1.1", "22")
+	sftp, err := SftpConnect("root", "ddd", "1.1.1.1", "22", time.Second)
 	assert.Nil(t, sftp)
 	assert.Error(t, err, "连接ssh失败 dial tcp 1.1.1.1:22: i/o timeout")
 }

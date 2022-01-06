@@ -43,7 +43,7 @@ type ServerExternal struct {
 type ServerInternal struct {
 	Host           string
 	Port           string
-	Username       string
+	UserName       string // ssh user's name -> root, e.g.
 	Password       string
 	PrivateKeyPath string
 }

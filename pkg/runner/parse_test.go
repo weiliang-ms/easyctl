@@ -57,7 +57,7 @@ excludes:
 	expect = append(expect, ServerInternal{
 		Host:     "10.10.10.1",
 		Port:     "22",
-		Username: "root",
+		UserName: "root",
 		Password: "123456",
 	})
 
@@ -152,7 +152,7 @@ excludes:
 		expect = append(expect, ServerInternal{
 			Host:     fmt.Sprintf("10.10.10.%d", i),
 			Port:     "22",
-			Username: "root",
+			UserName: "root",
 			Password: "123456",
 		})
 	}
@@ -185,7 +185,7 @@ excludes:
 		expect = append(expect, ServerInternal{
 			Host:     fmt.Sprintf("10.10.10.%d", i),
 			Port:     "22",
-			Username: "root",
+			UserName: "root",
 			Password: "123456",
 		})
 	}
@@ -218,7 +218,7 @@ excludes:
 		expect = append(expect, ServerInternal{
 			Host:     fmt.Sprintf("10.10.10.%d", i),
 			Port:     "22",
-			Username: "root",
+			UserName: "root",
 			Password: "123456",
 		})
 	}
@@ -251,7 +251,7 @@ excludes:
 		expect = append(expect, ServerInternal{
 			Host:     fmt.Sprintf("10.10.10.%d", i),
 			Port:     "22",
-			Username: "root",
+			UserName: "root",
 			Password: "123456",
 		})
 	}
@@ -284,7 +284,7 @@ excludes:
 		expect = append(expect, ServerInternal{
 			Host:     fmt.Sprintf("10.10.10.%d", i),
 			Port:     "22",
-			Username: "root",
+			UserName: "root",
 			Password: "123456",
 		})
 	}
@@ -317,7 +317,7 @@ excludes:
 		expect = append(expect, ServerInternal{
 			Host:     fmt.Sprintf("10.10.10.%d", i),
 			Port:     "22",
-			Username: "root",
+			UserName: "root",
 			Password: "123456",
 		})
 	}
@@ -345,7 +345,7 @@ excludes:
 		expect = append(expect, ServerInternal{
 			Host:     fmt.Sprintf("10.10.10.%d", i),
 			Port:     "22",
-			Username: "root",
+			UserName: "root",
 			Password: "123456",
 		})
 	}
@@ -505,7 +505,7 @@ server:
 	executor, err := ParseExecutor([]byte(b), nil)
 	//assert.Nil(t, err)
 	assert.Equal(t, fmt.Errorf("10.10.[1:2].1 地址区间非法"), err)
-	assert.Equal(t, 3 + 11 + 1 + 5, len(executor.Servers))
+	assert.Equal(t, 3+11+1+5, len(executor.Servers))
 
 	os.Remove("server-list.txt")
 	os.Remove("server-list2.txt")

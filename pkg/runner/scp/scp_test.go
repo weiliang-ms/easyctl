@@ -34,7 +34,9 @@ import (
 	"io/fs"
 	"os"
 	"runtime"
+	"sync"
 	"testing"
+	"time"
 )
 
 func TestScpErrorPathFile(t *testing.T) {
@@ -89,8 +91,7 @@ func TestScp(t *testing.T) {
 	_, _ = f.Write([]byte("123"))
 
 	item := ScpItem{
-		Servers: nil,
-		Logger:  nil,
+		Logger: logrus.New(),
 	}
 
 	item.SrcPath = "1.txt"
@@ -130,9 +131,10 @@ func TestSftpWithProcessBar_Success_Mock(t *testing.T) {
 	dstPath := "/root/1.txt"
 	srcPath := "/root/1.txt"
 	logger := logrus.New()
+	timeout := time.Second
 
 	mockThirdParty := &mocks.SftpInterface{}
-	mockThirdParty.On("NewSftpClient", runner.ServerInternal{Host: host}).Return(nil).Once()
+	mockThirdParty.On("NewSftpClient", runner.ServerInternal{Host: host}, timeout).Return(nil).Once()
 	mockThirdParty.On("SftpChmod", dstPath, mode).Return(nil).Once()
 	mockThirdParty.On("SftpCreate", dstPath).Return(nil).Once()
 	mockThirdParty.On("IOCopy64", size, srcPath, dstPath, host, logger).Return(nil).Once()
@@ -148,6 +150,7 @@ func TestSftpWithProcessBar_Success_Mock(t *testing.T) {
 	mockScpItem.Host = host
 	mockScpItem.DstPath = dstPath
 	mockScpItem.SrcPath = srcPath
+	mockScpItem.SftpConnectTimeout = timeout
 
 	err := sftpWithProcessBar(mockScpItem)
 	require.Equal(t, nil, err)
@@ -161,11 +164,12 @@ func TestSftpWithProcessBar_NewSftpClient_Fail_Mock(t *testing.T) {
 	srcPath := "/root/1.txt"
 	dstPath := "/root/1.txt"
 	logger := logrus.New()
+	timeout := time.Second
 
 	newSftpClientErr := fmt.Errorf("NewSftpClient Error")
 
 	mockThirdParty := &mocks.SftpInterface{}
-	mockThirdParty.On("NewSftpClient", runner.ServerInternal{Host: host}).Return(newSftpClientErr).Once()
+	mockThirdParty.On("NewSftpClient", runner.ServerInternal{Host: host}, timeout).Return(newSftpClientErr).Once()
 	mockThirdParty.On("SftpChmod", dstPath, mode).Return(nil).Once()
 	mockThirdParty.On("SftpCreate", dstPath).Return(nil).Once()
 	mockThirdParty.On("IOCopy64", size, srcPath, dstPath, host, logger).Return(nil).Once()
@@ -181,6 +185,7 @@ func TestSftpWithProcessBar_NewSftpClient_Fail_Mock(t *testing.T) {
 	mockScpItem.Host = host
 	mockScpItem.SrcPath = srcPath
 	mockScpItem.DstPath = dstPath
+	mockScpItem.SftpConnectTimeout = timeout
 
 	err := sftpWithProcessBar(mockScpItem)
 	require.Equal(t, NewSftpClientErr{
@@ -197,11 +202,12 @@ func TestSftpWithProcessBar_SftpChmod_Fail_Mock(t *testing.T) {
 	srcPath := "/root/1.txt"
 	dstPath := "/root/1.txt"
 	logger := logrus.New()
+	timeout := time.Second
 
 	chmodErr := fmt.Errorf("SftpChmod Error")
 
 	mockThirdParty := &mocks.SftpInterface{}
-	mockThirdParty.On("NewSftpClient", runner.ServerInternal{Host: host}).Return(nil).Once()
+	mockThirdParty.On("NewSftpClient", runner.ServerInternal{Host: host}, timeout).Return(nil).Once()
 	mockThirdParty.On("SftpChmod", dstPath, mode).Return(chmodErr).Once()
 	mockThirdParty.On("SftpCreate", dstPath).Return(nil).Once()
 	mockThirdParty.On("IOCopy64", size, srcPath, dstPath, host, logger).Return(nil).Once()
@@ -217,6 +223,7 @@ func TestSftpWithProcessBar_SftpChmod_Fail_Mock(t *testing.T) {
 	mockScpItem.Host = host
 	mockScpItem.SrcPath = srcPath
 	mockScpItem.DstPath = dstPath
+	mockScpItem.SftpConnectTimeout = timeout
 
 	err := sftpWithProcessBar(mockScpItem)
 	require.Equal(t, SftpChmodErr{
@@ -234,11 +241,12 @@ func TestSftpWithProcessBar_SftpCreateDst_Fail_Mock(t *testing.T) {
 	srcPath := "/root/1.txt"
 	dstPath := "/root/1.txt"
 	logger := logrus.New()
+	timeout := time.Second
 
 	createErr := fmt.Errorf("SftpCreate Error")
 
 	mockThirdParty := &mocks.SftpInterface{}
-	mockThirdParty.On("NewSftpClient", runner.ServerInternal{Host: host}).Return(nil).Once()
+	mockThirdParty.On("NewSftpClient", runner.ServerInternal{Host: host}, timeout).Return(nil).Once()
 	mockThirdParty.On("SftpChmod", dstPath, mode).Return(nil).Once()
 	mockThirdParty.On("SftpCreate", dstPath).Return(createErr).Once()
 	mockThirdParty.On("IOCopy64", size, srcPath, dstPath, host, logger).Return(nil).Once()
@@ -254,6 +262,7 @@ func TestSftpWithProcessBar_SftpCreateDst_Fail_Mock(t *testing.T) {
 	mockScpItem.Host = host
 	mockScpItem.SrcPath = srcPath
 	mockScpItem.DstPath = dstPath
+	mockScpItem.SftpConnectTimeout = timeout
 
 	err := sftpWithProcessBar(mockScpItem)
 	require.Equal(t, SftpCreateErr{
@@ -271,11 +280,12 @@ func TestSftpWithProcessBar_IOCopy64_Fail_Mock(t *testing.T) {
 	srcPath := "/root/1.txt"
 	dstPath := "/root/1.txt"
 	logger := logrus.New()
+	timeout := time.Second
 
 	ioCopy64Err := fmt.Errorf("IOCopy64 Error")
 
 	mockThirdParty := &mocks.SftpInterface{}
-	mockThirdParty.On("NewSftpClient", runner.ServerInternal{Host: host}).Return(nil).Once()
+	mockThirdParty.On("NewSftpClient", runner.ServerInternal{Host: host}, timeout).Return(nil).Once()
 	mockThirdParty.On("SftpChmod", dstPath, mode).Return(nil).Once()
 	mockThirdParty.On("SftpCreate", dstPath).Return(nil).Once()
 	mockThirdParty.On("IOCopy64", size, srcPath, dstPath, host, logger).Return(ioCopy64Err).Once()
@@ -291,6 +301,7 @@ func TestSftpWithProcessBar_IOCopy64_Fail_Mock(t *testing.T) {
 	mockScpItem.Host = host
 	mockScpItem.DstPath = dstPath
 	mockScpItem.SrcPath = srcPath
+	mockScpItem.SftpConnectTimeout = timeout
 
 	err := sftpWithProcessBar(mockScpItem)
 	require.Equal(t, IOCopy64Err{
@@ -349,43 +360,91 @@ func TestIOCopy64Err_Error(t *testing.T) {
 	}.Error())
 }
 
-// case: enable to connect remote server (local Test)
-func TestScpLimitRate(t *testing.T) {
-	s := runner.ServerInternal{
-		Host:     "192.168.109.160",
-		Port:     "22",
-		Username: "root",
-		Password: "1",
+func TestParallelScp(t *testing.T) {
+	f, _ := os.Create("p.txt")
+	f.WriteString("ddd")
+
+	ch := ParallelScp(ScpItem{
+		Logger: logrus.New(),
+		SftpExecutor: SftpExecutor{
+			SrcPath:        "p.txt",
+			DstPath:        "",
+			Mode:           0,
+			ServerInternal: runner.ServerInternal{},
+			Mutex:          sync.Mutex{},
+			SftpClient:     nil,
+			srcFile:        nil,
+			dstFile:        nil,
+			fileSize:       0,
+			ProxyReader:    nil,
+			P:              nil,
+		},
+		mock:               false,
+		SftpConnectTimeout: time.Millisecond,
+	}, []runner.ServerInternal{
+		{
+			Host:           "192.168.1.1",
+			Port:           "22",
+			UserName:       "root",
+			Password:       "1",
+			PrivateKeyPath: "",
+		},
+	})
+
+	for v := range ch {
+		if v != nil {
+			f.Close()
+			os.Remove("p.txt")
+			require.Equal(t, NewSftpClientErr{
+				Host: "192.168.1.1",
+				Err:  fmt.Errorf("连接ssh失败 dial tcp 192.168.1.1:22: i/o timeout"),
+			}, v)
+		}
 	}
-	scpItem := ScpItem{
-		Servers: nil,
-		Logger:  logrus.New(),
-	}
 
-	path := "ddd.test"
-
-	f, err := os.Create(path)
-
-	if err != nil {
-		panic(err)
-	}
-
-	err = f.Truncate(1024 * 1024 * 50)
-	if err != nil {
-		panic(err)
-	}
-
-	scpItem.SrcPath = path
-	scpItem.DstPath = path
-
-	scpItem.Mode = 0644
-	scpItem.SftpExecutor.ServerInternal = s
-
-	err = Scp(&scpItem)
-	if err != nil {
-		panic(err)
-	}
-
-	f.Close()
-	os.Remove(path)
+	defer func() {
+		f.Close()
+		os.Remove("p.txt")
+	}()
 }
+
+// case: enable to connect remote server (local Test)
+//func TestScpLimitRate(t *testing.T) {
+//	s := runner.ServerInternal{
+//		Host:     "192.168.109.160",
+//		Port:     "22",
+//		UserName: "root",
+//		Password: "1",
+//	}
+//	scpItem := ScpItem{
+//		Servers: nil,
+//		Logger:  logrus.New(),
+//	}
+//
+//	path := "ddd.test"
+//
+//	f, err := os.Create(path)
+//
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	err = f.Truncate(1024 * 1024 * 50)
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	scpItem.SrcPath = path
+//	scpItem.DstPath = path
+//
+//	scpItem.Mode = 0644
+//	scpItem.SftpExecutor.ServerInternal = s
+//
+//	err = Scp(&scpItem)
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	f.Close()
+//	os.Remove(path)
+//}

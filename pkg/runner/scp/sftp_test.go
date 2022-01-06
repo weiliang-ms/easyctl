@@ -31,11 +31,11 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"io/fs"
 	"testing"
+	"time"
 )
 
 func TestScpItem_NewSftpClient(t *testing.T) {
 	item := &ScpItem{
-		Servers:       nil,
 		Logger:        nil,
 		SftpInterface: nil,
 		SftpExecutor:  SftpExecutor{},
@@ -51,13 +51,12 @@ func TestScpItem_NewSftpClient(t *testing.T) {
 		}
 	}()
 
-	item.NewSftpClient(runner.ServerInternal{})
+	item.NewSftpClient(runner.ServerInternal{}, time.Second)
 
 }
 
 func TestScpItem_SftpCreate(t *testing.T) {
 	item := &ScpItem{
-		Servers:       nil,
 		Logger:        nil,
 		SftpInterface: nil,
 		SftpExecutor:  SftpExecutor{},
@@ -79,7 +78,6 @@ func TestScpItem_SftpCreate(t *testing.T) {
 
 func TestScpItem_SftpChmod(t *testing.T) {
 	item := &ScpItem{
-		Servers:       nil,
 		Logger:        nil,
 		SftpInterface: nil,
 		SftpExecutor:  SftpExecutor{},
@@ -106,7 +104,6 @@ func TestIOCopy64_FileNotFound(t *testing.T) {
 	logger := logrus.New()
 
 	item := &ScpItem{
-		Servers:       nil,
 		Logger:        nil,
 		SftpInterface: nil,
 		SftpExecutor:  SftpExecutor{},

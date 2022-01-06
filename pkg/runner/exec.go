@@ -31,6 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"github.com/weiliang-ms/easyctl/pkg/util/log"
+	"github.com/weiliang-ms/easyctl/pkg/util/value"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"net"
@@ -252,7 +253,7 @@ func (server ServerInternal) sshConnect() (*ssh.Session, error) {
 	}
 
 	clientConfig = &ssh.ClientConfig{
-		User:            s.Username,
+		User:            s.UserName,
 		Auth:            auth,
 		Timeout:         timeout * time.Second,
 		HostKeyCallback: hostKeyCallbk,
@@ -292,19 +293,12 @@ func publicKeyAuthFunc(kPath string) (ssh.AuthMethod, error) {
 	return ssh.PublicKeys(signer), nil
 }
 
-// todo: 利用反射断言等赋默认值
 func (server ServerInternal) completeDefault() ServerInternal {
-	if server.Port == "" {
-		server.Port = "22"
-	}
 
-	if server.Username == "" {
-		server.Username = constant.Root
-	}
-
-	if server.PrivateKeyPath == "" {
-		server.PrivateKeyPath = constant.RsaPrvPath
-	}
+	// ignore error
+	_ = value.SetStructDefaultValue(&server, "Port", "22")
+	_ = value.SetStructDefaultValue(&server, "UserName", constant.Root)
+	_ = value.SetStructDefaultValue(&server, "PrivateKeyPath", constant.RsaPrvPath)
 
 	return server
 }

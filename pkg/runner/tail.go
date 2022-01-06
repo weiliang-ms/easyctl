@@ -31,12 +31,13 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 // TailFile all & real time
 func (server ServerInternal) TailFile(path string, offset int64, whence int, stopCh <-chan struct{}) {
 	// init sftp
-	sftp, err := SftpConnect(server.Username, server.Password, server.Host, server.Port)
+	sftp, err := SftpConnect(server.UserName, server.Password, server.Host, server.Port, time.Second*5)
 	if err != nil {
 		log.Println(err)
 	}

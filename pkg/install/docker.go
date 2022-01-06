@@ -5,6 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/install/tmpl"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
+	"github.com/weiliang-ms/easyctl/pkg/runner/scp"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/log"
 	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
@@ -159,14 +160,15 @@ func (config *DockerInternalConfig) HandPackage() (err command.RunErr) {
 			return command.RunErr{Err: err}
 		}
 	} else {
-		ch := runner.ParallelScp(runner.ScpItem{
-			Servers: config.Servers,
-			SrcPath: config.Package,
-			DstPath: fmt.Sprintf("/tmp/%s",
-				strings2.SubFileName(config.Package)),
-			Mode:   0755,
+		ch := scp.ParallelScp(scp.ScpItem{
 			Logger: config.Logger,
-		})
+			SftpExecutor: scp.SftpExecutor{
+				SrcPath: config.Package,
+				DstPath: fmt.Sprintf("/tmp/%s", strings2.SubFileName(config.Package)),
+				Mode:    0755,
+			},
+			SftpConnectTimeout: 0,
+		}, config.Servers)
 
 		for v := range ch {
 			if config.IgnoreErr {

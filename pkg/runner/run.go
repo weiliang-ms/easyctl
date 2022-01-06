@@ -31,7 +31,6 @@ import (
 	"github.com/pkg/sftp"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
-	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"golang.org/x/crypto/ssh"
 	"net"
 	"os"
@@ -51,21 +50,18 @@ type RunItem struct {
 	Cmd    string
 }
 
-func SftpConnect(user, password, host string, port string) (sftpClient *sftp.Client, err error) { //参数: 远程服务器用户名, 密码, ip, 端口
+func SftpConnect(user, password, host string, port string, timeout time.Duration) (sftpClient *sftp.Client, err error) { //参数: 远程服务器用户名, 密码, ip, 端口
 	auth := make([]ssh.AuthMethod, 0)
 	auth = append(auth, ssh.Password(password))
 
-	var timeout time.Duration
-
-	if os.Getenv(constant.SshNoTimeout) == "true" {
-		timeout = 1
-	} else {
-		timeout = 5
+	if timeout == 0 {
+		timeout = time.Second * 3
 	}
+
 	clientConfig := &ssh.ClientConfig{
 		User:    user,
 		Auth:    auth,
-		Timeout: timeout * time.Second,
+		Timeout: timeout,
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 			return nil
 		},
