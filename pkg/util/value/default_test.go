@@ -47,12 +47,6 @@ func TestSetDefaultValue(t *testing.T) {
 	require.Equal(t, int32(32), p.Age32)
 	require.Equal(t, int64(64), p.Age64)
 
-	err = SetStructDefaultValue(&p, "Bool", "ddd")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	require.Equal(t, false, p.Bool)
 }
 
 func TestSetDefaultValue_ErrCase(t *testing.T) {
@@ -70,4 +64,16 @@ func TestSetDefaultValue_ErrCase(t *testing.T) {
 
 	err = SetStructDefaultValue(&d, "DDD", nil)
 	//require.Equal(t, "必须为结构体类型", err.Error())
+}
+
+func TestSetStructDefaultValue_Err(t *testing.T) {
+
+	p := Person{}
+	err := SetStructDefaultValue(&p, "Bool", "ddd")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	require.Equal(t, false, p.Bool)
+
 }
