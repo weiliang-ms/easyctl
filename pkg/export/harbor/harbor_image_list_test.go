@@ -10,7 +10,6 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/export/harbor/mocks"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/request"
-	"io/fs"
 	"net/http"
 	"os"
 	"runtime"
@@ -1318,8 +1317,7 @@ func Test_GenerateImageList_BadPreserveDirErr_Mock(t *testing.T) {
 	}
 	err := mockExecutor.GenerateImageList(expect)
 
-	_, ok := err.(*fs.PathError)
-	require.Equal(t, true, ok)
+	require.NotNil(t, err)
 }
 
 func Test_mkDirIfNotExist(t *testing.T) {
