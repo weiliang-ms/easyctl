@@ -475,10 +475,8 @@ func getHandlerInterface(i interface{}) HandlerInterface {
 
 func mkDirIfNotExist(dirName string, mode fs.FileMode) error {
 	err := os.Mkdir(dirName, mode)
-	if err != nil && err.Error() == fmt.Sprintf(
-		"mkdir %s: Cannot create a file when that file already exists.", dirName) {
+	if err != nil && strings.Contains(err.Error(), "already exists") {
 		return nil
 	}
-
 	return err
 }
