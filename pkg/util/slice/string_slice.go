@@ -31,3 +31,11 @@ func StringSliceFilter(s []string, filterChar string) []string {
 	}
 	return r
 }
+
+// StringSliceAppend 字符串数组拼接
+func StringSliceAppend(s []string, sub []string) []string {
+	for _, v := range sub {
+		s = append(s, v)
+	}
+	return s
+}

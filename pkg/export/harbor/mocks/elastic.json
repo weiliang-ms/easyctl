@@ -1,0 +1,124 @@
+{
+  "project": [
+    {
+      "project_id": 38,
+      "owner_id": 1,
+      "name": "elastic",
+      "creation_time": "2021-04-13T01:38:40.269431Z",
+      "update_time": "2021-04-13T01:38:40.269431Z",
+      "deleted": false,
+      "owner_name": "",
+      "current_user_role_id": 0,
+      "current_user_role_ids": null,
+      "repo_count": 2,
+      "chart_count": 0,
+      "metadata": {
+        "auto_scan": "false",
+        "enable_content_trust": "false",
+        "prevent_vul": "false",
+        "public": "true",
+        "reuse_sys_cve_allowlist": "true",
+        "severity": "low"
+      },
+      "cve_allowlist": {
+        "id": 0,
+        "project_id": 0,
+        "items": null,
+        "creation_time": "0001-01-01T00:00:00Z",
+        "update_time": "0001-01-01T00:00:00Z"
+      },
+      "registry_id": 0
+    },
+    {
+      "project_id": 66,
+      "owner_id": 1,
+      "name": "elasticsearch",
+      "creation_time": "2021-06-30T12:18:49.367504Z",
+      "update_time": "2021-06-30T12:18:49.367504Z",
+      "deleted": false,
+      "owner_name": "",
+      "current_user_role_id": 0,
+      "current_user_role_ids": null,
+      "repo_count": 3,
+      "chart_count": 0,
+      "metadata": {
+        "public": "true"
+      },
+      "cve_allowlist": {
+        "id": 0,
+        "project_id": 0,
+        "items": null,
+        "creation_time": "0001-01-01T00:00:00Z",
+        "update_time": "0001-01-01T00:00:00Z"
+      },
+      "registry_id": 0
+    }
+  ],
+  "repository": [
+    {
+      "artifact_count": 1,
+      "project_id": 38,
+      "project_name": "elastic",
+      "project_public": true,
+      "pull_count": 1,
+      "repository_name": "elastic/elasticsearch"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 38,
+      "project_name": "elastic",
+      "project_public": true,
+      "pull_count": 11,
+      "repository_name": "elastic/filebeat"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 66,
+      "project_name": "elasticsearch",
+      "project_public": true,
+      "pull_count": 21,
+      "repository_name": "elasticsearch/elasticsearch"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 66,
+      "project_name": "elasticsearch",
+      "project_public": true,
+      "pull_count": 0,
+      "repository_name": "elasticsearch/kibana"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 66,
+      "project_name": "elasticsearch",
+      "project_public": true,
+      "pull_count": 0,
+      "repository_name": "elasticsearch/kibana-oss"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 2,
+      "project_name": "kubesphere",
+      "project_public": true,
+      "pull_count": 255,
+      "repository_name": "kubesphere/elasticsearch-curator"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 2,
+      "project_name": "kubesphere",
+      "project_public": true,
+      "pull_count": 289,
+      "repository_name": "kubesphere/elasticsearch-oss"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 1,
+      "project_name": "library",
+      "project_public": true,
+      "pull_count": 13,
+      "repository_name": "library/elasticsearch"
+    }
+  ],
+  "chart": []
+}

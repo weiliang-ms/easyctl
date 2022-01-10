@@ -1,0 +1,41 @@
+[
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/elastic/repositories/elasticsearch/artifacts/sha256:f3321fc3504b3518aef40275bb26ed3c4f5374eee6891d473ad5967167bf412e/additions/build_history"
+      }
+    },
+    "digest": "sha256:f3321fc3504b3518aef40275bb26ed3c4f5374eee6891d473ad5967167bf412e",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2021-06-10T21:12:02.564129902Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 6256,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 38,
+    "pull_time": "2021-09-07T13:44:59.823Z",
+    "push_time": "2021-09-07T08:28:07.546Z",
+    "references": null,
+    "repository_id": 1277,
+    "size": 495995185,
+    "tags": [
+      {
+        "artifact_id": 6256,
+        "id": 3207,
+        "immutable": false,
+        "name": "7.13.2",
+        "pull_time": "2021-09-07T13:44:59.823Z",
+        "push_time": "2021-09-07T08:28:07.564Z",
+        "repository_id": 1277,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  }
+]

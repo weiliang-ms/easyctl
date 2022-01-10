@@ -250,3 +250,23 @@ func TestSaveAsExcel(t *testing.T) {
 		panic(err)
 	}
 }
+
+func TestOS2(t *testing.T) {
+
+	b := `
+server:
+ - host: 192.168.109.160
+  username: root
+  # privateKeyPath: "" # ~/.ssh/id_rsa，为空默认走password登录；不为空默认走密钥登录
+  password: 1
+  port: 22
+`
+
+	OS(command.OperationItem{
+		B:          []byte(b),
+		Logger:     logrus.New(),
+		OptionFunc: nil,
+		UnitTest:   false,
+		Local:      false,
+	})
+}

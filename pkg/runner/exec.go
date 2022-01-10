@@ -169,6 +169,7 @@ func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResul
 
 	if err := session.Run(executor.Script); err != nil {
 		code := err.(*ssh.ExitError).ExitStatus()
+		session.Close()
 		return ShellResult{
 			Host:      server.Host,
 			Err:       err,
@@ -195,7 +196,8 @@ func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResul
 
 // ReturnRunResult 获取执行结果
 func (server ServerInternal) ReturnRunResult(item RunItem) ShellResult {
-	item.Logger.Infof("<- %s开始执行命令...\n", server.Host)
+	item.Logger.Infof("-> %s开始执行命令...", server.Host)
+	item.Logger.Debug(item.Cmd)
 	session, err := server.sshConnect()
 	if err != nil {
 		return ShellResult{Err: fmt.Errorf("%s建立ssh会话失败 -> %s", server.Host, err.Error())}
@@ -211,7 +213,7 @@ func (server ServerInternal) ReturnRunResult(item RunItem) ShellResult {
 	}
 
 	item.Logger.Infof("<- %s执行命令成功", server.Host)
-	item.Logger.Debugf("[%s] 执行结果 => %s...\n", server.Host, string(out.Bytes()))
+	item.Logger.Debugf("[%s] 执行结果 => \n%s...\n", server.Host, string(out.Bytes()))
 	defer session.Close()
 	return ShellResult{StdOut: string(out.Bytes())}
 }

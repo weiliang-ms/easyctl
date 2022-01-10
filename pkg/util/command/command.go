@@ -39,7 +39,9 @@ type OperationItem struct {
 	B          []byte
 	Logger     *logrus.Logger
 	OptionFunc map[string]interface{}
+	Interface  interface{}
 	UnitTest   bool
+	Mock       bool
 	Local      bool // 本地
 }
 

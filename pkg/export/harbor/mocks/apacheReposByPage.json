@@ -1,0 +1,29 @@
+[
+  {
+    "artifact_count": 1,
+    "creation_time": "2021-06-29T11:52:03.894Z",
+    "id": 351,
+    "name": "apache/skywalking-ui",
+    "project_id": 64,
+    "pull_count": 37,
+    "update_time": "2021-09-07T13:26:35.607Z"
+  },
+  {
+    "artifact_count": 1,
+    "creation_time": "2021-06-29T11:51:30.663Z",
+    "id": 350,
+    "name": "apache/skywalking-oap-server",
+    "project_id": 64,
+    "pull_count": 79,
+    "update_time": "2021-12-24T02:55:41.566Z"
+  },
+  {
+    "artifact_count": 1,
+    "creation_time": "2021-06-29T11:50:50.942Z",
+    "id": 349,
+    "name": "apache/skywalking-java-agent",
+    "project_id": 64,
+    "pull_count": 22,
+    "update_time": "2021-12-24T02:55:54.573Z"
+  }
+]

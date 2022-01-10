@@ -1,0 +1,41 @@
+[
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/apache/repositories/skywalking-oap-server/artifacts/sha256:6d93a7a1d8f678b5a20f1acf567a7b2e998dd24361ff0001381762f18c84dbf2/additions/build_history"
+      }
+    },
+    "digest": "sha256:6d93a7a1d8f678b5a20f1acf567a7b2e998dd24361ff0001381762f18c84dbf2",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2021-06-11T04:08:47.977246911Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 2521,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 64,
+    "pull_time": "2021-12-24T02:55:41.566Z",
+    "push_time": "2021-06-29T11:51:30.700Z",
+    "references": null,
+    "repository_id": 350,
+    "size": 342565215,
+    "tags": [
+      {
+        "artifact_id": 2521,
+        "id": 735,
+        "immutable": false,
+        "name": "8.6.0-es7",
+        "pull_time": "2021-09-07T13:26:39.784Z",
+        "push_time": "2021-06-29T11:51:30.717Z",
+        "repository_id": 350,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  }
+]

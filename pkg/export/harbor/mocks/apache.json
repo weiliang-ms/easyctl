@@ -1,0 +1,150 @@
+{
+  "project": [
+    {
+      "project_id": 64,
+      "owner_id": 1,
+      "name": "apache",
+      "creation_time": "2021-06-29T11:48:56.280816Z",
+      "update_time": "2021-06-29T11:48:56.280816Z",
+      "deleted": false,
+      "owner_name": "",
+      "current_user_role_id": 0,
+      "current_user_role_ids": null,
+      "repo_count": 3,
+      "chart_count": 0,
+      "metadata": {
+        "public": "true",
+        "retention_id": "10"
+      },
+      "cve_allowlist": {
+        "id": 0,
+        "project_id": 0,
+        "items": null,
+        "creation_time": "0001-01-01T00:00:00Z",
+        "update_time": "0001-01-01T00:00:00Z"
+      },
+      "registry_id": 0
+    }
+  ],
+  "repository": [
+    {
+      "artifact_count": 1,
+      "project_id": 64,
+      "project_name": "apache",
+      "project_public": true,
+      "pull_count": 22,
+      "repository_name": "apache/skywalking-java-agent"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 64,
+      "project_name": "apache",
+      "project_public": true,
+      "pull_count": 79,
+      "repository_name": "apache/skywalking-oap-server"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 64,
+      "project_name": "apache",
+      "project_public": true,
+      "pull_count": 37,
+      "repository_name": "apache/skywalking-ui"
+    },
+    {
+      "artifact_count": 2,
+      "project_id": 52,
+      "project_name": "hsa-k8s-public",
+      "project_public": true,
+      "pull_count": 32,
+      "repository_name": "hsa-k8s-public/apache/dubbo-admin"
+    }
+  ],
+  "chart": [
+    {
+      "Name": "charts/adminer",
+      "Score": 2,
+      "Chart": {
+        "name": "charts/adminer",
+        "version": "1.0.0",
+        "description": "apache adminer",
+        "apiVersion": "v2",
+        "appVersion": "2.4.1",
+        "type": "application",
+        "urls": [
+          "charts/charts/adminer-1.0.0.tgz"
+        ],
+        "created": "2021-11-16T07:36:39.907110778Z",
+        "digest": "4a1a3a2133b6e03d4ff597f39b62caa44114b68ce660800009120b97041abeb3"
+      }
+    },
+    {
+      "Name": "charts/dubbo-admin",
+      "Score": 2,
+      "Chart": {
+        "name": "charts/dubbo-admin",
+        "version": "1.0.0",
+        "description": "apache dubbo-admin",
+        "apiVersion": "v2",
+        "appVersion": "2.4.1",
+        "type": "application",
+        "urls": [
+          "charts/charts/dubbo-admin-1.0.0.tgz"
+        ],
+        "created": "2021-11-16T07:36:41.022110726Z",
+        "digest": "a4045d7bb29488c3bb5589ae0da5561a4fbeede025b2543be639fb66e43f9fb6"
+      }
+    },
+    {
+      "Name": "charts/kafka-manager",
+      "Score": 2,
+      "Chart": {
+        "name": "charts/kafka-manager",
+        "version": "1.0.0",
+        "description": "apache kafka-manager",
+        "apiVersion": "v2",
+        "appVersion": "2.4.1",
+        "type": "application",
+        "urls": [
+          "charts/charts/kafka-manager-1.0.0.tgz"
+        ],
+        "created": "2021-11-16T07:36:45.578110509Z",
+        "digest": "f4078be187925ac439ac8e2c08c3b6c67b4ebdc3245f55c602125809c3464077"
+      }
+    },
+    {
+      "Name": "charts/mysql-init",
+      "Score": 2,
+      "Chart": {
+        "name": "charts/mysql-init",
+        "version": "1.0.0",
+        "description": "apache mysql-init",
+        "apiVersion": "v2",
+        "appVersion": "1.5.5",
+        "type": "application",
+        "urls": [
+          "charts/charts/mysql-init-1.0.0.tgz"
+        ],
+        "created": "2021-11-16T07:36:47.24111043Z",
+        "digest": "23fa81164b7dbd4e59f90be17d74b527ce51e981c942c8ea1d7f9eca27f99017"
+      }
+    },
+    {
+      "Name": "charts/zookeeper-manager",
+      "Score": 2,
+      "Chart": {
+        "name": "charts/zookeeper-manager",
+        "version": "1.0.0",
+        "description": "apache zookeeper-manager",
+        "apiVersion": "v2",
+        "appVersion": "3.4.10",
+        "type": "application",
+        "urls": [
+          "charts/charts/zookeeper-manager-1.0.0.tgz"
+        ],
+        "created": "2021-11-16T07:36:51.795110214Z",
+        "digest": "5c715378bcdf76da2af6a15a840750a006681866131d9e3fc3d4451f24e5cf7e"
+      }
+    }
+  ]
+}

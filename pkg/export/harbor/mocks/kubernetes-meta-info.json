@@ -1,0 +1,28 @@
+{
+  "creation_time": "2021-04-07T09:27:56.580Z",
+  "current_user_role_id": 1,
+  "current_user_role_ids": [
+    1
+  ],
+  "cve_allowlist": {
+    "creation_time": "2021-04-07T09:27:56.581Z",
+    "id": 3,
+    "items": [],
+    "project_id": 5,
+    "update_time": "2021-04-23T05:29:07.303Z"
+  },
+  "metadata": {
+    "auto_scan": "false",
+    "enable_content_trust": "false",
+    "prevent_vul": "false",
+    "public": "true",
+    "reuse_sys_cve_allowlist": "true",
+    "severity": "low"
+  },
+  "name": "kubernetes",
+  "owner_id": 1,
+  "owner_name": "admin",
+  "project_id": 5,
+  "repo_count": 15,
+  "update_time": "2021-04-07T09:27:56.580Z"
+}

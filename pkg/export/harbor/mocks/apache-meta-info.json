@@ -1,0 +1,24 @@
+{
+  "creation_time": "2021-06-29T11:48:56.280Z",
+  "current_user_role_id": 1,
+  "current_user_role_ids": [
+    1
+  ],
+  "cve_allowlist": {
+    "creation_time": "2021-06-29T11:48:56.282Z",
+    "id": 95,
+    "items": [],
+    "project_id": 64,
+    "update_time": "2021-06-29T11:48:56.282Z"
+  },
+  "metadata": {
+    "public": "true",
+    "retention_id": "10"
+  },
+  "name": "apache",
+  "owner_id": 1,
+  "owner_name": "admin",
+  "project_id": 64,
+  "repo_count": 3,
+  "update_time": "2021-06-29T11:48:56.280Z"
+}

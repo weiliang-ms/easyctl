@@ -1,0 +1,116 @@
+{
+  "project": [
+    {
+      "project_id": 76,
+      "owner_id": 1,
+      "name": "busybox",
+      "creation_time": "2021-07-07T03:40:32.70059Z",
+      "update_time": "2021-07-07T03:40:32.70059Z",
+      "deleted": false,
+      "owner_name": "",
+      "current_user_role_id": 0,
+      "current_user_role_ids": null,
+      "repo_count": 8,
+      "chart_count": 0,
+      "metadata": {
+        "auto_scan": "false",
+        "enable_content_trust": "false",
+        "prevent_vul": "false",
+        "public": "true",
+        "reuse_sys_cve_allowlist": "true",
+        "severity": "low"
+      },
+      "cve_allowlist": {
+        "id": 0,
+        "project_id": 0,
+        "items": null,
+        "creation_time": "0001-01-01T00:00:00Z",
+        "update_time": "0001-01-01T00:00:00Z"
+      },
+      "registry_id": 0
+    }
+  ],
+  "repository": [
+    {
+      "artifact_count": 1,
+      "project_id": 76,
+      "project_name": "busybox",
+      "project_public": true,
+      "pull_count": 0,
+      "repository_name": "busybox/bats"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 76,
+      "project_name": "busybox",
+      "project_public": true,
+      "pull_count": 0,
+      "repository_name": "busybox/bitnami-shell"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 76,
+      "project_name": "busybox",
+      "project_public": true,
+      "pull_count": 0,
+      "repository_name": "busybox/busybox"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 76,
+      "project_name": "busybox",
+      "project_public": true,
+      "pull_count": 0,
+      "repository_name": "busybox/jmx_exporter"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 76,
+      "project_name": "busybox",
+      "project_public": true,
+      "pull_count": 0,
+      "repository_name": "busybox/minideb"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 76,
+      "project_name": "busybox",
+      "project_public": true,
+      "pull_count": 0,
+      "repository_name": "busybox/redis-cluster"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 76,
+      "project_name": "busybox",
+      "project_public": true,
+      "pull_count": 0,
+      "repository_name": "busybox/redis-exporter"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 76,
+      "project_name": "busybox",
+      "project_public": true,
+      "pull_count": 0,
+      "repository_name": "busybox/redis-sentinel"
+    },
+    {
+      "artifact_count": 3,
+      "project_id": 1,
+      "project_name": "library",
+      "project_public": true,
+      "pull_count": 3166,
+      "repository_name": "library/busybox"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 1,
+      "project_name": "library",
+      "project_public": true,
+      "pull_count": 12,
+      "repository_name": "library/library/busybox"
+    }
+  ],
+  "chart": []
+}

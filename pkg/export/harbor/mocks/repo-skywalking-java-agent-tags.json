@@ -1,0 +1,41 @@
+[
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/apache/repositories/skywalking-java-agent/artifacts/sha256:051bc62fd99d54dad6902ecfe87e4917c57e632b807671d5d59e12a16bc499a0/additions/build_history"
+      }
+    },
+    "digest": "sha256:051bc62fd99d54dad6902ecfe87e4917c57e632b807671d5d59e12a16bc499a0",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2021-06-11T04:09:02.847053154Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 2520,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 64,
+    "pull_time": "2021-12-24T02:55:54.573Z",
+    "push_time": "2021-06-29T11:50:50.992Z",
+    "references": null,
+    "repository_id": 349,
+    "size": 51656151,
+    "tags": [
+      {
+        "artifact_id": 2520,
+        "id": 734,
+        "immutable": false,
+        "name": "8.6.0-alpine",
+        "pull_time": "2021-09-07T13:26:45.546Z",
+        "push_time": "2021-06-29T11:50:51.014Z",
+        "repository_id": 349,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  }
+]

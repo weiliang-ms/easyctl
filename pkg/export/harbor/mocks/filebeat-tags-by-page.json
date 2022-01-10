@@ -1,0 +1,41 @@
+[
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/elastic/repositories/filebeat/artifacts/sha256:68f5172ad232f6315c07a8bf1a9bcec8314c55ca0cf62d4a0aa1b4f4c31b3b2f/additions/build_history"
+      }
+    },
+    "digest": "sha256:68f5172ad232f6315c07a8bf1a9bcec8314c55ca0cf62d4a0aa1b4f4c31b3b2f",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2019-03-21T14:35:51.787070307Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 186,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 38,
+    "pull_time": "2021-09-07T13:45:08.640Z",
+    "push_time": "2021-04-13T01:38:43.817Z",
+    "references": null,
+    "repository_id": 154,
+    "size": 98817135,
+    "tags": [
+      {
+        "artifact_id": 186,
+        "id": 181,
+        "immutable": false,
+        "name": "6.7.0",
+        "pull_time": "2021-09-07T13:45:08.640Z",
+        "push_time": "2021-04-13T01:38:43.832Z",
+        "repository_id": 154,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  }
+]

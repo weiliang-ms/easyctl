@@ -92,20 +92,23 @@ func OS(item command.OperationItem) command.RunErr {
 	var result OSInfoSlice
 
 	ch := make(chan OSInfo, len(servers))
-	errCh := make(chan error)
+	errCh := make(chan error, len(servers))
 	wg := sync.WaitGroup{}
 	wg.Add(len(servers))
 
 	for _, v := range servers {
 		go func(s runner.ServerInternal) {
 			re, scanErr := osInfo(s, item.Logger)
-			errCh <- fmt.Errorf("[%s] 扫描异常: %s", s.Host, scanErr)
+			if scanErr != nil {
+				errCh <- fmt.Errorf("[%s] 扫描异常: %s", s.Host, scanErr)
+			}
 			ch <- re
 			defer wg.Done()
 		}(v)
 	}
 
 	wg.Wait()
+
 	close(ch)
 	close(errCh)
 

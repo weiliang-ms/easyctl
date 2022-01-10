@@ -1,0 +1,156 @@
+{
+  "project": [
+    {
+      "project_id": 5,
+      "owner_id": 1,
+      "name": "kubernetes",
+      "creation_time": "2021-04-07T09:27:56.580163Z",
+      "update_time": "2021-04-07T09:27:56.580163Z",
+      "deleted": false,
+      "owner_name": "",
+      "current_user_role_id": 0,
+      "current_user_role_ids": null,
+      "repo_count": 15,
+      "chart_count": 0,
+      "metadata": {
+        "auto_scan": "false",
+        "enable_content_trust": "false",
+        "prevent_vul": "false",
+        "public": "true",
+        "reuse_sys_cve_allowlist": "true",
+        "severity": "low"
+      },
+      "cve_allowlist": {
+        "id": 0,
+        "project_id": 0,
+        "items": null,
+        "creation_time": "0001-01-01T00:00:00Z",
+        "update_time": "0001-01-01T00:00:00Z"
+      },
+      "registry_id": 0
+    }
+  ],
+  "repository": [
+    {
+      "artifact_count": 2,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 436,
+      "repository_name": "kubernetes/cephcsi"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 12,
+      "repository_name": "kubernetes/cephfs-provisioner"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 435,
+      "repository_name": "kubernetes/cni"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 435,
+      "repository_name": "kubernetes/coredns"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 423,
+      "repository_name": "kubernetes/csi-attacher"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 422,
+      "repository_name": "kubernetes/csi-node-driver-registrar"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 423,
+      "repository_name": "kubernetes/csi-provisioner"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 423,
+      "repository_name": "kubernetes/csi-resizer"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 423,
+      "repository_name": "kubernetes/csi-snapshotter"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 433,
+      "repository_name": "kubernetes/kube-controllers"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 433,
+      "repository_name": "kubernetes/node"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 435,
+      "repository_name": "kubernetes/pod2daemon-flexvol"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 7,
+      "repository_name": "kubernetes/stakater/reloader"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 5,
+      "repository_name": "kubernetes/velero/velero"
+    },
+    {
+      "artifact_count": 1,
+      "project_id": 5,
+      "project_name": "kubernetes",
+      "project_public": true,
+      "pull_count": 4,
+      "repository_name": "kubernetes/velero/velero-plugin-for-aws"
+    }
+  ],
+  "chart": []
+}

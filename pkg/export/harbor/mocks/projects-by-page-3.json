@@ -1,0 +1,268 @@
+[
+  {
+    "creation_time": "2021-04-12T06:42:58.481Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-04-12T06:42:58.482Z",
+      "id": 38,
+      "items": [],
+      "project_id": 22,
+      "update_time": "2021-04-22T10:32:41.448Z"
+    },
+    "metadata": {
+      "auto_scan": "false",
+      "enable_content_trust": "false",
+      "prevent_vul": "false",
+      "public": "true",
+      "reuse_sys_cve_allowlist": "true",
+      "severity": "low"
+    },
+    "name": "istio",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 22,
+    "repo_count": 7,
+    "update_time": "2021-04-12T06:42:58.481Z"
+  },
+  {
+    "creation_time": "2021-04-13T01:39:17.029Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-04-13T01:39:17.030Z",
+      "id": 44,
+      "items": [],
+      "project_id": 39,
+      "update_time": "2021-04-22T10:27:48.313Z"
+    },
+    "metadata": {
+      "auto_scan": "false",
+      "enable_content_trust": "false",
+      "prevent_vul": "false",
+      "public": "true",
+      "reuse_sys_cve_allowlist": "true",
+      "severity": "low"
+    },
+    "name": "jaegertracing",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 39,
+    "repo_count": 5,
+    "update_time": "2021-04-13T01:39:17.029Z"
+  },
+  {
+    "creation_time": "2021-04-13T01:26:23.412Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-04-13T01:26:23.413Z",
+      "id": 41,
+      "items": [],
+      "project_id": 36,
+      "update_time": "2021-04-22T10:31:53.980Z"
+    },
+    "metadata": {
+      "auto_scan": "false",
+      "enable_content_trust": "false",
+      "prevent_vul": "false",
+      "public": "true",
+      "reuse_sys_cve_allowlist": "true",
+      "severity": "low"
+    },
+    "name": "jenkins",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 36,
+    "repo_count": 2,
+    "update_time": "2021-04-13T01:26:23.412Z"
+  },
+  {
+    "creation_time": "2021-04-13T01:43:30.325Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-04-13T01:43:30.325Z",
+      "id": 46,
+      "items": [],
+      "project_id": 41,
+      "update_time": "2021-04-22T10:32:03.657Z"
+    },
+    "metadata": {
+      "auto_scan": "false",
+      "enable_content_trust": "false",
+      "prevent_vul": "false",
+      "public": "true",
+      "reuse_sys_cve_allowlist": "true",
+      "severity": "low"
+    },
+    "name": "jimmidyson",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 41,
+    "repo_count": 1,
+    "update_time": "2021-04-13T01:43:30.325Z"
+  },
+  {
+    "creation_time": "2021-04-07T09:27:56.580Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-04-07T09:27:56.581Z",
+      "id": 3,
+      "items": [],
+      "project_id": 5,
+      "update_time": "2021-04-23T05:29:07.303Z"
+    },
+    "metadata": {
+      "auto_scan": "false",
+      "enable_content_trust": "false",
+      "prevent_vul": "false",
+      "public": "true",
+      "reuse_sys_cve_allowlist": "true",
+      "severity": "low"
+    },
+    "name": "kubernetes",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 5,
+    "repo_count": 15,
+    "update_time": "2021-04-07T09:27:56.580Z"
+  },
+  {
+    "creation_time": "2021-04-07T07:41:51.042Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-04-07T07:41:51.043Z",
+      "id": 1,
+      "items": [],
+      "project_id": 2,
+      "update_time": "2021-04-22T10:31:35.248Z"
+    },
+    "metadata": {
+      "auto_scan": "false",
+      "enable_content_trust": "false",
+      "prevent_vul": "false",
+      "public": "true",
+      "retention_id": "1",
+      "reuse_sys_cve_allowlist": "true",
+      "severity": "low"
+    },
+    "name": "kubesphere",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 2,
+    "repo_count": 52,
+    "update_time": "2021-04-07T07:41:51.042Z"
+  },
+  {
+    "creation_time": "2021-09-06T03:04:24.373Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-09-06T03:04:24.374Z",
+      "id": 117,
+      "items": [],
+      "project_id": 92,
+      "update_time": "2021-09-06T03:04:24.374Z"
+    },
+    "metadata": {
+      "public": "true"
+    },
+    "name": "liaoning",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 92,
+    "repo_count": 4,
+    "update_time": "2021-09-06T03:04:24.373Z"
+  },
+  {
+    "creation_time": "2021-04-07T03:52:25.313Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "0001-01-01T00:00:00.000Z",
+      "items": [],
+      "project_id": 1,
+      "update_time": "0001-01-01T00:00:00.000Z"
+    },
+    "metadata": {
+      "public": "true",
+      "retention_id": "5"
+    },
+    "name": "library",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 1,
+    "repo_count": 33,
+    "update_time": "2021-04-07T03:52:25.313Z"
+  },
+  {
+    "creation_time": "2021-08-20T09:04:51.885Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-08-20T09:04:51.893Z",
+      "id": 114,
+      "items": [],
+      "project_id": 89,
+      "update_time": "2021-08-20T09:04:51.893Z"
+    },
+    "metadata": {
+      "public": "true"
+    },
+    "name": "manual",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 89,
+    "repo_count": 1,
+    "update_time": "2021-08-20T09:04:51.885Z"
+  },
+  {
+    "creation_time": "2021-04-12T10:04:21.878Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-04-12T10:04:21.879Z",
+      "id": 39,
+      "items": [],
+      "project_id": 33,
+      "update_time": "2021-04-23T05:01:06.666Z"
+    },
+    "metadata": {
+      "auto_scan": "false",
+      "enable_content_trust": "false",
+      "prevent_vul": "false",
+      "public": "true",
+      "reuse_sys_cve_allowlist": "true",
+      "severity": "low"
+    },
+    "name": "minio",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 33,
+    "repo_count": 2,
+    "update_time": "2021-04-12T10:04:21.878Z"
+  }
+]

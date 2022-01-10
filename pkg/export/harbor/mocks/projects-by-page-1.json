@@ -1,0 +1,256 @@
+[
+  {
+    "creation_time": "2021-06-29T11:48:56.280Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-06-29T11:48:56.282Z",
+      "id": 95,
+      "items": [],
+      "project_id": 64,
+      "update_time": "2021-06-29T11:48:56.282Z"
+    },
+    "metadata": {
+      "public": "true",
+      "retention_id": "10"
+    },
+    "name": "apache",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 64,
+    "repo_count": 3,
+    "update_time": "2021-06-29T11:48:56.280Z"
+  },
+  {
+    "creation_time": "2021-06-30T12:14:48.666Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-06-30T12:14:48.667Z",
+      "id": 96,
+      "items": [],
+      "project_id": 65,
+      "update_time": "2021-06-30T12:14:48.667Z"
+    },
+    "metadata": {
+      "public": "true"
+    },
+    "name": "argo",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 65,
+    "repo_count": 9,
+    "update_time": "2021-06-30T12:14:48.666Z"
+  },
+  {
+    "creation_time": "2021-06-26T03:26:31.958Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-06-26T03:26:31.959Z",
+      "id": 91,
+      "items": [],
+      "project_id": 60,
+      "update_time": "2021-06-26T03:26:31.959Z"
+    },
+    "metadata": {
+      "public": "true",
+      "retention_id": "9"
+    },
+    "name": "b2i",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 60,
+    "repo_count": 15,
+    "update_time": "2021-06-26T03:26:31.958Z"
+  },
+  {
+    "creation_time": "2021-07-01T10:25:01.094Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-07-01T10:25:01.094Z",
+      "id": 98,
+      "items": [],
+      "project_id": 67,
+      "update_time": "2021-07-01T10:25:01.094Z"
+    },
+    "metadata": {
+      "public": "true"
+    },
+    "name": "beijing",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 67,
+    "repo_count": 20,
+    "update_time": "2021-07-01T10:25:01.094Z"
+  },
+  {
+    "creation_time": "2021-05-26T01:30:17.318Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-05-26T01:30:17.319Z",
+      "id": 82,
+      "items": [],
+      "project_id": 54,
+      "update_time": "2021-05-26T01:30:17.319Z"
+    },
+    "metadata": {
+      "public": "true",
+      "retention_id": "6"
+    },
+    "name": "build",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 54,
+    "repo_count": 14,
+    "update_time": "2021-05-26T01:30:17.318Z"
+  },
+  {
+    "creation_time": "2021-07-07T03:40:32.700Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-07-07T03:40:32.701Z",
+      "id": 99,
+      "items": [],
+      "project_id": 76,
+      "update_time": "2021-07-16T03:30:40.860Z"
+    },
+    "metadata": {
+      "auto_scan": "false",
+      "enable_content_trust": "false",
+      "prevent_vul": "false",
+      "public": "true",
+      "reuse_sys_cve_allowlist": "true",
+      "severity": "low"
+    },
+    "name": "busybox",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 76,
+    "repo_count": 8,
+    "update_time": "2021-07-07T03:40:32.700Z"
+  },
+  {
+    "creation_time": "2021-06-28T12:25:42.778Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-06-28T12:25:42.780Z",
+      "id": 93,
+      "items": [],
+      "project_id": 62,
+      "update_time": "2021-06-28T12:25:42.780Z"
+    },
+    "metadata": {
+      "public": "true"
+    },
+    "name": "ceph-csi",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 62,
+    "repo_count": 12,
+    "update_time": "2021-06-28T12:25:42.778Z"
+  },
+  {
+    "creation_time": "2021-04-27T01:24:58.303Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-04-27T01:24:58.305Z",
+      "id": 77,
+      "items": [],
+      "project_id": 50,
+      "update_time": "2021-05-12T03:27:39.436Z"
+    },
+    "metadata": {
+      "auto_scan": "false",
+      "enable_content_trust": "false",
+      "prevent_vul": "false",
+      "public": "false",
+      "retention_id": "4",
+      "reuse_sys_cve_allowlist": "true",
+      "severity": "low"
+    },
+    "name": "champ",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 50,
+    "repo_count": 182,
+    "update_time": "2021-04-27T01:24:58.303Z"
+  },
+  {
+    "chart_count": 138,
+    "creation_time": "2021-07-17T05:06:42.813Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-07-17T05:06:42.813Z",
+      "id": 105,
+      "items": [],
+      "project_id": 82,
+      "update_time": "2021-08-10T12:05:53.246Z"
+    },
+    "metadata": {
+      "auto_scan": "true",
+      "enable_content_trust": "false",
+      "prevent_vul": "false",
+      "public": "true",
+      "reuse_sys_cve_allowlist": "true",
+      "severity": "low"
+    },
+    "name": "charts",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 82,
+    "update_time": "2021-07-17T05:06:42.813Z"
+  },
+  {
+    "creation_time": "2021-04-13T01:47:10.132Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-04-13T01:47:10.133Z",
+      "id": 48,
+      "items": [],
+      "project_id": 44,
+      "update_time": "2021-04-23T05:28:57.379Z"
+    },
+    "metadata": {
+      "auto_scan": "false",
+      "enable_content_trust": "false",
+      "prevent_vul": "false",
+      "public": "true",
+      "reuse_sys_cve_allowlist": "true",
+      "severity": "low"
+    },
+    "name": "csiplugin",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 44,
+    "repo_count": 6,
+    "update_time": "2021-04-13T01:47:10.132Z"
+  }
+]

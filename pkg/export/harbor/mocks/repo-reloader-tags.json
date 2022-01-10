@@ -1,0 +1,41 @@
+[
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/kubernetes/repositories/stakater%252Freloader/artifacts/sha256:1155152b62ee8f13bff6e501fb9c2028587728ed4a63918df0ce35fab39ae309/additions/build_history"
+      }
+    },
+    "digest": "sha256:1155152b62ee8f13bff6e501fb9c2028587728ed4a63918df0ce35fab39ae309",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": "Bazel",
+      "created": "2021-07-11T07:51:23.013976993Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 4393,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 5,
+    "pull_time": "2021-09-07T13:57:18.635Z",
+    "push_time": "2021-07-24T07:11:19.308Z",
+    "references": null,
+    "repository_id": 1020,
+    "size": 19209630,
+    "tags": [
+      {
+        "artifact_id": 4393,
+        "id": 2142,
+        "immutable": false,
+        "name": "v0.0.97",
+        "pull_time": "2021-09-07T13:57:18.635Z",
+        "push_time": "2021-07-24T07:11:19.330Z",
+        "repository_id": 1020,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  }
+]

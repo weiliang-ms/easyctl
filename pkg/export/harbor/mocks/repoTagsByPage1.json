@@ -1,0 +1,392 @@
+[
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/kubernetes/repositories/cephcsi/artifacts/sha256:ddfe11a51e9d4dfd413f6e29a511e16e25eab965324f11bf8ce78b95a00de6c3/additions/build_history"
+      }
+    },
+    "digest": "sha256:ddfe11a51e9d4dfd413f6e29a511e16e25eab965324f11bf8ce78b95a00de6c3",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2020-12-09T13:16:52.214141906Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 97,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 5,
+    "pull_time": "2021-09-07T13:57:25.484Z",
+    "push_time": "2021-04-09T06:20:53.486Z",
+    "references": null,
+    "repository_id": 80,
+    "size": 344216886,
+    "tags": [
+      {
+        "artifact_id": 97,
+        "id": 97,
+        "immutable": false,
+        "name": "v3.2.0",
+        "pull_time": "2021-09-07T13:57:25.484Z",
+        "push_time": "2021-04-09T06:20:53.502Z",
+        "repository_id": 80,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  },
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/kubernetes/repositories/cephcsi/artifacts/sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899/additions/build_history"
+      }
+    },
+    "digest": "sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2021-01-06T14:54:26.461659532Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 96,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 5,
+    "pull_time": "2021-09-07T13:57:32.357Z",
+    "push_time": "2021-04-09T06:20:42.712Z",
+    "references": null,
+    "repository_id": 80,
+    "size": 345577952,
+    "tags": [
+      {
+        "artifact_id": 96,
+        "id": 96,
+        "immutable": false,
+        "name": "v3.2.1",
+        "pull_time": "2021-09-07T13:57:32.357Z",
+        "push_time": "2021-04-09T06:20:42.728Z",
+        "repository_id": 80,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  },
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/kubernetes/repositories/cephcsi/artifacts/sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899/additions/build_history"
+      }
+    },
+    "digest": "sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2021-01-06T14:54:26.461659532Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 96,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 5,
+    "pull_time": "2021-09-07T13:57:32.357Z",
+    "push_time": "2021-04-09T06:20:42.712Z",
+    "references": null,
+    "repository_id": 80,
+    "size": 345577952,
+    "tags": [
+      {
+        "artifact_id": 96,
+        "id": 96,
+        "immutable": false,
+        "name": "v3.2.2",
+        "pull_time": "2021-09-07T13:57:32.357Z",
+        "push_time": "2021-04-09T06:20:42.728Z",
+        "repository_id": 80,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  },
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/kubernetes/repositories/cephcsi/artifacts/sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899/additions/build_history"
+      }
+    },
+    "digest": "sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2021-01-06T14:54:26.461659532Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 96,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 5,
+    "pull_time": "2021-09-07T13:57:32.357Z",
+    "push_time": "2021-04-09T06:20:42.712Z",
+    "references": null,
+    "repository_id": 80,
+    "size": 345577952,
+    "tags": [
+      {
+        "artifact_id": 96,
+        "id": 96,
+        "immutable": false,
+        "name": "v3.2.3",
+        "pull_time": "2021-09-07T13:57:32.357Z",
+        "push_time": "2021-04-09T06:20:42.728Z",
+        "repository_id": 80,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  },
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/kubernetes/repositories/cephcsi/artifacts/sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899/additions/build_history"
+      }
+    },
+    "digest": "sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2021-01-06T14:54:26.461659532Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 96,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 5,
+    "pull_time": "2021-09-07T13:57:32.357Z",
+    "push_time": "2021-04-09T06:20:42.712Z",
+    "references": null,
+    "repository_id": 80,
+    "size": 345577952,
+    "tags": [
+      {
+        "artifact_id": 96,
+        "id": 96,
+        "immutable": false,
+        "name": "v3.2.4",
+        "pull_time": "2021-09-07T13:57:32.357Z",
+        "push_time": "2021-04-09T06:20:42.728Z",
+        "repository_id": 80,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  },
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/kubernetes/repositories/cephcsi/artifacts/sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899/additions/build_history"
+      }
+    },
+    "digest": "sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2021-01-06T14:54:26.461659532Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 96,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 5,
+    "pull_time": "2021-09-07T13:57:32.357Z",
+    "push_time": "2021-04-09T06:20:42.712Z",
+    "references": null,
+    "repository_id": 80,
+    "size": 345577952,
+    "tags": [
+      {
+        "artifact_id": 96,
+        "id": 96,
+        "immutable": false,
+        "name": "v3.2.5",
+        "pull_time": "2021-09-07T13:57:32.357Z",
+        "push_time": "2021-04-09T06:20:42.728Z",
+        "repository_id": 80,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  },
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/kubernetes/repositories/cephcsi/artifacts/sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899/additions/build_history"
+      }
+    },
+    "digest": "sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2021-01-06T14:54:26.461659532Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 96,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 5,
+    "pull_time": "2021-09-07T13:57:32.357Z",
+    "push_time": "2021-04-09T06:20:42.712Z",
+    "references": null,
+    "repository_id": 80,
+    "size": 345577952,
+    "tags": [
+      {
+        "artifact_id": 96,
+        "id": 96,
+        "immutable": false,
+        "name": "v3.2.6",
+        "pull_time": "2021-09-07T13:57:32.357Z",
+        "push_time": "2021-04-09T06:20:42.728Z",
+        "repository_id": 80,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  },
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/kubernetes/repositories/cephcsi/artifacts/sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899/additions/build_history"
+      }
+    },
+    "digest": "sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2021-01-06T14:54:26.461659532Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 96,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 5,
+    "pull_time": "2021-09-07T13:57:32.357Z",
+    "push_time": "2021-04-09T06:20:42.712Z",
+    "references": null,
+    "repository_id": 80,
+    "size": 345577952,
+    "tags": [
+      {
+        "artifact_id": 96,
+        "id": 96,
+        "immutable": false,
+        "name": "v3.2.7",
+        "pull_time": "2021-09-07T13:57:32.357Z",
+        "push_time": "2021-04-09T06:20:42.728Z",
+        "repository_id": 80,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  },
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/kubernetes/repositories/cephcsi/artifacts/sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899/additions/build_history"
+      }
+    },
+    "digest": "sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2021-01-06T14:54:26.461659532Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 96,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 5,
+    "pull_time": "2021-09-07T13:57:32.357Z",
+    "push_time": "2021-04-09T06:20:42.712Z",
+    "references": null,
+    "repository_id": 80,
+    "size": 345577952,
+    "tags": [
+      {
+        "artifact_id": 96,
+        "id": 96,
+        "immutable": false,
+        "name": "v3.2.8",
+        "pull_time": "2021-09-07T13:57:32.357Z",
+        "push_time": "2021-04-09T06:20:42.728Z",
+        "repository_id": 80,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  },
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/kubernetes/repositories/cephcsi/artifacts/sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899/additions/build_history"
+      }
+    },
+    "digest": "sha256:fb2abed617d37c416b3c0d3bb7f62e8351cfeb719012314c1165eace51133899",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2021-01-06T14:54:26.461659532Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 96,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 5,
+    "pull_time": "2021-09-07T13:57:32.357Z",
+    "push_time": "2021-04-09T06:20:42.712Z",
+    "references": null,
+    "repository_id": 80,
+    "size": 345577952,
+    "tags": [
+      {
+        "artifact_id": 96,
+        "id": 96,
+        "immutable": false,
+        "name": "v3.2.9",
+        "pull_time": "2021-09-07T13:57:32.357Z",
+        "push_time": "2021-04-09T06:20:42.728Z",
+        "repository_id": 80,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  }
+]

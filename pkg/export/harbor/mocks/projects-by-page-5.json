@@ -1,0 +1,95 @@
+[
+  {
+    "creation_time": "2021-06-17T01:57:18.149Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-06-17T01:57:18.150Z",
+      "id": 87,
+      "items": [],
+      "project_id": 56,
+      "update_time": "2021-06-17T01:57:18.150Z"
+    },
+    "metadata": {
+      "public": "true",
+      "retention_id": "7"
+    },
+    "name": "saca-di",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 56,
+    "repo_count": 3,
+    "update_time": "2021-06-17T01:57:18.149Z"
+  },
+  {
+    "creation_time": "2021-09-21T03:07:17.142Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-09-21T03:07:17.143Z",
+      "id": 118,
+      "items": [],
+      "project_id": 93,
+      "update_time": "2021-09-21T03:07:17.143Z"
+    },
+    "metadata": {
+      "public": "true"
+    },
+    "name": "seataio",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 93,
+    "repo_count": 1,
+    "update_time": "2021-09-21T03:07:17.142Z"
+  },
+  {
+    "creation_time": "2021-06-26T05:03:35.895Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-06-26T05:03:35.896Z",
+      "id": 92,
+      "items": [],
+      "project_id": 61,
+      "update_time": "2021-06-26T05:03:35.896Z"
+    },
+    "metadata": {
+      "public": "true"
+    },
+    "name": "tmp",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 61,
+    "repo_count": 1,
+    "update_time": "2021-06-26T05:03:35.895Z"
+  },
+  {
+    "creation_time": "2021-06-24T11:22:44.971Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "2021-06-24T11:22:44.972Z",
+      "id": 90,
+      "items": [],
+      "project_id": 59,
+      "update_time": "2021-06-24T11:22:44.972Z"
+    },
+    "metadata": {
+      "public": "true"
+    },
+    "name": "weaveworks",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 59,
+    "repo_count": 1,
+    "update_time": "2021-06-24T11:22:44.971Z"
+  }
+]

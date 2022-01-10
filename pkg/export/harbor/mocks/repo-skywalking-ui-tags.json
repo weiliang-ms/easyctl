@@ -1,0 +1,41 @@
+[
+  {
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/apache/repositories/skywalking-ui/artifacts/sha256:9d429cbeedbbd863a78293e8c9f0e4edddde76b39134712fa1eeb8d1fd74880e/additions/build_history"
+      }
+    },
+    "digest": "sha256:9d429cbeedbbd863a78293e8c9f0e4edddde76b39134712fa1eeb8d1fd74880e",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": null,
+      "created": "2021-06-11T04:08:54.377737256Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 2522,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 64,
+    "pull_time": "2021-09-07T13:26:35.608Z",
+    "push_time": "2021-06-29T11:52:03.938Z",
+    "references": null,
+    "repository_id": 351,
+    "size": 259756633,
+    "tags": [
+      {
+        "artifact_id": 2522,
+        "id": 736,
+        "immutable": false,
+        "name": "8.6.0",
+        "pull_time": "2021-09-07T13:26:35.608Z",
+        "push_time": "2021-06-29T11:52:03.961Z",
+        "repository_id": 351,
+        "signed": false
+      }
+    ],
+    "type": "IMAGE"
+  }
+]

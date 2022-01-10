@@ -1,11 +1,13 @@
 harbor-repo:
-  address: 192.168.1.1              # harbor连接地址
+  schema: http
+  address: 192.168.1.1:80           # harbor连接地址
   domain: harbor.wl.io              # harbor域
   user: admin                       # harbor用户
   password: Harbor-12345            # harbor用户密码
   preserve-dir: harbor-image-list   # 持久化tag
-  projects:                         # 导出哪些项目下的镜像tag（如果为空表示全库导出）
+  withDomain: true                  # 镜像tag是否包含harbor domain (harbor.wl.io/library/busybox:latest,即含有harbor.wl.io)
+  projects: # 导出哪些项目下的镜像tag（如果为空表示全库导出）
     - apache                        # project名称
     - weaveworks
-  excludes:                         # 配置'projects'空值使用，过滤某些project
+  excludes: # 配置'projects'空值使用，过滤某些project
     - ddd
