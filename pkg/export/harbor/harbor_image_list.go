@@ -475,7 +475,9 @@ func getHandlerInterface(i interface{}) HandlerInterface {
 
 func mkDirIfNotExist(dirName string, mode fs.FileMode) error {
 	err := os.Mkdir(dirName, mode)
-	if err != nil && strings.Contains(err.Error(), "already exists") {
+	//if err != nil && strings.Contains(err.Error(), "already exists") {
+	if err != nil {
+		fmt.Println(err.Error())
 		return nil
 	}
 	return err
