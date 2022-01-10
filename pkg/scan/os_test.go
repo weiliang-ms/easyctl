@@ -1,45 +1,39 @@
 package scan
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
+	"github.com/weiliang-ms/easyctl/pkg/scan/mocks"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
+	"os"
+	"sort"
 	"testing"
 )
 
-func TestOS(t *testing.T) {
-	b := `
-server:
- #- host: 192.168.109.157
-  #username: root
-  # privateKeyPath: "" # ~/.ssh/id_rsa，为空默认走password登录；不为空默认走密钥登录
-  #password: 1
-  #port: 22
-`
-	UnitTest = true
-	err := OS(command.OperationItem{
-		B:      []byte(b),
-		Logger: logrus.New(),
-	})
-	if err.Err != nil {
-		panic(err.Err)
-	}
-}
+var (
+	mockHostName = "nodeA"
+	mockKernelV  = "3.10.0-693.2.2.el7.x86_64"
+	mockOSV      = "CentOS Linux release 7.4.1708 (Core)"
+	mockLogger   = logrus.New()
 
-func TestOSINFO(t *testing.T) {
+	mockCPUModeNum     = "Intel(R) Xeon(R) Silver 4214 CPU"
+	mockCPUThreadCount = 4
+	mockCPUClockSpeed  = "2.20GHz"
 
-	UnitTest = true
+	mockCPULoadAverage = "3.0 2.0 1.0"
 
-	_, err := osInfo(runner.ServerInternal{}, logrus.New())
-	if err != nil {
-		panic(err)
-	}
+	mockMemUsed       = 0.66
+	mockMemUsePercent = 8.64
+	mockMemTotal      = 7.64
 
-}
+	mockRootMountUsedPercent       = 98
+	mockHighUsedPercentMountPoints = "/,/dev/shm"
+	mockErr                        = fmt.Errorf("mock error")
 
-func TestNewCPUInfoItem(t *testing.T) {
-	content := `
+	mockCPUInfo = `
 processor       : 0
 vendor_id       : GenuineIntel
 cpu family      : 6
@@ -142,18 +136,8 @@ bogomips        : 4389.68
 clflush size    : 64
 cache_alignment : 64
 address sizes   : 46 bits physical, 48 bits virtual
-power management:
-`
-	c := NewCPUInfoItem(content)
-
-	assert.Equal(t, 4, c.CPUThreadCount)
-	assert.Equal(t, "Intel(R) Xeon(R) Silver 4214 CPU", c.CPUModeNum)
-	assert.Equal(t, "2.20GHz", c.CPUClockSpeed)
-
-}
-
-func TestNewMemInfoItem(t *testing.T) {
-	b := `
+power management:`
+	mockMemoryInfo = `
 MemTotal:        8010192 kB
 MemFree:         6411000 kB
 MemAvailable:    7313528 kB
@@ -197,14 +181,183 @@ HugePages_Surp:        0
 Hugepagesize:       2048 kB
 DirectMap4k:       61312 kB
 DirectMap2M:     3084288 kB
-DirectMap1G:     7340032 kB
-`
-	//fmt.Printf("#%v", b)
+DirectMap1G:     7340032 kB`
+	mocMountPointInfo = `
+/dev/vda1        40G  3.4G   34G   98% /
+devtmpfs        3.9G     0  3.9G   0% /dev
+tmpfs           3.9G     0  3.9G   91% /dev/shm`
+)
 
-	m := NewMemInfoItem(b)
-	assert.Equal(t, 0.66, m.MemUsed)
-	assert.Equal(t, 8.64, m.MemUsePercent)
-	assert.Equal(t, 7.64, m.MemTotal)
+func Test_GetOSInfo_Mock(t *testing.T) {
+	mockInterface := &mocks.HandleOSInterface{}
+
+	r := osScanner{
+		Logger:           mockLogger,
+		HandlerInterface: mockInterface,
+	}
+
+	s := runner.ServerInternal{
+		Host:     "1.1.1.1",
+		Port:     "22",
+		UserName: "root",
+		Password: "123456",
+	}
+
+	mockInterface.On("GetHostName", s, mockLogger).Return(mockHostName, nil)
+	mockInterface.On("GetKernelVersion", s, mockLogger).Return(mockKernelV, nil)
+	mockInterface.On("GetSystemVersion", s, mockLogger).Return(mockOSV, nil)
+	mockInterface.On("GetCPUInfo", s, mockLogger).Return(mockCPUInfo, nil)
+	mockInterface.On("GetCPULoadAverage", s, mockLogger).Return(mockCPULoadAverage, nil)
+	mockInterface.On("GetMemoryInfo", s, mockLogger).Return(mockMemoryInfo, nil)
+	mockInterface.On("GetMountPointInfo", s, mockLogger).Return(mocMountPointInfo, nil)
+
+	re, err := r.GetOSInfo(s)
+	require.Nil(t, err)
+	require.Equal(t, mockHostName, re.Hostname)
+	require.Equal(t, mockKernelV, re.KernelV)
+	require.Equal(t, mockOSV, re.OSV)
+	require.Equal(t, mockCPUModeNum, re.CPUModeNum)
+	require.Equal(t, mockCPUThreadCount, re.CPUThreadCount)
+	require.Equal(t, mockCPUClockSpeed, re.CPUClockSpeed)
+	require.Equal(t, mockCPULoadAverage, re.CPULoadAverage)
+	require.Equal(t, mockMemUsed, re.MemUsed)
+	require.Equal(t, mockMemUsePercent, re.MemUsePercent)
+	require.Equal(t, mockMemTotal, re.MemTotal)
+}
+
+func Test_GetOSInfo_GetHostNameErr_Mock(t *testing.T) {
+	mockInterface := &mocks.HandleOSInterface{}
+
+	r := osScanner{
+		Logger:           mockLogger,
+		HandlerInterface: mockInterface,
+	}
+	var s runner.ServerInternal
+
+	mockInterface.On("GetHostName", s, mockLogger).Return("", mockErr)
+	_, err := r.GetOSInfo(s)
+	require.NotNil(t, err)
+}
+
+func Test_GetOSInfo_GetKernelVersionErr_Mock(t *testing.T) {
+	mockInterface := &mocks.HandleOSInterface{}
+
+	r := osScanner{
+		Logger:           mockLogger,
+		HandlerInterface: mockInterface,
+	}
+	var s runner.ServerInternal
+
+	mockInterface.On("GetHostName", s, mockLogger).Return(mockHostName, nil)
+	mockInterface.On("GetKernelVersion", s, mockLogger).Return("", mockErr)
+	_, err := r.GetOSInfo(s)
+	require.NotNil(t, err)
+}
+
+func Test_GetOSInfo_GetSystemVersionErr_Mock(t *testing.T) {
+	mockInterface := &mocks.HandleOSInterface{}
+
+	r := osScanner{
+		Logger:           mockLogger,
+		HandlerInterface: mockInterface,
+	}
+	var s runner.ServerInternal
+
+	mockInterface.On("GetHostName", s, mockLogger).Return(mockHostName, nil)
+	mockInterface.On("GetKernelVersion", s, mockLogger).Return(mockKernelV, nil)
+	mockInterface.On("GetSystemVersion", s, mockLogger).Return("", mockErr)
+	_, err := r.GetOSInfo(s)
+	require.NotNil(t, err)
+}
+
+func Test_GetOSInfo_GetCPUInfoErr_Mock(t *testing.T) {
+	mockInterface := &mocks.HandleOSInterface{}
+
+	r := osScanner{
+		Logger:           mockLogger,
+		HandlerInterface: mockInterface,
+	}
+	var s runner.ServerInternal
+
+	mockInterface.On("GetHostName", s, mockLogger).Return(mockHostName, nil)
+	mockInterface.On("GetKernelVersion", s, mockLogger).Return(mockKernelV, nil)
+	mockInterface.On("GetSystemVersion", s, mockLogger).Return(mockOSV, nil)
+	mockInterface.On("GetCPUInfo", s, mockLogger).Return("", mockErr)
+	_, err := r.GetOSInfo(s)
+	require.NotNil(t, err)
+}
+
+func Test_GetOSInfo_GetCPULoadAverageErr_Mock(t *testing.T) {
+	mockInterface := &mocks.HandleOSInterface{}
+
+	r := osScanner{
+		Logger:           mockLogger,
+		HandlerInterface: mockInterface,
+	}
+	var s runner.ServerInternal
+
+	mockInterface.On("GetHostName", s, mockLogger).Return(mockHostName, nil)
+	mockInterface.On("GetKernelVersion", s, mockLogger).Return(mockKernelV, nil)
+	mockInterface.On("GetSystemVersion", s, mockLogger).Return(mockOSV, nil)
+	mockInterface.On("GetCPUInfo", s, mockLogger).Return(mockCPUInfo, nil)
+	mockInterface.On("GetCPULoadAverage", s, mockLogger).Return("", mockErr)
+	_, err := r.GetOSInfo(s)
+	require.NotNil(t, err)
+}
+
+func Test_GetOSInfo_GetMemoryInfoErr_Mock(t *testing.T) {
+	mockInterface := &mocks.HandleOSInterface{}
+
+	r := osScanner{
+		Logger:           mockLogger,
+		HandlerInterface: mockInterface,
+	}
+	var s runner.ServerInternal
+
+	mockInterface.On("GetHostName", s, mockLogger).Return(mockHostName, nil)
+	mockInterface.On("GetKernelVersion", s, mockLogger).Return(mockKernelV, nil)
+	mockInterface.On("GetSystemVersion", s, mockLogger).Return(mockOSV, nil)
+	mockInterface.On("GetCPUInfo", s, mockLogger).Return(mockCPUInfo, nil)
+	mockInterface.On("GetCPULoadAverage", s, mockLogger).Return(mockCPULoadAverage, nil)
+	mockInterface.On("GetMemoryInfo", s, mockLogger).Return("", mockErr)
+	_, err := r.GetOSInfo(s)
+	require.NotNil(t, err)
+}
+
+func Test_GetOSInfo_GetMountPointInfoErr_Mock(t *testing.T) {
+	mockInterface := &mocks.HandleOSInterface{}
+
+	r := osScanner{
+		Logger:           mockLogger,
+		HandlerInterface: mockInterface,
+	}
+	var s runner.ServerInternal
+
+	mockInterface.On("GetHostName", s, mockLogger).Return(mockHostName, nil)
+	mockInterface.On("GetKernelVersion", s, mockLogger).Return(mockKernelV, nil)
+	mockInterface.On("GetSystemVersion", s, mockLogger).Return(mockOSV, nil)
+	mockInterface.On("GetCPUInfo", s, mockLogger).Return(mockCPUInfo, nil)
+	mockInterface.On("GetCPULoadAverage", s, mockLogger).Return(mockCPULoadAverage, nil)
+	mockInterface.On("GetMemoryInfo", s, mockLogger).Return(mockMemoryInfo, nil)
+	mockInterface.On("GetMountPointInfo", s, mockLogger).Return("", mockErr)
+	_, err := r.GetOSInfo(s)
+	require.NotNil(t, err)
+}
+
+func TestNewCPUInfoItem(t *testing.T) {
+	c := NewCPUInfoItem(mockCPUInfo)
+
+	require.Equal(t, mockCPUThreadCount, c.CPUThreadCount)
+	require.Equal(t, mockCPUModeNum, c.CPUModeNum)
+	require.Equal(t, mockCPUClockSpeed, c.CPUClockSpeed)
+
+}
+
+func TestNewMemInfoItem(t *testing.T) {
+	m := NewMemInfoItem(mockMemoryInfo)
+	require.Equal(t, mockMemUsed, m.MemUsed)
+	require.Equal(t, mockMemUsePercent, m.MemUsePercent)
+	require.Equal(t, mockMemTotal, m.MemTotal)
 }
 
 func TestNewDiskInfoMeta(t *testing.T) {
@@ -212,24 +365,27 @@ func TestNewDiskInfoMeta(t *testing.T) {
 	d := NewDiskInfoMetaItem(content)
 
 	assert.Equal(t, "/dev/vda1", d.Filesystem)
-	assert.Equal(t, "40G", d.Size)
-	assert.Equal(t, "3.4G", d.Used)
-	assert.Equal(t, "34G", d.Avail)
-	assert.Equal(t, "9%", d.UsedPercent)
-	assert.Equal(t, "/", d.MountedPoint)
+	require.Equal(t, "40G", d.Size)
+	require.Equal(t, "3.4G", d.Used)
+	require.Equal(t, "34G", d.Avail)
+	require.Equal(t, "9%", d.UsedPercent)
+	require.Equal(t, "/", d.MountedPoint)
+
+	r := NewDiskInfoMetaItem("/dev/vda1        40G  3.4G   34G   9%")
+	require.Equal(t, DiskInfoMeta{}, r)
 }
 
 func TestNewDiskInfoItem(t *testing.T) {
-	content := `/dev/vda1        40G  3.4G   34G   98% /
-devtmpfs        3.9G     0  3.9G   0% /dev
-tmpfs           3.9G     0  3.9G   91% /dev/shm
-`
-	d := NewDiskInfoItem(content)
-	assert.Equal(t, 98, d.RootMountUsedPercent)
-	assert.Equal(t, "/,/dev/shm", d.HighUsedPercentMountPoint)
+
+	d := NewDiskInfoItem(mocMountPointInfo)
+	require.Equal(t, mockRootMountUsedPercent, d.RootMountUsedPercent)
+	require.Equal(t, mockHighUsedPercentMountPoints, d.HighUsedPercentMountPoint)
 }
 
 func TestSaveAsExcel(t *testing.T) {
+
+	defer os.Remove(preserveFileName)
+
 	data := []OSInfo{{
 		BaseOSInfo: BaseOSInfo{
 			Address:  "192.168.11.1",
@@ -251,22 +407,34 @@ func TestSaveAsExcel(t *testing.T) {
 	}
 }
 
-func TestOS2(t *testing.T) {
+func Test_OS_Mock(t *testing.T) {
+	defer os.Remove(preserveFileName)
 
-	b := `
+	content := `
 server:
- - host: 192.168.109.160
-  username: root
-  # privateKeyPath: "" # ~/.ssh/id_rsa，为空默认走password登录；不为空默认走密钥登录
-  password: 1
-  port: 22
+excludes:
+ - 192.168.235.132
 `
-
+	mockInterface := &mocks.HandleOSInterface{}
 	OS(command.OperationItem{
-		B:          []byte(b),
+		B:          []byte(content),
 		Logger:     logrus.New(),
 		OptionFunc: nil,
+		Interface:  mockInterface,
 		UnitTest:   false,
+		Mock:       false,
 		Local:      false,
 	})
+}
+
+func Test_Sort(t *testing.T) {
+
+	var slice OSInfoSlice
+
+	slice = append(slice, OSInfo{BaseOSInfo: BaseOSInfo{Address: "192.168.1.200"}})
+	slice = append(slice, OSInfo{BaseOSInfo: BaseOSInfo{Address: "192.168.3.200"}})
+	slice = append(slice, OSInfo{BaseOSInfo: BaseOSInfo{Address: "192.168.2.200"}})
+	slice = append(slice, OSInfo{BaseOSInfo: BaseOSInfo{Address: "192.168.2.100"}})
+
+	sort.Sort(slice)
 }

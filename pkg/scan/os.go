@@ -37,6 +37,7 @@ const (
 	PrintMemInfoShell       = "cat /proc/meminfo"
 	PrintCPULoadavgShell    = "cat /proc/loadavg|awk '{print $1,$2,$3}'"
 	PrintMountInfoShell     = "df -h|grep -v Filesystem"
+	preserveFileName        = "system.xlsx"
 )
 
 var UnitTest bool
@@ -78,6 +79,11 @@ type DiskInfo struct {
 	OSDriveLetter             string // 系统分区
 }
 
+type osScanner struct {
+	Logger           *logrus.Logger
+	HandlerInterface HandleOSInterface
+}
+
 // OS 扫描系统信息
 func OS(item command.OperationItem) command.RunErr {
 	servers, err := runner.ParseServerList(item.B, item.Logger)
@@ -89,16 +95,27 @@ func OS(item command.OperationItem) command.RunErr {
 	serversOut := format.ObjectToJson(servers)
 	item.Logger.Debugf("列表信息：%s", &serversOut)
 
-	var result OSInfoSlice
+	scanner := osScanner{
+		Logger: item.Logger,
+	}
 
-	ch := make(chan OSInfo, len(servers))
-	errCh := make(chan error, len(servers))
+	result, err := scanner.ParallelGetOSInfo(servers)
+	if err != nil {
+		return command.RunErr{Err: err}
+	}
+
+	return command.RunErr{Err: SaveAsExcel(result)}
+}
+func (scanner osScanner) ParallelGetOSInfo(servers []runner.ServerInternal) (result OSInfoSlice, err error) {
 	wg := sync.WaitGroup{}
 	wg.Add(len(servers))
 
+	ch := make(chan OSInfo, len(servers))
+	errCh := make(chan error, len(servers))
+
 	for _, v := range servers {
 		go func(s runner.ServerInternal) {
-			re, scanErr := osInfo(s, item.Logger)
+			re, scanErr := scanner.GetOSInfo(s)
 			if scanErr != nil {
 				errCh <- fmt.Errorf("[%s] 扫描异常: %s", s.Host, scanErr)
 			}
@@ -111,7 +128,6 @@ func OS(item command.OperationItem) command.RunErr {
 
 	close(ch)
 	close(errCh)
-
 	for v := range ch {
 		result = append(result, v)
 	}
@@ -120,97 +136,70 @@ func OS(item command.OperationItem) command.RunErr {
 	sort.Sort(result)
 	out := format.ObjectToJson(result)
 
-	item.Logger.Infof("系统信息：\n%v", out.String())
+	scanner.Logger.Infof("系统信息：\n%v", out.String())
 
 	for v := range errCh {
-		item.Logger.Error(v)
+		scanner.Logger.Error(v)
 	}
 
-	return command.RunErr{Err: SaveAsExcel(result)}
+	return result, nil
+
 }
 
-// 获取操作系统信息
-func osInfo(s runner.ServerInternal, logger *logrus.Logger) (osInfo OSInfo, err error) {
+// GetOSInfo 获取操作系统信息
+func (scanner osScanner) GetOSInfo(s runner.ServerInternal) (osInfo OSInfo, err error) {
 
-	defer HandleTestErr(UnitTest, &err)
-
-	var cpuInfo CPUInfo
-	var memInfo MemoryInfo
-	var diskInfo DiskInfo
-
-	baseInfo := BaseOSInfo{Address: s.Host}
-
-	if re := s.ReturnRunResult(runner.RunItem{
-		Logger: logger,
-		Cmd:    PrintHostnameShell,
-	}); re.Err != nil && !UnitTest {
+	// 1. get hostname and ip address
+	osInfo.Address = s.Host
+	hostname, err := scanner.HandlerInterface.GetHostName(s, scanner.Logger)
+	if err != nil {
 		return osInfo, err
-	} else {
-		hostname := strings.TrimSuffix(re.StdOut, "\n")
-		logger.Debugf("[%s] 主机名为：%s", s.Host, hostname)
-		baseInfo.Hostname = hostname
 	}
+	osInfo.Hostname = hostname
 
-	if re := s.ReturnRunResult(runner.RunItem{
-		Logger: logger,
-		Cmd:    PrintKernelVersionShell,
-	}); re.Err != nil && !UnitTest {
+	// 2. get kernel version
+	kernelV, err := scanner.HandlerInterface.GetKernelVersion(s, scanner.Logger)
+	if err != nil {
 		return osInfo, err
-	} else {
-		baseInfo.KernelV = strings.TrimSuffix(re.StdOut, "\n")
 	}
+	osInfo.KernelV = kernelV
 
-	if re := s.ReturnRunResult(runner.RunItem{
-		Logger: logger,
-		Cmd:    PrintOSVersionShell,
-	}); re.Err != nil && !UnitTest {
+	// 3. get system version
+	systemV, err := scanner.HandlerInterface.GetSystemVersion(s, scanner.Logger)
+	if err != nil {
 		return osInfo, err
-	} else {
-		baseInfo.OSV = strings.TrimSuffix(re.StdOut, "\n")
 	}
+	osInfo.OSV = systemV
 
-	if re := s.ReturnRunResult(runner.RunItem{
-		Logger: logger,
-		Cmd:    PrintCPUInfoShell,
-	}); re.Err != nil && !UnitTest {
+	// 4. get cpu info
+	cpuContent, err := scanner.HandlerInterface.GetCPUInfo(s, scanner.Logger)
+	if err != nil {
 		return osInfo, err
-	} else {
-		cpuInfo = NewCPUInfoItem(re.StdOut)
 	}
+	osInfo.CPUInfo = NewCPUInfoItem(cpuContent)
 
-	if re := s.ReturnRunResult(runner.RunItem{
-		Logger: logger,
-		Cmd:    PrintCPULoadavgShell,
-	}); re.Err != nil && !UnitTest {
+	// 5. get cpu load average
+	cpuLoadAverage, err := scanner.HandlerInterface.GetCPULoadAverage(s, scanner.Logger)
+	if err != nil {
 		return osInfo, err
-	} else {
-		cpuInfo.CPULoadAverage = strings.TrimSpace(re.StdOut)
 	}
+	osInfo.CPULoadAverage = cpuLoadAverage
 
-	if re := s.ReturnRunResult(runner.RunItem{
-		Logger: logger,
-		Cmd:    PrintMemInfoShell,
-	}); re.Err != nil && !UnitTest {
+	// 6. get Mem info
+	memContent, err := scanner.HandlerInterface.GetMemoryInfo(s, scanner.Logger)
+	if err != nil {
 		return osInfo, err
-	} else {
-		memInfo = NewMemInfoItem(strings.TrimSpace(re.StdOut))
 	}
+	osInfo.MemoryInfo = NewMemInfoItem(memContent)
 
-	if re := s.ReturnRunResult(runner.RunItem{
-		Logger: logger,
-		Cmd:    PrintMountInfoShell,
-	}); re.Err != nil && !UnitTest {
+	// 7. get mount info
+	diskContent, err := scanner.HandlerInterface.GetMountPointInfo(s, scanner.Logger)
+	if err != nil {
 		return osInfo, err
-	} else {
-		diskInfo = NewDiskInfoItem(strings.TrimSpace(re.StdOut))
 	}
+	osInfo.DiskInfo = NewDiskInfoItem(diskContent)
 
-	return OSInfo{
-		BaseOSInfo: baseInfo,
-		CPUInfo:    cpuInfo,
-		DiskInfo:   diskInfo,
-		MemoryInfo: memInfo,
-	}, nil
+	return osInfo, nil
 }
 
 func (re OSInfoSlice) Len() int { return len(re) }
@@ -223,15 +212,18 @@ func (re OSInfoSlice) Less(i, j int) bool {
 	address1 := strings.Split(re[i].Address, ".")
 	address2 := strings.Split(re[j].Address, ".")
 
+	result := true
+
 	for k := 0; k < 4; k++ {
 		if address1[k] != address2[k] {
 			num1, _ := strconv.Atoi(address1[k])
 			num2, _ := strconv.Atoi(address2[k])
-			return num1 < num2
+			result = num1 < num2
+			break
 		}
 	}
 
-	return true
+	return result
 }
 
 func NewCPUInfoItem(content string) CPUInfo {
@@ -344,7 +336,7 @@ func SaveAsExcel(data []OSInfo) error {
 
 	sheet := "Sheet1"
 
-	excel, err := os.Create("system.xlsx")
+	excel, err := os.Create(preserveFileName)
 	defer excel.Close()
 
 	if err != nil {
@@ -355,7 +347,7 @@ func SaveAsExcel(data []OSInfo) error {
 		return err
 	}
 
-	f, err := excelize.OpenFile("system.xlsx")
+	f, err := excelize.OpenFile(preserveFileName)
 	if err != nil {
 		return err
 	}
@@ -386,15 +378,4 @@ func SaveAsExcel(data []OSInfo) error {
 	}
 
 	return f.Save()
-}
-
-func HandleTestErr(unitTest bool, err *error) {
-
-	if v := recover(); v != nil {
-		if unitTest {
-			*err = nil
-		} else {
-			panic(v)
-		}
-	}
 }

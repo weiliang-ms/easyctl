@@ -79,6 +79,11 @@ sudo cp easyctl /usr/local/bin
 - `v1.0.0-beta`: `bug`修复
 - `v1.0.0-release`: 正式版本
 
+> TODO
+
+- 单元测试覆盖率90%以上
+- 提升单元测试执行效率
+
 > `v1`功能列表
 
 - `add`
@@ -112,10 +117,6 @@ sudo cp easyctl /usr/local/bin
   - [x] [修改root口令](https://weiliang-ms.github.io/easyctl/%E8%AE%BE%E7%BD%AE%E6%8C%87%E4%BB%A4%E9%9B%86/02%E5%A4%9A%E4%B8%BB%E6%9C%BA%E4%BF%AE%E6%94%B9root%E5%8F%A3%E4%BB%A4.html)
 - `track`
   - [x] [日志tail](https://weiliang-ms.github.io/easyctl/%E8%BF%BD%E8%B8%AA%E6%8C%87%E4%BB%A4%E9%9B%86/01%E5%A4%9A%E4%B8%BB%E6%9C%BA%E6%97%A5%E5%BF%97%E5%AE%9E%E6%97%B6%E8%BF%BD%E8%B8%AA.html)
-
-> `v2`功能预览
-
-- `windows GUI`
 
 ## License
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fweiliang-ms%2Feasyctl.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fweiliang-ms%2Feasyctl?ref=badge_large)
