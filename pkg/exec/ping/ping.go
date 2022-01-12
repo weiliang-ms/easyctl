@@ -41,7 +41,9 @@ func Run(item command.OperationItem) command.RunErr {
 	}
 
 	m := Manger{
-		Handler: getHandlerInterface(item.Interface),
+		Handler:      getHandlerInterface(item.Interface),
+		CheckTimeout: time.Second,
+		CheckCount:   1,
 	}
 
 	return command.RunErr{Err: m.getSurviveList(serverList, item.Logger)}

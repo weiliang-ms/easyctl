@@ -4,7 +4,7 @@ import (
 	//
 	_ "embed"
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/pkg/exec"
+	"github.com/weiliang-ms/easyctl/pkg/exec/ping"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 )
 
@@ -17,7 +17,7 @@ var pingCmd = &cobra.Command{
 	Example: "\neasyctl exec -c config.yaml",
 	Run: func(cmd *cobra.Command, args []string) {
 		if runErr := command.SetExecutorDefault(
-			command.Item{Cmd: cmd, Fnc: exec.Ping, DefaultConfig: pingConfig, ConfigFilePath: configFile}); runErr.Err != nil {
+			command.Item{Cmd: cmd, Fnc: ping.Run, DefaultConfig: pingConfig, ConfigFilePath: configFile}); runErr.Err != nil {
 			command.DefaultLogger.Errorln(runErr.Msg)
 			panic(runErr.Err)
 		}
