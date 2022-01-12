@@ -332,6 +332,30 @@ func Test_ProjectsByName_Mock(t *testing.T) {
 	require.Equal(t, searchResult.Project[0].projectDeepCopy(), p)
 }
 
+func Test_ProjectsByNameUnmarshalErr_Mock(t *testing.T) {
+
+	r := request.HTTPRequestItem{
+		Url:      mockApiGetProjectsByNameUrl,
+		Method:   http.MethodGet,
+		Body:     nil,
+		Headers:  nil,
+		User:     mockUser,
+		Password: mockPassword,
+	}
+
+	mockInterface := &mocks.HandlerInterface{}
+	mockExecutor.HandlerInterface = mockInterface
+
+	mockInterface.On(MockDoRequestFunc, r).Return(nil, nil).Once()
+
+	p, err := mockExecutor.ProjectsByName(mockProjectName)
+
+	var project ProjectInternal
+	_, ok := err.(*json.SyntaxError)
+	require.Equal(t, true, ok)
+	require.Equal(t, project, p)
+}
+
 func Test_ProjectsByName_ProjectNotFound_Mock(t *testing.T) {
 
 	r := request.HTTPRequestItem{
@@ -343,18 +367,17 @@ func Test_ProjectsByName_ProjectNotFound_Mock(t *testing.T) {
 		Password: mockPassword,
 	}
 
-	searchErr := ProjectNotFoundErr{ProjectName: mockProjectName}
-
 	mockInterface := &mocks.HandlerInterface{}
 	mockExecutor.HandlerInterface = mockInterface
 
 	mockInterface.On(MockDoRequestFunc, r).Return(nil, nil).Once()
 
 	p, err := mockExecutor.ProjectsByName(mockProjectName)
-	var searchResult SearchResult
-	json.Unmarshal(nil, &searchResult)
-	require.Equal(t, searchErr, err)
-	require.Equal(t, ProjectInternal{}, p)
+
+	var project ProjectInternal
+	_, ok := err.(*json.SyntaxError)
+	require.Equal(t, true, ok)
+	require.Equal(t, project, p)
 }
 
 func Test_ProjectsByName_NetErr_Mock(t *testing.T) {

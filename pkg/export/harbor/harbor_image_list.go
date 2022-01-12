@@ -166,7 +166,8 @@ func (executor *Executor) ProjectsByName(projectName string) (ProjectInternal, e
 		return ProjectInternal{}, err
 	}
 
-	_ = json.Unmarshal(b, &result)
+	// nil response
+	unmarshalErr := json.Unmarshal(b, &result)
 
 	// 接口返回数据为模糊查询数据，需要二次校验
 	for _, v := range result.Project {
@@ -175,7 +176,7 @@ func (executor *Executor) ProjectsByName(projectName string) (ProjectInternal, e
 		}
 	}
 
-	return ProjectInternal{}, ProjectNotFoundErr{ProjectName: projectName}
+	return ProjectInternal{}, unmarshalErr
 }
 
 // ProjectsByNames 按名称集合获取harbor内的项目

@@ -10,7 +10,7 @@
     "deprecated": false
   },
   {
-    "name": "zookeeper-cluster",
+    "name": "httpd",
     "total_versions": 1,
     "latest_version": "1.0.0",
     "created": "2021-09-09T07:02:23.887617835Z",
@@ -20,7 +20,7 @@
     "deprecated": false
   },
   {
-    "name": "zookeeper-manager",
+    "name": "nginx",
     "total_versions": 1,
     "latest_version": "1.0.0",
     "created": "2021-09-09T07:02:23.963619358Z",

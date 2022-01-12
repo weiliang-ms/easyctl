@@ -4,7 +4,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util/log"
 	"github.com/weiliang-ms/easyctl/pkg/util/request"
-	"io"
 	"net/http"
 	"time"
 )
@@ -31,19 +30,7 @@ type HandlerInterface interface {
 type Requester struct{}
 
 func (r Requester) DoRequest(httpRequestItem request.HTTPRequestItem) ([]byte, error) {
-	request, err := http.NewRequest(httpRequestItem.Method, httpRequestItem.Url, httpRequestItem.Body)
-	if err != nil {
-		return nil, err
-	}
-	request.SetBasicAuth(httpRequestItem.User, httpRequestItem.Password)
-
-	client := http.Client{Timeout: httpRequestItem.Timeout}
-	resp, err := client.Do(request)
-	if err != nil && !httpRequestItem.Mock {
-		return nil, err
-	}
-
-	return io.ReadAll(resp.Body)
+	return request.DoRequest(httpRequestItem)
 }
 
 // ProjectsByPage 按页查询harbor内project
