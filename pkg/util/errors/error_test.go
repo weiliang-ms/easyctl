@@ -3,6 +3,7 @@ package errors
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"testing"
 )
@@ -30,4 +31,8 @@ func TestNumNotEqualErr(t *testing.T) {
 func TestIsCaller(t *testing.T) {
 	assert.Equal(t, true, IsCaller(1, "github.com/weiliang-ms/easyctl/pkg/util/errors.TestIsCaller"))
 	assert.NotEqual(t, true, IsCaller(2, "github.com/weiliang-ms/easyctl/pkg/util/errors.TestIsCaller"))
+}
+func Test_FalseConditionErr(t *testing.T) {
+	require.NotNil(t, FalseConditionErr(true, ""))
+	require.Nil(t, FalseConditionErr(false, ""))
 }

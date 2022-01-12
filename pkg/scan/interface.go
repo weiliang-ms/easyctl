@@ -18,9 +18,9 @@ type HandleOSInterface interface {
 	GetMountPointInfo(s runner.ServerInternal, l *logrus.Logger) (result string, err error)
 }
 
-type OsExecutor struct{}
+type Handler struct{}
 
-func (osExecutor OsExecutor) DoRequest(doRequestItem runner.DoRequestItem) (string, error) {
+func (h Handler) DoRequest(doRequestItem runner.DoRequestItem) (string, error) {
 	re := doRequestItem.S.ReturnRunResult(doRequestItem.R)
 	if re.Err != nil && !doRequestItem.Mock {
 		return "", re.Err
@@ -28,37 +28,37 @@ func (osExecutor OsExecutor) DoRequest(doRequestItem runner.DoRequestItem) (stri
 	return strings.TrimSuffix(re.StdOut, "\n"), nil
 }
 
-func (osExecutor OsExecutor) GetHostName(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
+func (h Handler) GetHostName(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
 	defer l.Debugf("[%s] hostname -> %s", s.Host, result)
-	return osExecutor.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintHostnameShell}})
+	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintHostnameShell}})
 }
 
-func (osExecutor OsExecutor) GetKernelVersion(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
+func (h Handler) GetKernelVersion(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
 	defer l.Debugf("[%s] kernel version -> %s", s.Host, result)
-	return osExecutor.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintKernelVersionShell}})
+	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintKernelVersionShell}})
 }
 
-func (osExecutor OsExecutor) GetSystemVersion(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
+func (h Handler) GetSystemVersion(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
 	defer l.Debugf("[%s] system version -> %s", s.Host, result)
-	return osExecutor.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintOSVersionShell}})
+	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintOSVersionShell}})
 }
 
-func (osExecutor OsExecutor) GetCPUInfo(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
+func (h Handler) GetCPUInfo(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
 	defer l.Debugf("[%s] cpu info -> %s", s.Host, result)
-	return osExecutor.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintCPUInfoShell}})
+	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintCPUInfoShell}})
 }
 
-func (osExecutor OsExecutor) GetCPULoadAverage(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
+func (h Handler) GetCPULoadAverage(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
 	defer l.Debugf("[%s] cpu loadaverage info -> %s", s.Host, result)
-	return osExecutor.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintCPULoadavgShell}})
+	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintCPULoadavgShell}})
 }
 
-func (osExecutor OsExecutor) GetMemoryInfo(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
+func (h Handler) GetMemoryInfo(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
 	defer l.Debugf("[%s] memory info -> %s", s.Host, result)
-	return osExecutor.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintMemInfoShell}})
+	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintMemInfoShell}})
 }
 
-func (osExecutor OsExecutor) GetMountPointInfo(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
+func (h Handler) GetMountPointInfo(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
 	defer l.Debugf("[%s] mount point info -> %s", s.Host, result)
-	return osExecutor.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintMountInfoShell}})
+	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintMountInfoShell}})
 }

@@ -220,7 +220,7 @@ var (
 func Test_ParallelGetOSInfo_Mock(t *testing.T) {
 	mockInterface := &mocks.HandleOSInterface{}
 
-	r := osScanner{
+	r := Manager{
 		Logger:           mockLogger,
 		HandlerInterface: mockInterface,
 	}
@@ -257,7 +257,7 @@ func Test_ParallelGetOSInfo_Mock(t *testing.T) {
 func Test_ParallelGetOSInfo_Err_Mock(t *testing.T) {
 	mockInterface := &mocks.HandleOSInterface{}
 
-	r := osScanner{
+	r := Manager{
 		Logger:           mockLogger,
 		HandlerInterface: mockInterface,
 	}
@@ -712,7 +712,7 @@ excludes:
 func Test_getHandlerInterface(t *testing.T) {
 	var h HandleOSInterface
 	r := getHandlerInterface(h)
-	require.Equal(t, new(OsExecutor), r)
+	require.Equal(t, new(Handler), r)
 
 	h2 := &mocks.HandleOSInterface{}
 	r2 := getHandlerInterface(h2)

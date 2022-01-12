@@ -1,12 +1,11 @@
-package exec
+package ping
 
 import (
-	"errors"
 	"fmt"
-	"github.com/go-ping/ping"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/file"
+	"github.com/weiliang-ms/easyctl/pkg/util/log"
 	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
 	"gopkg.in/yaml.v2"
 	"net"
@@ -18,7 +17,7 @@ import (
 
 const SurviveListFilePath = "server-list.txt"
 
-type PingItem struct {
+type Config struct {
 	Ping []struct {
 		Address string `yaml:"address"`
 		Start   int    `yaml:"start"`
@@ -27,28 +26,32 @@ type PingItem struct {
 	} `yaml:"ping"`
 }
 
-// Ping 执行指令
-func Ping(item command.OperationItem) command.RunErr {
+type Manger struct {
+	Handler      HandlerInterface
+	CheckCount   int
+	CheckTimeout time.Duration
+}
+
+// Run 执行指令
+func Run(item command.OperationItem) command.RunErr {
 
 	serverList, err := ParsePingItems(item.B, item.Logger)
 	if err != nil {
 		return command.RunErr{Err: err}
 	}
 
-	surviveList, err := getSurviveList(serverList, item.Logger)
-	if err != nil {
-		return command.RunErr{Err: err}
+	m := Manger{
+		Handler: getHandlerInterface(item.Interface),
 	}
 
-	item.Logger.Infof("生成活体列表文件: %s", SurviveListFilePath)
-	return command.RunErr{Err: file.WriteWithIPS(surviveList, SurviveListFilePath)}
+	return command.RunErr{Err: m.getSurviveList(serverList, item.Logger)}
 }
 
 // ParsePingItems 解析探活地址区间
 func ParsePingItems(b []byte, logger *logrus.Logger) (strings2.IPS, error) {
 	var address strings2.IPS
 
-	item := &PingItem{}
+	item := &Config{}
 
 	err := yaml.Unmarshal(b, item)
 	if err != nil {
@@ -64,7 +67,7 @@ func ParsePingItems(b []byte, logger *logrus.Logger) (strings2.IPS, error) {
 
 		if ip := net.ParseIP(fmt.Sprintf("%s.1", v.Address)); ip == nil {
 			logger.Errorf("[interrupt] %s 格式非法", v.Address)
-			break
+			continue
 		}
 
 		logger.Infof("[pass] %s 合法性检测通过!", v.Address)
@@ -72,12 +75,12 @@ func ParsePingItems(b []byte, logger *logrus.Logger) (strings2.IPS, error) {
 		logger.Info("ip地址区间合法性检测...")
 		if v.Start > 255 || v.Start < 1 || v.End > 255 || v.End < 1 {
 			logger.Errorf("[interrupt] ip地址区间不合法，start、end值有效取值区间为[1-255]!")
-			break
+			continue
 		}
 
 		if v.Start > v.End {
 			logger.Errorf("[interrupt] ip地址区间不合法，start值不应大于end值!")
-			break
+			continue
 		}
 
 		logger.Info("[pass] ip地址区间合法性检测通过!")
@@ -92,24 +95,28 @@ func ParsePingItems(b []byte, logger *logrus.Logger) (strings2.IPS, error) {
 	return address, nil
 }
 
-func getSurviveList(addresses []string, logger *logrus.Logger) (strings2.IPS, error) {
+func (m Manger) getSurviveList(addresses []string, logger *logrus.Logger) error {
+
+	logger.Infof("生成活体列表文件: %s", SurviveListFilePath)
 
 	surviveList := strings2.IPS{}
 	surviveCh := make(chan string, len(addresses))
+
+	logger = log.SetDefault(logger)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(len(addresses))
 
 	for _, v := range addresses {
 		go func(address string) {
-			var err error
+			var telnetErr error
 			// 192.168.1.1:22 -> []string{"192.168.1.1", "22"}
 			slice := strings.Split(address, ":")
 			ip := slice[0]
 			logger.Debugf("ping [%s]", ip)
 
-			// icmp探测
-			pingErr := icmp(ip, true)
+			// ICMP探测
+			pingErr := m.Handler.ICMP(ip, m.CheckCount, m.CheckTimeout, true)
 			if pingErr != nil {
 				logger.Debugf("[%s] ping err: %s", ip, pingErr)
 			}
@@ -117,61 +124,36 @@ func getSurviveList(addresses []string, logger *logrus.Logger) (strings2.IPS, er
 			// 端口可达探测
 			if len(slice) > 1 && slice[1] != "0" {
 				logger.Debugf("探测端口监听: %s", address)
-				_, err = net.DialTimeout("tcp", address, 1*time.Second)
+				telnetErr = m.Handler.Telnet("tcp", address, m.CheckTimeout)
 			}
 
 			// 1.ping不通 telnet通
 			// 2.ping通telnet通
 			// 3.ping通，不进行telnet探测
-			if (pingErr != nil && err == nil) || (pingErr == nil && err == nil) {
+			case1 := pingErr != nil && telnetErr == nil && len(slice) > 1 && slice[1] != "0"
+			if case1 || (pingErr == nil && telnetErr == nil) {
 				surviveCh <- ip
 			}
 			defer wg.Done()
 		}(v)
 	}
 
-	for {
-		v, err := readWithSelect(surviveCh)
-		if err != nil {
-			break
-		} else {
-			surviveList = append(surviveList, v)
-		}
-	}
-
 	wg.Wait()
+	close(surviveCh)
+
+	for v := range surviveCh {
+		surviveList = append(surviveList, v)
+	}
 
 	sort.Sort(surviveList)
 	logger.Info("探活列表获取完毕")
-	return surviveList, nil
+	return file.WriteWithIPS(surviveList, SurviveListFilePath)
 }
 
-func readWithSelect(ch chan string) (x string, err error) {
-	timeout := time.NewTimer(time.Second * 2)
-
-	select {
-	case x = <-ch:
-		return x, nil
-	case <-timeout.C:
-		return "", errors.New("read time out")
+func getHandlerInterface(i interface{}) HandlerInterface {
+	handlerInterface, _ := i.(HandlerInterface)
+	if handlerInterface == nil {
+		return new(Handler)
 	}
-}
-
-func icmp(ip string, privileged bool) error {
-	pinger, err := ping.NewPinger(ip)
-	if err != nil {
-		panic(err)
-	}
-	pinger.Timeout = 1 * time.Second
-	pinger.Count = 1
-	pinger.SetPrivileged(privileged)
-	if err := pinger.Run(); err != nil {
-		return err
-	}
-
-	if pinger.Statistics().PacketsRecv == 0 {
-		return fmt.Errorf("%s无法ping通", ip)
-	}
-
-	return nil
+	return handlerInterface
 }

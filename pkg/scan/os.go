@@ -28,7 +28,7 @@ const (
 	preserveFileName        = "system.xlsx"
 )
 
-type osScanner struct {
+type Manager struct {
 	Logger           *logrus.Logger
 	HandlerInterface HandleOSInterface
 }
@@ -47,73 +47,73 @@ func OS(item command.OperationItem) command.RunErr {
 	serversOut := format.ObjectToJson(servers)
 	item.Logger.Debugf("列表信息：%s", &serversOut)
 
-	scanner := osScanner{
+	m := Manager{
 		Logger: item.Logger,
 	}
 
-	scanner.HandlerInterface = getHandlerInterface(item.Interface)
+	m.HandlerInterface = getHandlerInterface(item.Interface)
 
-	result, err := scanner.ParallelGetOSInfo(servers)
+	result, err := m.ParallelGetOSInfo(servers)
 	if err != nil {
 		return command.RunErr{Err: err}
 	}
 
 	return command.RunErr{Err: SaveAsExcel(result, preserveFileName, excelTmpl)}
 }
-func (scanner osScanner) ParallelGetOSInfo(servers []runner.ServerInternal) (result scanos.MetaInfoSlice, err error) {
+func (m Manager) ParallelGetOSInfo(servers []runner.ServerInternal) (result scanos.MetaInfoSlice, err error) {
 	wg := sync.WaitGroup{}
 	wg.Add(len(servers))
 
 	ch := make(chan scanos.MetaInfo, len(servers))
 	errCh := make(chan error, len(servers))
 
-	f := func(s runner.ServerInternal, osScanner osScanner) (osInfo scanos.MetaInfo, err error) {
+	f := func(s runner.ServerInternal, m Manager) (osInfo scanos.MetaInfo, err error) {
 
 		// 1. get hostname and ip address
 		osInfo.Address = s.Host
-		hostname, err := osScanner.HandlerInterface.GetHostName(s, osScanner.Logger)
+		hostname, err := m.HandlerInterface.GetHostName(s, m.Logger)
 		if err != nil {
 			return osInfo, err
 		}
 		osInfo.Hostname = hostname
 
 		// 2. get kernel version
-		kernelV, err := osScanner.HandlerInterface.GetKernelVersion(s, osScanner.Logger)
+		kernelV, err := m.HandlerInterface.GetKernelVersion(s, m.Logger)
 		if err != nil {
 			return osInfo, err
 		}
 		osInfo.KernelV = kernelV
 
 		// 3. get system version
-		systemV, err := osScanner.HandlerInterface.GetSystemVersion(s, osScanner.Logger)
+		systemV, err := m.HandlerInterface.GetSystemVersion(s, m.Logger)
 		if err != nil {
 			return osInfo, err
 		}
 		osInfo.OSV = systemV
 
 		// 4. get cpu info
-		cpuContent, err := osScanner.HandlerInterface.GetCPUInfo(s, osScanner.Logger)
+		cpuContent, err := m.HandlerInterface.GetCPUInfo(s, m.Logger)
 		if err != nil {
 			return osInfo, err
 		}
 		osInfo.CPUInfo = scanos.NewCPUInfoItem(cpuContent)
 
 		// 5. get cpu load average
-		cpuLoadAverage, err := osScanner.HandlerInterface.GetCPULoadAverage(s, osScanner.Logger)
+		cpuLoadAverage, err := m.HandlerInterface.GetCPULoadAverage(s, m.Logger)
 		if err != nil {
 			return osInfo, err
 		}
 		osInfo.CPULoadAverage = cpuLoadAverage
 
 		// 6. get Mem info
-		memContent, err := osScanner.HandlerInterface.GetMemoryInfo(s, osScanner.Logger)
+		memContent, err := m.HandlerInterface.GetMemoryInfo(s, m.Logger)
 		if err != nil {
 			return osInfo, err
 		}
 		osInfo.MemoryInfo = scanos.NewMemInfoItem(memContent)
 
 		// 7. get mount info
-		diskContent, err := osScanner.HandlerInterface.GetMountPointInfo(s, osScanner.Logger)
+		diskContent, err := m.HandlerInterface.GetMountPointInfo(s, m.Logger)
 		if err != nil {
 			return osInfo, err
 		}
@@ -124,7 +124,7 @@ func (scanner osScanner) ParallelGetOSInfo(servers []runner.ServerInternal) (res
 
 	for _, v := range servers {
 		go func(s runner.ServerInternal) {
-			re, scanErr := f(s, scanner)
+			re, scanErr := f(s, m)
 			if scanErr != nil {
 				fmt.Println(scanErr)
 				errCh <- fmt.Errorf("[%s] 扫描异常: %s", s.Host, scanErr)
@@ -146,7 +146,7 @@ func (scanner osScanner) ParallelGetOSInfo(servers []runner.ServerInternal) (res
 	sort.Sort(result)
 	out := format.ObjectToJson(result)
 
-	scanner.Logger.Infof("系统信息：\n%v", out.String())
+	m.Logger.Infof("系统信息：\n%v", out.String())
 
 	for v := range errCh {
 		return nil, v
@@ -211,7 +211,7 @@ func SaveAsExcel(data []scanos.MetaInfo, path string, tmplBytes []byte) error {
 func getHandlerInterface(i interface{}) HandleOSInterface {
 	handlerInterface, _ := i.(HandleOSInterface)
 	if handlerInterface == nil {
-		return new(OsExecutor)
+		return new(Handler)
 	}
 	return handlerInterface
 }

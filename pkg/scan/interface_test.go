@@ -8,7 +8,7 @@ import (
 func Test(t *testing.T) {
 
 	s := runner.ServerInternal{}
-	r := OsExecutor{}
+	r := Handler{}
 
 	_, _ = r.GetHostName(s, mockLogger)
 	_, _ = r.GetCPUInfo(s, mockLogger)

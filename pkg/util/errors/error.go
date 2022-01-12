@@ -25,6 +25,17 @@ func IgnoreErrorFromCaller(skip int, callerName string, err *error) {
 	}
 }
 
+/*
+	condition == true  -> return err
+	condition == false -> return nil
+*/
+func FalseConditionErr(condition bool, msg string) error {
+	if !condition {
+		return nil
+	}
+	return fmt.Errorf(fmt.Sprintf("%s.", msg))
+}
+
 // IsTestCaller 判断调用者是否为test函数
 func IsTestCaller(skip int) bool {
 	pc, _, _, _ := runtime.Caller(skip)
