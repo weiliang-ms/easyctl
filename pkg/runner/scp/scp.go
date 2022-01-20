@@ -51,7 +51,7 @@ type SftpExecutor struct {
 	SrcPath string
 	DstPath string
 	Mode    os.FileMode
-	runner.ServerInternal
+	Server  runner.ServerInternal
 	sync.Mutex
 	SftpClient  *sftp.Client
 	srcFile     *os.File
@@ -82,7 +82,7 @@ func ParallelScp(sftpItem ScpItem, servers []runner.ServerInternal) chan error {
 	for _, s := range servers {
 		go func(server runner.ServerInternal) {
 			sftpItem.Lock()
-			sftpItem.ServerInternal = server
+			sftpItem.Server = server
 			sftpItem.Unlock()
 			ch <- Scp(&sftpItem)
 			defer wg.Done()
@@ -146,16 +146,16 @@ func sftpWithProcessBar(scpItem *ScpItem) (err error) {
 		scpItem.SftpInterface = new(ScpItem)
 	}
 
-	if err := scpItem.SftpInterface.NewSftpClient(scpItem.ServerInternal, scpItem.SftpConnectTimeout); err != nil {
+	if err := scpItem.SftpInterface.NewSftpClient(scpItem.Server, scpItem.SftpConnectTimeout); err != nil {
 		return NewSftpClientErr{
-			Host: scpItem.Host,
+			Host: scpItem.Server.Host,
 			Err:  err,
 		}
 	}
 
 	if err := scpItem.SftpInterface.SftpCreate(scpItem.DstPath); err != nil {
 		return SftpCreateErr{
-			Host:    scpItem.Host,
+			Host:    scpItem.Server.Host,
 			DstPath: scpItem.DstPath,
 			Err:     err,
 		}
@@ -163,7 +163,7 @@ func sftpWithProcessBar(scpItem *ScpItem) (err error) {
 
 	if err := scpItem.SftpInterface.SftpChmod(scpItem.DstPath, scpItem.Mode); err != nil {
 		return SftpChmodErr{
-			Host:    scpItem.Host,
+			Host:    scpItem.Server.Host,
 			DstPath: scpItem.DstPath,
 			Err:     err,
 		}
@@ -179,10 +179,10 @@ func sftpWithProcessBar(scpItem *ScpItem) (err error) {
 	if err := scpItem.SftpInterface.IOCopy64(scpItem.fileSize,
 		scpItem.SrcPath,
 		scpItem.DstPath,
-		scpItem.Host,
+		scpItem.Server.Host,
 		scpItem.Logger); err != nil {
 		return IOCopy64Err{
-			Host:    scpItem.Host,
+			Host:    scpItem.Server.Host,
 			SrcPath: scpItem.SrcPath,
 			DstPath: scpItem.DstPath,
 			Err:     err,

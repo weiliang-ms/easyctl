@@ -8,7 +8,7 @@ import (
 // Selinux 关闭selinux
 func Selinux(item command.OperationItem) command.RunErr {
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   item.B,
+		ManifestContent:     item.B,
 		Logger:              item.Logger,
 		Cmd:                 closeSELinuxShell,
 		RecordErrServerList: false,

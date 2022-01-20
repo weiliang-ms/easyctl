@@ -9,6 +9,7 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"github.com/weiliang-ms/easyctl/pkg/util/log"
 	"os"
+	"time"
 )
 
 //go:embed config.yaml
@@ -43,6 +44,7 @@ type OperationItem struct {
 	UnitTest   bool
 	Mock       bool
 	Local      bool // 本地
+	SSHTimeout time.Duration
 }
 
 var DefaultLogger *logrus.Logger

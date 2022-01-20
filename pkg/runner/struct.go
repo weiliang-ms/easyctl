@@ -2,6 +2,6 @@ package runner
 
 type DoRequestItem struct {
 	S    ServerInternal
-	R    RunItem
+	R    RemoteRunItem
 	Mock bool
 }

@@ -59,14 +59,11 @@ type WindowsErr struct {
 func LocalRun(shell string, logger *logrus.Logger) ShellResult {
 
 	result := ShellResult{}
-
-	if logger == nil {
-		logger = logrus.New()
-	}
+	logger = log.SetDefault(logger)
 
 	var cmd *exec.Cmd
 
-	logger.Debugf("执行r指令: %s", shell)
+	logger.Debugf("[shell] local执行指令: \n%s", shell)
 
 	switch runtime.GOOS {
 	case "windows":
@@ -80,17 +77,17 @@ func LocalRun(shell string, logger *logrus.Logger) ShellResult {
 	b, err := cmd.CombinedOutput()
 
 	if err != nil {
+		logger.Debugf("[shell] 执行错误：%s", err)
 		return ShellResult{Err: err}
 	}
 
 	logger.Debug(string(b))
-
 	return result
 }
 
 // ParallelRun 并发执行
 // todo: 添加缓冲队列，避免过多goroutine
-func (executor ExecutorInternal) ParallelRun() chan ShellResult {
+func (executor ExecutorInternal) ParallelRun(timeout time.Duration) chan ShellResult {
 
 	executor.Logger = log.SetDefault(executor.Logger)
 	executor.Logger.Info("开始并行执行命令...")
@@ -113,7 +110,7 @@ func (executor ExecutorInternal) ParallelRun() chan ShellResult {
 	for _, v := range executor.Servers {
 		wg.Add(1)
 		go func(s ServerInternal) {
-			ch <- executor.runOnNode(s)
+			ch <- executor.RunOnNode(s, timeout)
 			defer wg.Done()
 		}(v)
 	}
@@ -123,12 +120,12 @@ func (executor ExecutorInternal) ParallelRun() chan ShellResult {
 	return ch
 }
 
-func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResult) {
+func (executor ExecutorInternal) RunOnNode(server ServerInternal, timeout time.Duration) (re ShellResult) {
 	defer handleErr(&re.Err)
 
 	executor.Logger.Infof("[%s] 开始执行指令 -> start", server.Host)
 	executor.Logger.Debugf("\n# 指令开始\n%s\n# 指令结束\n", executor.Script)
-	session, err := server.sshConnect()
+	session, err := server.sshConnect(timeout)
 	defer session.Close()
 
 	if err != nil {
@@ -179,7 +176,7 @@ func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResul
 			StdErrMsg: fmt.Sprintf("[%s] 执行失败, %s", server.Host, string(errOut.Bytes()))}
 	}
 
-	executor.Logger.Infof("<- %s执行命令成功", server.Host)
+	executor.Logger.Infof("[%s] 执行命令成功 <- end", server.Host)
 	executor.Logger.Debugf("[%s] 执行结果 => %s...\n", server.Host, string(out.Bytes()))
 
 	var subOut string
@@ -195,10 +192,10 @@ func (executor ExecutorInternal) runOnNode(server ServerInternal) (re ShellResul
 }
 
 // ReturnRunResult 获取执行结果
-func (server ServerInternal) ReturnRunResult(item RunItem) ShellResult {
+func (server ServerInternal) ReturnRunResult(item RemoteRunItem) ShellResult {
 	item.Logger.Infof("-> %s开始执行命令...", server.Host)
 	item.Logger.Debug(item.Cmd)
-	session, err := server.sshConnect()
+	session, err := server.sshConnect(item.SSHTimeout)
 	if err != nil {
 		return ShellResult{Err: fmt.Errorf("%s建立ssh会话失败 -> %s", server.Host, err.Error())}
 	}
@@ -212,13 +209,13 @@ func (server ServerInternal) ReturnRunResult(item RunItem) ShellResult {
 		return ShellResult{Code: code, Err: err, StdErrMsg: fmt.Sprintf("%s执行失败, %s", server.Host, string(errOut.Bytes()))}
 	}
 
-	item.Logger.Infof("<- %s执行命令成功", server.Host)
+	item.Logger.Infof("[%s] 执行命令成功 <- end", server.Host)
 	item.Logger.Debugf("[%s] 执行结果 => \n%s...\n", server.Host, string(out.Bytes()))
 	defer session.Close()
 	return ShellResult{StdOut: string(out.Bytes())}
 }
 
-func (server ServerInternal) sshConnect() (*ssh.Session, error) {
+func (server ServerInternal) sshConnect(timeout time.Duration) (*ssh.Session, error) {
 	s := server.completeDefault()
 	var (
 		auth         []ssh.AuthMethod
@@ -245,18 +242,18 @@ func (server ServerInternal) sshConnect() (*ssh.Session, error) {
 		return nil
 	}
 
-	var timeout time.Duration
-
-	if os.Getenv(constant.SshNoTimeout) == "true" {
-		timeout = 1
-	} else {
-		timeout = 3
-	}
+	//var timeout time.Duration
+	//
+	//if os.Getenv(constant.SshNoTimeout) == "true" {
+	//	timeout = 1
+	//} else {
+	//	timeout = 3
+	//}
 
 	clientConfig = &ssh.ClientConfig{
 		User:            s.UserName,
 		Auth:            auth,
-		Timeout:         timeout * time.Second,
+		Timeout:         timeout,
 		HostKeyCallback: hostKeyCallbk,
 	}
 

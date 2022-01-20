@@ -67,7 +67,7 @@ func HostResolve(item command.OperationItem) command.RunErr {
 	})
 
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   item.B,
+		ManifestContent:     item.B,
 		Logger:              item.Logger,
 		Cmd:                 shell,
 		RecordErrServerList: false,
@@ -76,5 +76,9 @@ func HostResolve(item command.OperationItem) command.RunErr {
 }
 
 func GetHostResolve(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResult, error) {
-	return runner.GetResult(b, logger, cmd)
+	return runner.GetResult(runner.RemoteRunItem{
+		ManifestContent: b,
+		Logger:          logger,
+		Cmd:             cmd,
+	})
 }

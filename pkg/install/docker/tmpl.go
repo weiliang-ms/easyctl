@@ -1,4 +1,4 @@
-package tmpl
+package docker
 
 import (
 	"github.com/lithammer/dedent"

@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util/format"
+	"github.com/weiliang-ms/easyctl/pkg/util/log"
 	"github.com/weiliang-ms/easyctl/pkg/util/slice"
 	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
 	"gopkg.in/yaml.v2"
@@ -89,9 +90,8 @@ func contain(server ServerInternal, excludeServers []string) bool {
 
 // ParseServerList ServerList反序列化
 func ParseServerList(b []byte, logger *logrus.Logger) ([]ServerInternal, error) {
-	if logger == nil {
-		logger = logrus.New()
-	}
+
+	logger = log.SetDefault(logger)
 
 	serverList := ServerListExternal{}
 	if err := yaml.Unmarshal(b, &serverList); err != nil {

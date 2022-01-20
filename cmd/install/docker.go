@@ -4,9 +4,8 @@ import (
 	// embed
 	_ "embed"
 	"github.com/spf13/cobra"
-	"github.com/weiliang-ms/easyctl/pkg/install"
+	"github.com/weiliang-ms/easyctl/pkg/install/docker"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
-	"log"
 )
 
 //go:embed asset/docker.yaml
@@ -23,12 +22,11 @@ var dockerCmd = &cobra.Command{
 		if runErr := command.SetExecutorDefault(
 			command.Item{
 				Cmd:            cmd,
-				Fnc:            install.Docker,
+				Fnc:            docker.Install,
 				DefaultConfig:  dockerConfigContent(),
 				ConfigFilePath: configFile,
 				Local:          local,
 			}); runErr.Err != nil {
-			log.Println(runErr.Msg)
 			panic(runErr.Err)
 		}
 	},

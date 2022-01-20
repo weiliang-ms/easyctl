@@ -20,7 +20,7 @@ func Test(t *testing.T) {
 
 	r.DoRequest(runner.DoRequestItem{
 		S: s,
-		R: runner.RunItem{
+		R: runner.RemoteRunItem{
 			Logger: mockLogger,
 			Cmd:    "ddd",
 		},

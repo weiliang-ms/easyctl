@@ -1,4 +1,4 @@
-package tmpl
+package docker
 
 import (
 	"fmt"
@@ -8,9 +8,9 @@ import (
 )
 
 func TestDockerConfigTmpl(t *testing.T) {
-	shell , err := tmplutil.Render(DockerConfigTmpl, tmplutil.TmplRenderData{
-		"DataPath": "/data/lib/docker",
-		"Mirrors": "\"harbor.aa.io\",\"harbor.bb.io\"",
+	shell, err := tmplutil.Render(DockerConfigTmpl, tmplutil.TmplRenderData{
+		"DataPath":           "/data/lib/docker",
+		"Mirrors":            "\"harbor.aa.io\",\"harbor.bb.io\"",
 		"InsecureRegistries": "\"xxx.xxx.io\",\"xxx.yyy.io\"",
 	})
 	assert.Equal(t, nil, err)

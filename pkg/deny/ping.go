@@ -8,8 +8,8 @@ import (
 // Ping 禁ping
 func Ping(item command.OperationItem) command.RunErr {
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:      item.B,
-		Logger: item.Logger,
-		Cmd:    DenyPingShell,
+		ManifestContent: item.B,
+		Logger:          item.Logger,
+		Cmd:             DenyPingShell,
 	})
 }

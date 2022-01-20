@@ -9,7 +9,7 @@ import (
 // Redis 清理redis服务及文件
 func Redis(item command.OperationItem) command.RunErr {
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   item.B,
+		ManifestContent:     item.B,
 		Logger:              item.Logger,
 		Cmd:                 install.PruneRedisShell,
 		RecordErrServerList: false,

@@ -19,10 +19,12 @@ type TailLogExecutor struct {
 func TaiLog(item command.OperationItem) command.RunErr {
 
 	servers, err := runner.ParseServerList(item.B, item.Logger)
-	stopCh := make(chan struct{})
+
 	if err != nil {
 		return command.RunErr{Err: err}
 	}
+
+	stopCh := make(chan struct{})
 
 	executor, err := parseTailLogExecutor(item.B)
 	if err != nil {

@@ -14,6 +14,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"os"
 	"strings"
+	"time"
 )
 
 // RedisClusterConfig redis安装配置反序列化对象
@@ -42,6 +43,7 @@ type redisClusterConfig struct {
 	EndpointList  []string // 节点列表
 	BootCommand   string
 	unitTest      bool
+	sshTimeout    time.Duration
 }
 
 // RedisClusterType redis cluster部署模式
@@ -86,6 +88,7 @@ func RedisCluster(item command.OperationItem) command.RunErr {
 	}
 
 	config.unitTest = item.UnitTest
+	config.sshTimeout = item.SSHTimeout
 
 	return install(config)
 }
@@ -188,7 +191,7 @@ func (config *redisClusterConfig) Detect() (err command.RunErr) {
 		config.Servers = config.Servers[:1]
 	}
 
-	for v := range config.Executor.ParallelRun() {
+	for v := range config.Executor.ParallelRun(config.sshTimeout) {
 		if config.IgnoreErr {
 			break
 		} else if v.Err != nil {
@@ -219,7 +222,7 @@ func (config *redisClusterConfig) Prune() (err command.RunErr) {
 		OutPutRealTime: true,
 	}
 
-	ch := exec.ParallelRun()
+	ch := exec.ParallelRun(config.sshTimeout)
 	for v := range ch {
 		if config.IgnoreErr {
 			break
@@ -434,7 +437,7 @@ func (config *redisClusterConfig) run(script string) error {
 		OutPutRealTime: true,
 	}
 
-	ch := exec.ParallelRun()
+	ch := exec.ParallelRun(config.sshTimeout)
 	for v := range ch {
 		if v.Err != nil {
 			return v.Err

@@ -185,7 +185,7 @@ func OS(item command.OperationItem) command.RunErr {
 func (object *Object) denyPing() command.RunErr {
 	object.Logger.Info("[step 1] 禁ping")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 deny.DenyPingShell,
 		RecordErrServerList: false,
@@ -196,7 +196,7 @@ func (object *Object) denyPing() command.RunErr {
 func (object *Object) denyICMPTimeStamp() command.RunErr {
 	object.Logger.Info("[step 2] 关闭ICMP_TIMESTAMP应答")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 UnsetICMPTimeStampShell,
 		RecordErrServerList: false,
@@ -207,7 +207,7 @@ func (object *Object) denyICMPTimeStamp() command.RunErr {
 func (object *Object) setTMOUT() command.RunErr {
 	object.Logger.Info("[step 3] 设置系统空闲等待时间")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 SetTMOUTShell,
 		RecordErrServerList: false,
@@ -218,7 +218,7 @@ func (object *Object) setTMOUT() command.RunErr {
 func (object *Object) hideOSVersion() command.RunErr {
 	object.Logger.Info("[step 4] 隐藏系统版本信息")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 HideOSVersionShell,
 		RecordErrServerList: false,
@@ -229,7 +229,7 @@ func (object *Object) hideOSVersion() command.RunErr {
 func (object *Object) denyRebootByKeyBoard() command.RunErr {
 	object.Logger.Info("[step 5] 禁止Control-Alt-Delete 键盘重启系统命令")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 UnsetRebootByKeyBoardShell,
 		RecordErrServerList: false,
@@ -240,7 +240,7 @@ func (object *Object) denyRebootByKeyBoard() command.RunErr {
 func (object *Object) setPasswdPolicy() command.RunErr {
 	object.Logger.Info("[step 6] ssh用户密码加固")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 SetPasswdPolicyShell,
 		RecordErrServerList: false,
@@ -251,7 +251,7 @@ func (object *Object) setPasswdPolicy() command.RunErr {
 func (object *Object) delUnusedUser() command.RunErr {
 	object.Logger.Info("[step 7] 删除系统默认用户")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 DeleteUnUsedUserShell,
 		RecordErrServerList: false,
@@ -262,7 +262,7 @@ func (object *Object) delUnusedUser() command.RunErr {
 func (object *Object) errPasswdRetryCount() command.RunErr {
 	object.Logger.Info("[step 8] 修改允许密码错误次数")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 SetErrPasswdRetryShell,
 		RecordErrServerList: false,
@@ -273,7 +273,7 @@ func (object *Object) errPasswdRetryCount() command.RunErr {
 func (object *Object) denySSHUseDns() command.RunErr {
 	object.Logger.Info("[step 9] ssh关闭UseDNS")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 DenySSHUseDnsShell,
 		RecordErrServerList: false,
@@ -284,7 +284,7 @@ func (object *Object) denySSHUseDns() command.RunErr {
 func (object *Object) denySSHAgentForwarding() command.RunErr {
 	object.Logger.Info("[step 10] ssh关闭AgentForwarding")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 DenySSHdAgentForwardingShell,
 		RecordErrServerList: false,
@@ -295,7 +295,7 @@ func (object *Object) denySSHAgentForwarding() command.RunErr {
 func (object *Object) setSysLog() command.RunErr {
 	object.Logger.Info("[step 11] 加固系统日志文件")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 HardenSystemLogShell,
 		RecordErrServerList: false,
@@ -306,7 +306,7 @@ func (object *Object) setSysLog() command.RunErr {
 func (object *Object) delCommonUserCron() command.RunErr {
 	object.Logger.Info("[step 12] 删除非root用户定时任务")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 DeleteCommonUserCronShell,
 		RecordErrServerList: false,
@@ -317,7 +317,7 @@ func (object *Object) delCommonUserCron() command.RunErr {
 func (object *Object) delZombieProcessCron() command.RunErr {
 	object.Logger.Info("[step 13] 定时清理僵尸进程")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 DeleteZombieProcessCronShell,
 		RecordErrServerList: false,
@@ -332,7 +332,7 @@ func (object *Object) addSudoUser() command.RunErr {
 		"Password": constant.DefaultPassword,
 	})
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 cmd,
 		RecordErrServerList: false,
@@ -343,7 +343,7 @@ func (object *Object) addSudoUser() command.RunErr {
 func (object *Object) lockKeyFile() command.RunErr {
 	object.Logger.Info("[step 15] 锁定敏感文件")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 LockKeyFileShell,
 		RecordErrServerList: false,
@@ -354,7 +354,7 @@ func (object *Object) lockKeyFile() command.RunErr {
 func (object *Object) modifySSHLogin() command.RunErr {
 	object.Logger.Info("[step 16] 调整ssh登录端口为: 22122，禁止root直接登录.")
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   object.B,
+		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 ModifySSHLoginShell,
 		RecordErrServerList: false,

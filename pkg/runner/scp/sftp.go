@@ -70,7 +70,7 @@ func (sftp *ScpItem) IOCopy64(size int64, srcPath string, dstPath string, hostSi
 
 	if _, ioErr := io.Copy(sftp.dstFile, sftp.ProxyReader); ioErr != nil {
 		return fmt.Errorf("传输%s:%s失败 ->%s",
-			sftp.Host, sftp.DstPath, ioErr)
+			sftp.Server.Host, sftp.DstPath, ioErr)
 	}
 
 	sftp.P.Wait()

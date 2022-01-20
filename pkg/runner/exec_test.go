@@ -30,6 +30,11 @@ import (
 	"os"
 	"runtime"
 	"testing"
+	"time"
+)
+
+var (
+	mockTimeout = time.Millisecond
 )
 
 func TestLocalRun(t *testing.T) {
@@ -61,7 +66,7 @@ func TestParallelRun(t *testing.T) {
 		Script:  script,
 	}
 
-	re := executor.ParallelRun()
+	re := executor.ParallelRun(mockTimeout)
 	for v := range re {
 		assert.NotNil(t, v.Err)
 		assert.Equal(t, script, v.Cmd)
@@ -77,7 +82,7 @@ func TestParallelRun(t *testing.T) {
 		Script:  script,
 	}
 
-	re = executor.ParallelRun()
+	re = executor.ParallelRun(mockTimeout)
 	for v := range re {
 		assert.NotNil(t, v.Err)
 		assert.Equal(t, "pwd", v.Cmd)

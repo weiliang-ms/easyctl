@@ -23,7 +23,7 @@ EOF
 func Ulimit(item command.OperationItem) command.RunErr {
 
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   item.B,
+		ManifestContent:     item.B,
 		Logger:              item.Logger,
 		Cmd:                 ulimitShell,
 		RecordErrServerList: false,

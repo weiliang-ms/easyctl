@@ -19,3 +19,11 @@ func Render(tmpl *template.Template, variables map[string]interface{}) (string, 
 	}
 	return buf.String(), nil
 }
+
+func RenderPanicErr(tmpl *template.Template, variables map[string]interface{}) string {
+	var buf strings.Builder
+	if err := tmpl.Execute(&buf, variables); err != nil {
+		panic(err)
+	}
+	return buf.String()
+}

@@ -31,7 +31,7 @@ func Dns(item command.OperationItem) command.RunErr {
 		return command.RunErr{Err: err}
 	}
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   item.B,
+		ManifestContent:     item.B,
 		Logger:              item.Logger,
 		Cmd:                 script,
 		RecordErrServerList: false,

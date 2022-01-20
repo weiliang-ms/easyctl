@@ -30,35 +30,35 @@ func (h Handler) DoRequest(doRequestItem runner.DoRequestItem) (string, error) {
 
 func (h Handler) GetHostName(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
 	defer l.Debugf("[%s] hostname -> %s", s.Host, result)
-	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintHostnameShell}})
+	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RemoteRunItem{Logger: l, Cmd: PrintHostnameShell}})
 }
 
 func (h Handler) GetKernelVersion(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
 	defer l.Debugf("[%s] kernel version -> %s", s.Host, result)
-	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintKernelVersionShell}})
+	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RemoteRunItem{Logger: l, Cmd: PrintKernelVersionShell}})
 }
 
 func (h Handler) GetSystemVersion(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
 	defer l.Debugf("[%s] system version -> %s", s.Host, result)
-	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintOSVersionShell}})
+	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RemoteRunItem{Logger: l, Cmd: PrintOSVersionShell}})
 }
 
 func (h Handler) GetCPUInfo(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
 	defer l.Debugf("[%s] cpu info -> %s", s.Host, result)
-	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintCPUInfoShell}})
+	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RemoteRunItem{Logger: l, Cmd: PrintCPUInfoShell}})
 }
 
 func (h Handler) GetCPULoadAverage(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
 	defer l.Debugf("[%s] cpu loadaverage info -> %s", s.Host, result)
-	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintCPULoadavgShell}})
+	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RemoteRunItem{Logger: l, Cmd: PrintCPULoadavgShell}})
 }
 
 func (h Handler) GetMemoryInfo(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
 	defer l.Debugf("[%s] memory info -> %s", s.Host, result)
-	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintMemInfoShell}})
+	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RemoteRunItem{Logger: l, Cmd: PrintMemInfoShell}})
 }
 
 func (h Handler) GetMountPointInfo(s runner.ServerInternal, l *logrus.Logger) (result string, err error) {
 	defer l.Debugf("[%s] mount point info -> %s", s.Host, result)
-	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RunItem{Logger: l, Cmd: PrintMountInfoShell}})
+	return h.DoRequest(runner.DoRequestItem{S: s, R: runner.RemoteRunItem{Logger: l, Cmd: PrintMountInfoShell}})
 }

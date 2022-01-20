@@ -33,7 +33,7 @@ chmod 600 ~/.ssh -R
 func PasswordLess(item command.OperationItem) command.RunErr {
 	script, _ := MakeKeyPairScript(PasswordLessTmpl)
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   item.B,
+		ManifestContent:     item.B,
 		Logger:              item.Logger,
 		Cmd:                 script,
 		RecordErrServerList: false,

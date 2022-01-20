@@ -47,7 +47,13 @@ excludes:
  - 192.168.235.132
 `
 	// b.测试执行结果
-	_, err := GetResult([]byte(aaa), nil, "")
+	_, err := GetResult(RemoteRunItem{
+		ManifestContent:     []byte(aaa),
+		Logger:              nil,
+		Cmd:                 "",
+		RecordErrServerList: false,
+		SSHTimeout:          time.Millisecond,
+	})
 	assert.Errorf(t, err, "line 3: cannot unmarshal !!map into []runner.ServerExternal")
 
 	aaa = `
@@ -59,7 +65,12 @@ server:
 excludes:
  - 192.168.235.132
 `
-	re, err := GetResult([]byte(aaa), nil, "")
+	re, err := GetResult(RemoteRunItem{
+		ManifestContent: []byte(aaa),
+		Logger:          nil,
+		Cmd:             "",
+		SSHTimeout:      time.Millisecond,
+	})
 	assert.Nil(t, err)
 	for _, v := range re {
 		assert.Equal(t, "10.10.10.1 ssh会话建立失败->dial tcp 10.10.10.1:22: i/o timeout", v.StdErrMsg)
@@ -79,7 +90,7 @@ excludes:
 `
 	//assert.Nil(t, RemoteRun([]byte(aaa), nil, ""))
 	os.Setenv(constant.SshNoTimeout, "true")
-	assert.NotEqual(t, nil, RemoteRun(RemoteRunItem{B: []byte(aaa)}))
+	assert.NotEqual(t, nil, RemoteRun(RemoteRunItem{ManifestContent: []byte(aaa), SSHTimeout: mockTimeout}))
 
 	aaa = `
 server:
@@ -90,7 +101,7 @@ server:
 excludes:
  - 192.168.235.132
 `
-	err := RemoteRun(RemoteRunItem{B: []byte(aaa)})
+	err := RemoteRun(RemoteRunItem{ManifestContent: []byte(aaa), SSHTimeout: mockTimeout})
 	_, ok := err.Err.(runtime.Error)
 	if ok {
 		assert.Equal(t, true, ok)
@@ -100,7 +111,7 @@ excludes:
 
 // ssh连接异常error
 func TestSFtpConnectSSHError(t *testing.T) {
-	sftp, err := SftpConnect("root", "ddd", "1.1.1.1", "22", time.Second)
+	sftp, err := SftpConnect("root", "ddd", "1.1.1.1", "22", time.Millisecond)
 	assert.Nil(t, sftp)
 	assert.Error(t, err, "连接ssh失败 dial tcp 1.1.1.1:22: i/o timeout")
 }

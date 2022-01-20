@@ -12,6 +12,7 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"gopkg.in/yaml.v2"
 	"strings"
+	"time"
 )
 
 // RedisExternalConfig redis安装配置反序列化对象
@@ -37,6 +38,7 @@ type RedisInternalConfig struct {
 	EndpointList  []string // 节点列表
 	BootCommand   string
 	unitTest      bool
+	sshTimeout    time.Duration
 }
 
 // Redis 部署redis
@@ -46,6 +48,7 @@ func Redis(item command.OperationItem) (err command.RunErr) {
 		Logger:        item.Logger,
 		ConfigContent: item.B,
 		unitTest:      item.UnitTest,
+		sshTimeout:    item.SSHTimeout,
 	}
 
 	return install(config)
@@ -132,7 +135,7 @@ func (config *RedisInternalConfig) Detect() (err command.RunErr) {
 		Logger:  config.Logger,
 	}
 
-	for v := range config.Executor.ParallelRun() {
+	for v := range config.Executor.ParallelRun(config.sshTimeout) {
 		if config.IgnoreErr {
 			break
 		} else if v.Err != nil {
@@ -164,7 +167,7 @@ func (config *RedisInternalConfig) Prune() (err command.RunErr) {
 		OutPutRealTime: true,
 	}
 
-	ch := exec.ParallelRun()
+	ch := exec.ParallelRun(config.sshTimeout)
 	for v := range ch {
 		if config.IgnoreErr {
 			break
@@ -371,7 +374,7 @@ func (config *RedisInternalConfig) run(script string) error {
 		OutPutRealTime: true,
 	}
 
-	ch := exec.ParallelRun()
+	ch := exec.ParallelRun(config.sshTimeout)
 	for v := range ch {
 		if v.Err != nil {
 			return v.Err

@@ -39,16 +39,18 @@ import (
 )
 
 type RemoteRunItem struct {
-	B                   []byte
+	ManifestContent     []byte
 	Logger              *logrus.Logger
 	Cmd                 string
 	RecordErrServerList bool
+	SSHTimeout          time.Duration
 }
 
-type RunItem struct {
-	Logger *logrus.Logger
-	Cmd    string
-}
+//type RunItem struct {
+//	ManifestContent []byte
+//	Logger *logrus.Logger
+//	Cmd    string
+//}
 
 func SftpConnect(user, password, host string, port string, timeout time.Duration) (sftpClient *sftp.Client, err error) { //参数: 远程服务器用户名, 密码, ip, 端口
 	auth := make([]ssh.AuthMethod, 0)
@@ -85,7 +87,7 @@ func RemoteRun(item RemoteRunItem) command.RunErr {
 
 	var f *os.File
 
-	results, err := GetResult(item.B, item.Logger, item.Cmd)
+	results, err := GetResult(item)
 	if err != nil {
 		return command.RunErr{Err: err}
 	}
@@ -125,16 +127,16 @@ func RemoteRun(item RemoteRunItem) command.RunErr {
 }
 
 // GetResult 远程执行，获取结果
-func GetResult(b []byte, logger *logrus.Logger, cmd string) ([]ShellResult, error) {
+func GetResult(item RemoteRunItem) ([]ShellResult, error) {
 
-	servers, err := ParseServerList(b, logger)
+	servers, err := ParseServerList(item.ManifestContent, item.Logger)
 	if err != nil {
 		return []ShellResult{}, err
 	}
 
 	// 组装执行器,执行命令
-	executor := ExecutorInternal{Servers: servers, Script: cmd, Logger: logger}
-	ch := executor.ParallelRun()
+	executor := ExecutorInternal{Servers: servers, Script: item.Cmd, Logger: item.Logger}
+	ch := executor.ParallelRun(item.SSHTimeout)
 
 	// 打包执行结果
 	var results []ShellResult

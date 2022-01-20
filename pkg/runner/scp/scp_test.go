@@ -43,7 +43,7 @@ func TestScpErrorPathFile(t *testing.T) {
 	server := runner.ServerInternal{}
 	item := &ScpItem{}
 	item.SrcPath = "1.txt"
-	item.ServerInternal = server
+	item.Server = server
 
 	err := Scp(item)
 	switch runtime.GOOS {
@@ -59,7 +59,7 @@ func TestScpNilFile(t *testing.T) {
 	server := runner.ServerInternal{}
 	item := &ScpItem{}
 	item.SrcPath = "222.txt"
-	item.ServerInternal = server
+	item.Server = server
 	err := Scp(item)
 	assert.EqualError(t, err, "源文件: 222.txt 大小为0")
 	f.Close()
@@ -74,7 +74,7 @@ func TestConnectErr(t *testing.T) {
 	server := runner.ServerInternal{}
 	item := ScpItem{}
 	item.SrcPath = "1.txt"
-	item.ServerInternal = server
+	item.Server = server
 	err := Scp(&item)
 	assert.NotNil(t, err)
 	f.Close()
@@ -97,7 +97,7 @@ func TestScp(t *testing.T) {
 	item.SrcPath = "1.txt"
 	item.DstPath = "2.txt"
 	item.Mode = 0644
-	item.ServerInternal = runner.ServerInternal{}
+	item.Server = runner.ServerInternal{}
 	item.mock = true
 	err := Scp(&item)
 
@@ -147,7 +147,7 @@ func TestSftpWithProcessBar_Success_Mock(t *testing.T) {
 
 	mockScpItem.Mode = mode
 	mockScpItem.fileSize = size
-	mockScpItem.Host = host
+	mockScpItem.Server.Host = host
 	mockScpItem.DstPath = dstPath
 	mockScpItem.SrcPath = srcPath
 	mockScpItem.SftpConnectTimeout = timeout
@@ -182,7 +182,7 @@ func TestSftpWithProcessBar_NewSftpClient_Fail_Mock(t *testing.T) {
 
 	mockScpItem.Mode = mode
 	mockScpItem.fileSize = size
-	mockScpItem.Host = host
+	mockScpItem.Server.Host = host
 	mockScpItem.SrcPath = srcPath
 	mockScpItem.DstPath = dstPath
 	mockScpItem.SftpConnectTimeout = timeout
@@ -220,7 +220,7 @@ func TestSftpWithProcessBar_SftpChmod_Fail_Mock(t *testing.T) {
 
 	mockScpItem.Mode = mode
 	mockScpItem.fileSize = size
-	mockScpItem.Host = host
+	mockScpItem.Server.Host = host
 	mockScpItem.SrcPath = srcPath
 	mockScpItem.DstPath = dstPath
 	mockScpItem.SftpConnectTimeout = timeout
@@ -259,7 +259,7 @@ func TestSftpWithProcessBar_SftpCreateDst_Fail_Mock(t *testing.T) {
 
 	mockScpItem.Mode = mode
 	mockScpItem.fileSize = size
-	mockScpItem.Host = host
+	mockScpItem.Server.Host = host
 	mockScpItem.SrcPath = srcPath
 	mockScpItem.DstPath = dstPath
 	mockScpItem.SftpConnectTimeout = timeout
@@ -298,7 +298,7 @@ func TestSftpWithProcessBar_IOCopy64_Fail_Mock(t *testing.T) {
 
 	mockScpItem.Mode = mode
 	mockScpItem.fileSize = size
-	mockScpItem.Host = host
+	mockScpItem.Server.Host = host
 	mockScpItem.DstPath = dstPath
 	mockScpItem.SrcPath = srcPath
 	mockScpItem.SftpConnectTimeout = timeout
@@ -367,17 +367,17 @@ func TestParallelScp(t *testing.T) {
 	ch := ParallelScp(ScpItem{
 		Logger: logrus.New(),
 		SftpExecutor: SftpExecutor{
-			SrcPath:        "p.txt",
-			DstPath:        "",
-			Mode:           0,
-			ServerInternal: runner.ServerInternal{},
-			Mutex:          sync.Mutex{},
-			SftpClient:     nil,
-			srcFile:        nil,
-			dstFile:        nil,
-			fileSize:       0,
-			ProxyReader:    nil,
-			P:              nil,
+			SrcPath:     "p.txt",
+			DstPath:     "",
+			Mode:        0,
+			Server:      runner.ServerInternal{},
+			Mutex:       sync.Mutex{},
+			SftpClient:  nil,
+			srcFile:     nil,
+			dstFile:     nil,
+			fileSize:    0,
+			ProxyReader: nil,
+			P:           nil,
 		},
 		mock:               false,
 		SftpConnectTimeout: time.Millisecond,

@@ -8,7 +8,7 @@ import (
 // Firewall 关闭防火墙
 func Firewall(item command.OperationItem) command.RunErr {
 	return runner.RemoteRun(runner.RemoteRunItem{
-		B:                   item.B,
+		ManifestContent:     item.B,
 		Logger:              item.Logger,
 		Cmd:                 disableFirewallShell,
 		RecordErrServerList: false,
