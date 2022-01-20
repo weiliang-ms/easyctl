@@ -7,6 +7,7 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"os"
 	"testing"
+	"time"
 )
 
 // todo 合并测试用例
@@ -35,5 +36,5 @@ redis-cluster:
     - 12346
 `
 	assert.Equal(t, command.RunErr{},
-		RedisCluster(command.OperationItem{B: []byte(content), Logger: logrus.New(), UnitTest: true}))
+		RedisCluster(command.OperationItem{B: []byte(content), Logger: logrus.New(), UnitTest: true, SSHTimeout: time.Millisecond}))
 }
