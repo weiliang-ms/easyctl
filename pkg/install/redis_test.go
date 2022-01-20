@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestRedis(t *testing.T) {
@@ -25,6 +26,7 @@ redis:
 	os.Setenv(constant.SshNoTimeout, "true")
 	var item command.OperationItem
 	item.Logger = logrus.New()
+	item.SSHTimeout = time.Millisecond
 	item.UnitTest = true
 	item.Logger.SetLevel(logrus.DebugLevel)
 	item.B = []byte(b)
