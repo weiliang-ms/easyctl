@@ -5,8 +5,6 @@ github.com/Microsoft/go-winio/pkg/guid
 github.com/VividCortex/ewma
 # github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 github.com/acarl005/stripansi
-# github.com/agiledragon/gomonkey v2.0.2+incompatible
-## explicit
 # github.com/containerd/cgroups v1.0.2
 ## explicit
 github.com/containerd/cgroups
@@ -24,7 +22,7 @@ github.com/davecgh/go-spew/spew
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
 github.com/docker/distribution/registry/api/errcode
-# github.com/docker/docker v20.10.12+incompatible
+# github.com/docker/docker v20.10.13+incompatible
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
@@ -102,10 +100,6 @@ github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417
 ## explicit
 github.com/opencontainers/runtime-spec/specs-go
-# github.com/oscarzhao/oscarzhao.github.io v0.0.0-20200406055212-9108a70663f3
-## explicit
-github.com/oscarzhao/oscarzhao.github.io/examples/testing/thirdpartyapi
-github.com/oscarzhao/oscarzhao.github.io/examples/testing/thirdpartyapi/mocks
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
@@ -121,8 +115,6 @@ github.com/richardlehane/mscfb
 github.com/richardlehane/msoleps/types
 # github.com/rivo/uniseg v0.2.0
 github.com/rivo/uniseg
-# github.com/schollz/progressbar/v3 v3.8.5
-## explicit
 # github.com/sirupsen/logrus v1.8.1
 ## explicit
 github.com/sirupsen/logrus
@@ -138,16 +130,12 @@ github.com/stretchr/objx
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock
 github.com/stretchr/testify/require
-# github.com/vbauerster/mpb/v6 v6.0.4
-## explicit
 # github.com/vbauerster/mpb/v7 v7.3.0
 ## explicit
 github.com/vbauerster/mpb/v7
 github.com/vbauerster/mpb/v7/cwriter
 github.com/vbauerster/mpb/v7/decor
 github.com/vbauerster/mpb/v7/internal
-# github.com/vektra/mockery/v2 v2.9.4
-## explicit
 # github.com/xuri/efp v0.0.0-20210322160811-ab561f5b45e3
 github.com/xuri/efp
 # github.com/xuri/excelize/v2 v2.5.0
@@ -182,10 +170,13 @@ golang.org/x/net/proxy
 # golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 golang.org/x/sync/errgroup
 # golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
+## explicit
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+# golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
+## explicit
 # golang.org/x/text v0.3.7
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
