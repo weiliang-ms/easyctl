@@ -305,7 +305,7 @@ excludes:
 		Interface:  mockInterface,
 		UnitTest:   false,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 	})
 
 	require.NotNil(t, err)
@@ -330,7 +330,7 @@ excludes:
 		Interface:  mockInterface,
 		UnitTest:   false,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 	})
 
 	require.NotNil(t, err)
@@ -377,7 +377,7 @@ excludes:
 		Interface:  mockInterface,
 		UnitTest:   false,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 	})
 
 	require.NotNil(t, err)
@@ -426,7 +426,7 @@ excludes:
 		Interface:  mockInterface,
 		UnitTest:   false,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 	})
 
 	require.NotNil(t, err)
@@ -477,7 +477,7 @@ excludes:
 		Interface:  mockInterface,
 		UnitTest:   false,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 	})
 
 	require.NotNil(t, err)
@@ -530,7 +530,7 @@ excludes:
 		Interface:  mockInterface,
 		UnitTest:   false,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 	})
 
 	require.NotNil(t, err)
@@ -587,7 +587,7 @@ excludes:
 		Interface:  mockInterface,
 		UnitTest:   false,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 	})
 
 	require.NotNil(t, err)
@@ -644,7 +644,7 @@ excludes:
 		Interface:  mockInterface,
 		UnitTest:   false,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 	})
 
 	require.NotNil(t, err)
@@ -703,7 +703,7 @@ excludes:
 		Interface:  mockInterface,
 		UnitTest:   false,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 	})
 
 	require.NotNil(t, err)

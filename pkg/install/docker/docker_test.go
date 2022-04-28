@@ -364,7 +364,7 @@ func Test_InstallDocker_Mock(t *testing.T) {
 		Logger:     mockLogger,
 		Interface:  mockInterface,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 		SSHTimeout: mockTimeout,
 	}
 
@@ -389,7 +389,7 @@ func Test_InstallDocker_BootErr_Mock(t *testing.T) {
 		Logger:     mockLogger,
 		Interface:  mockInterface,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 		SSHTimeout: mockTimeout,
 	}
 
@@ -414,7 +414,7 @@ func Test_InstallDocker_SetSystemdErr_Mock(t *testing.T) {
 		Logger:     mockLogger,
 		Interface:  mockInterface,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 		SSHTimeout: mockTimeout,
 	}
 
@@ -438,7 +438,7 @@ func Test_InstallDocker_SetConfigErr_Mock(t *testing.T) {
 		Logger:     mockLogger,
 		Interface:  mockInterface,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 		SSHTimeout: mockTimeout,
 	}
 
@@ -461,7 +461,7 @@ func Test_InstallDocker_SetUpRuntimeErr_Mock(t *testing.T) {
 		Logger:     mockLogger,
 		Interface:  mockInterface,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 		SSHTimeout: mockTimeout,
 	}
 
@@ -483,7 +483,7 @@ func Test_InstallDocker_InstallFuncErr_Mock(t *testing.T) {
 		Logger:     mockLogger,
 		Interface:  mockInterface,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 		SSHTimeout: mockTimeout,
 	}
 
@@ -504,7 +504,7 @@ func Test_InstallDocker_TransferPackageErr_Mock(t *testing.T) {
 		Logger:     mockLogger,
 		Interface:  mockInterface,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 		SSHTimeout: mockTimeout,
 	}
 
@@ -524,7 +524,7 @@ func Test_InstallDocker_PruneErr_Mock(t *testing.T) {
 		Logger:     mockLogger,
 		Interface:  mockInterface,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 		SSHTimeout: mockTimeout,
 	}
 
@@ -543,7 +543,7 @@ func Test_InstallDocker_DetectErr_Mock(t *testing.T) {
 		Logger:     mockLogger,
 		Interface:  mockInterface,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 		SSHTimeout: mockTimeout,
 	}
 
@@ -577,7 +577,7 @@ docker:
 		Logger:    mockLogger,
 		Interface: mockInterface,
 		Mock:      false,
-		Local:     false,
+		LocalRun:  false,
 	}
 
 	err := Install(item).Err
@@ -606,8 +606,8 @@ docker:
 		B:      []byte(content),
 		Logger: mockLogger,
 		//Interface: mockInterface,
-		Mock:  false,
-		Local: true,
+		Mock:     false,
+		LocalRun: true,
 	}
 
 	err := Install(item).Err

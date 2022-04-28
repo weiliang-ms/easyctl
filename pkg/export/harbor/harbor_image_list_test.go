@@ -1505,7 +1505,7 @@ harbor-repo:
 	ImageList(command.OperationItem{
 		B:         []byte(content),
 		Logger:    mockLogger,
-		Local:     false,
+		LocalRun:  false,
 		Interface: mockInterface,
 	})
 }
@@ -1531,7 +1531,7 @@ harbor-repo:
 	err := ImageList(command.OperationItem{
 		B:         []byte(content),
 		Logger:    mockLogger,
-		Local:     false,
+		LocalRun:  false,
 		Interface: mockInterface,
 	})
 
@@ -1579,7 +1579,7 @@ harbor-repo:
 	err := ImageList(command.OperationItem{
 		B:         []byte(content),
 		Logger:    mockLogger,
-		Local:     false,
+		LocalRun:  false,
 		Interface: mockInterface,
 	})
 
@@ -1669,7 +1669,7 @@ harbor-repo:
 	err := ImageList(command.OperationItem{
 		B:         []byte(content),
 		Logger:    mockLogger,
-		Local:     false,
+		LocalRun:  false,
 		Interface: mockInterface,
 	})
 
@@ -1819,7 +1819,7 @@ harbor-repo:
 	ImageList(command.OperationItem{
 		B:         []byte(content),
 		Logger:    mockLogger,
-		Local:     false,
+		LocalRun:  false,
 		Interface: mockInterface,
 	})
 }

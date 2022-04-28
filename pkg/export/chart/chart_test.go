@@ -495,7 +495,7 @@ func Test_Chart(t *testing.T) {
 		Interface:  nil,
 		UnitTest:   false,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 	})
 }
 
