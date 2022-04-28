@@ -1,6 +1,9 @@
 # github.com/Microsoft/go-winio v0.4.17
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
+# github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
+## explicit
+github.com/Netflix/go-expect
 # github.com/VividCortex/ewma v1.2.0
 github.com/VividCortex/ewma
 # github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
@@ -18,6 +21,8 @@ github.com/containerd/containerd/log
 github.com/containerd/containerd/platforms
 # github.com/coreos/go-systemd/v22 v22.3.2
 github.com/coreos/go-systemd/v22/dbus
+# github.com/creack/pty v1.1.17
+github.com/creack/pty
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/docker/distribution v2.7.1+incompatible
@@ -66,12 +71,20 @@ github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
+# github.com/google/goexpect v0.0.0-20210430020637-ab937bf7fd6f
+## explicit
+# github.com/google/goterm v0.0.0-20200907032337-555d40f16ae2
+## explicit
 # github.com/google/uuid v1.2.0
 github.com/google/uuid
 # github.com/gorilla/mux v1.8.0
 ## explicit
+# github.com/gorilla/websocket v1.4.2
+## explicit
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
+# github.com/jamesharr/expect v0.0.0-20201014182811-a21cfa3e9a24
+## explicit
 # github.com/kr/fs v0.1.0
 github.com/kr/fs
 # github.com/lithammer/dedent v1.1.0
@@ -104,8 +117,6 @@ github.com/opencontainers/image-spec/specs-go/v1
 github.com/opencontainers/runtime-spec/specs-go
 # github.com/oscarzhao/oscarzhao.github.io v0.0.0-20200406055212-9108a70663f3
 ## explicit
-github.com/oscarzhao/oscarzhao.github.io/examples/testing/thirdpartyapi
-github.com/oscarzhao/oscarzhao.github.io/examples/testing/thirdpartyapi/mocks
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
@@ -167,6 +178,7 @@ golang.org/x/crypto/md4
 golang.org/x/crypto/ripemd160
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
+golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 golang.org/x/net/bpf
 golang.org/x/net/html
@@ -184,8 +196,11 @@ golang.org/x/sync/errgroup
 # golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+# golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
+golang.org/x/term
 # golang.org/x/text v0.3.7
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
@@ -215,6 +230,7 @@ golang.org/x/text/transform
 # google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.42.0
+## explicit
 google.golang.org/grpc/codes
 google.golang.org/grpc/internal/status
 google.golang.org/grpc/status

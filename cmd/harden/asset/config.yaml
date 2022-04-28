@@ -5,3 +5,40 @@ server:
     port: 22
 excludes:
   - 192.168.235.132
+harden:
+  common:
+    denyPing: true               # 禁ping
+    denyICMPTimeStamp: true      # 禁ICMP时间戳报文
+    denyRebootByKeyBoard: true   # 禁止快捷键重启操作系统
+    delUnusedUser: true          # 删除用户（系统预创建用户等）
+    hideOSVersion: true          # 隐藏操作系统版本
+    lockKeyFile: true            # 锁定敏感文件
+    setTMOUT: true               # 设置无shell操作自动断开时间
+    setPasswdPolicy: true        # 设置系统密码策略
+    setSysLog: true              # 设置系统日志
+    passwdErrRetryCount: 3       # 错误密码重试次数
+    sudoUser: # 设置sudo用户
+      setSudoUser: false
+      sudoUser: easyctl
+      sudoPasswd: "Ckh3TQ%~Xal+gohyh"
+    unuseUsers:
+      - adm
+      - ftp
+      - games
+      - gopher
+      - halt
+      - lp
+      - mail
+      - news
+      - sync
+      - shutdown
+      - uucp
+      - operator
+  ssh:
+    denySSHUseDns: true           # 禁止ssh对地址进行dns解析
+    denySSHAgentForwarding: true
+    denyRootLogin: false          # 禁止root用户登录
+    modifyServePort: 22           # 修改ssh服务端口号
+  cron:
+    delCommonUserCron: true       # 清理普通用户定时任务
+    setDelZombieProcessCron: true # 设置清理僵尸进程定时任务

@@ -25,7 +25,7 @@ var dockerCmd = &cobra.Command{
 				Fnc:            docker.Install,
 				DefaultConfig:  dockerConfigContent(),
 				ConfigFilePath: configFile,
-				Local:          local,
+				LocalRun:       local,
 			}); runErr.Err != nil {
 			panic(runErr.Err)
 		}

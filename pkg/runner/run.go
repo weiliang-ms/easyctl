@@ -118,7 +118,6 @@ func RemoteRun(item RemoteRunItem) command.RunErr {
 	table.SetHeader([]string{"IP ADDRESS", "cmd", "exit code", "result", "output", "exception"})
 	table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
 	table.SetCenterSeparator("|")
-	//table.SetRowLine(true)
 	table.SetAlignment(tablewriter.ALIGN_CENTER)
 	table.AppendBulk(data) // Add Bulk Data
 	table.Render()

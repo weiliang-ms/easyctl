@@ -20,8 +20,9 @@ type Item struct {
 	Cmd            *cobra.Command
 	DefaultConfig  []byte
 	Fnc            func(item OperationItem) RunErr
+	SkipConfirm    bool
 	ConfigFilePath string
-	Local          bool // 本地执行
+	LocalRun       bool // 本地执行
 	OptionFunc     map[string]interface{}
 }
 
@@ -37,14 +38,15 @@ func (err RunErr) Error() string {
 
 // OperationItem 操作实体
 type OperationItem struct {
-	B          []byte
-	Logger     *logrus.Logger
-	OptionFunc map[string]interface{}
-	Interface  interface{}
-	UnitTest   bool
-	Mock       bool
-	Local      bool // 本地
-	SSHTimeout time.Duration
+	B           []byte
+	Logger      *logrus.Logger
+	OptionFunc  map[string]interface{}
+	Interface   interface{}
+	UnitTest    bool
+	SkipConfirm bool
+	Mock        bool
+	LocalRun    bool // 本地
+	SSHTimeout  time.Duration
 }
 
 var DefaultLogger *logrus.Logger
@@ -92,9 +94,10 @@ func SetExecutorDefault(item Item) (runErr RunErr) {
 	logger.SetFormatter(&log.CustomFormatter{})
 
 	return item.Fnc(OperationItem{
-		B:          b,
-		Logger:     logger,
-		OptionFunc: item.OptionFunc,
-		Local:      item.Local,
+		B:           b,
+		Logger:      logger,
+		OptionFunc:  item.OptionFunc,
+		SkipConfirm: item.SkipConfirm,
+		LocalRun:    item.LocalRun,
 	})
 }

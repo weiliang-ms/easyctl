@@ -7,7 +7,9 @@ import (
 )
 
 var (
-	configFile string
+	configFile  string
+	localRun    bool
+	skipConfirm bool
 )
 
 //go:embed asset/config.yaml

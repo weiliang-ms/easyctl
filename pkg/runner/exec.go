@@ -125,7 +125,7 @@ func (executor ExecutorInternal) RunOnNode(server ServerInternal, timeout time.D
 
 	executor.Logger.Infof("[%s] 开始执行指令 -> start", server.Host)
 	executor.Logger.Debugf("\n# 指令开始\n%s\n# 指令结束\n", executor.Script)
-	session, err := server.sshConnect(timeout)
+	session, err := server.SSHConnect(timeout)
 	defer session.Close()
 
 	if err != nil {
@@ -195,7 +195,7 @@ func (executor ExecutorInternal) RunOnNode(server ServerInternal, timeout time.D
 func (server ServerInternal) ReturnRunResult(item RemoteRunItem) ShellResult {
 	item.Logger.Infof("-> %s开始执行命令...", server.Host)
 	item.Logger.Debug(item.Cmd)
-	session, err := server.sshConnect(item.SSHTimeout)
+	session, err := server.SSHConnect(item.SSHTimeout)
 	if err != nil {
 		return ShellResult{Err: fmt.Errorf("%s建立ssh会话失败 -> %s", server.Host, err.Error())}
 	}
@@ -206,6 +206,7 @@ func (server ServerInternal) ReturnRunResult(item RemoteRunItem) ShellResult {
 
 	if err := session.Run(item.Cmd); err != nil {
 		code := err.(*ssh.ExitError).ExitStatus()
+		item.Logger.Debugf("执行命令失败, %s -> %s", err, string(errOut.Bytes()))
 		return ShellResult{Code: code, Err: err, StdErrMsg: fmt.Sprintf("%s执行失败, %s", server.Host, string(errOut.Bytes()))}
 	}
 
@@ -215,7 +216,7 @@ func (server ServerInternal) ReturnRunResult(item RemoteRunItem) ShellResult {
 	return ShellResult{StdOut: string(out.Bytes())}
 }
 
-func (server ServerInternal) sshConnect(timeout time.Duration) (*ssh.Session, error) {
+func (server ServerInternal) SSHConnect(timeout time.Duration) (*ssh.Session, error) {
 	s := server.completeDefault()
 	var (
 		auth         []ssh.AuthMethod

@@ -72,7 +72,7 @@ func Install(item command.OperationItem) command.RunErr {
 		Logger:        item.Logger,
 		ConfigContent: item.B,
 		unitTest:      item.UnitTest,
-		Local:         item.Local,
+		Local:         item.LocalRun,
 		Timeout:       item.SSHTimeout,
 	}
 

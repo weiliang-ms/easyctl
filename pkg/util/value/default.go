@@ -39,8 +39,8 @@ func SetStructDefaultValue(obj interface{}, key string, value interface{}) error
 		//if !fieldValue.IsValid() {
 		//	continue
 		//}
-
-		if fieldValue.CanInterface() && fieldValue.CanSet() {
+		// todo: 默认值，key值必须为空，非空不赋值
+		if fieldValue.CanInterface() && fieldValue.CanSet() && fieldValue.String() == "" {
 			//fmt.Printf("exported fieldName:%v value:%v\n", fieldName, fieldValue.Interface())
 			if defaultValueType.Kind() == fieldValue.Kind() && key == fieldName {
 				switch defaultValueType.Kind() {
