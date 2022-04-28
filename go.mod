@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
-	github.com/containerd/cgroups v1.0.2
-	github.com/docker/docker v20.10.12+incompatible
+	github.com/containerd/cgroups v1.0.3
+	github.com/docker/docker v20.10.14+incompatible
 	github.com/go-ping/ping v0.0.0-20211130115550-779d1e919534
 	github.com/lithammer/dedent v1.1.0
 	github.com/mitchellh/go-homedir v1.1.0
@@ -15,9 +15,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.4
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/cobra v1.3.0
-	github.com/stretchr/testify v1.7.0
-	github.com/vbauerster/mpb/v7 v7.3.0
+	github.com/spf13/cobra v1.4.0
+	github.com/stretchr/testify v1.7.1
+	github.com/vbauerster/mpb/v7 v7.4.1
 	github.com/xuri/excelize/v2 v2.5.0
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
 	gopkg.in/yaml.v2 v2.4.0
@@ -57,7 +57,7 @@ require (
 	github.com/xuri/efp v0.0.0-20210322160811-ab561f5b45e3 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
+	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
