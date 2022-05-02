@@ -526,7 +526,7 @@ helm-repo:
 		Interface:  nil,
 		UnitTest:   false,
 		Mock:       false,
-		Local:      false,
+		LocalRun:   false,
 	})
 }
 
