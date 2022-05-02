@@ -133,7 +133,7 @@ github.com/pkg/sftp/internal/encoding/ssh/filexfer
 # github.com/pmezard/go-difflib v1.0.0
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/richardlehane/mscfb v1.0.3
+# github.com/richardlehane/mscfb v1.0.4
 ## explicit
 github.com/richardlehane/mscfb
 # github.com/richardlehane/msoleps v1.0.1
@@ -165,20 +165,22 @@ github.com/vbauerster/mpb/v7
 github.com/vbauerster/mpb/v7/cwriter
 github.com/vbauerster/mpb/v7/decor
 github.com/vbauerster/mpb/v7/internal
-# github.com/xuri/efp v0.0.0-20210322160811-ab561f5b45e3
+# github.com/xuri/efp v0.0.0-20220407160117-ad0f7a785be8
 ## explicit; go 1.11
 github.com/xuri/efp
-# github.com/xuri/excelize/v2 v2.5.0
+# github.com/xuri/excelize/v2 v2.6.0
 ## explicit; go 1.15
 github.com/xuri/excelize/v2
-# golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
+# github.com/xuri/nfp v0.0.0-20220409054826-5e722a1d9e22
+## explicit; go 1.15
+github.com/xuri/nfp
+# golang.org/x/crypto v0.0.0-20220408190544-5352b0902921
 ## explicit; go 1.17
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/chacha20
 golang.org/x/crypto/curve25519
 golang.org/x/crypto/curve25519/internal/field
 golang.org/x/crypto/ed25519
-golang.org/x/crypto/ed25519/internal/edwards25519
 golang.org/x/crypto/internal/poly1305
 golang.org/x/crypto/internal/subtle
 golang.org/x/crypto/md4
@@ -186,7 +188,7 @@ golang.org/x/crypto/ripemd160
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
+# golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3
 ## explicit; go 1.17
 golang.org/x/net/bpf
 golang.org/x/net/html
