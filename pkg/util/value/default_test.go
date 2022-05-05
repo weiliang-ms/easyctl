@@ -77,3 +77,20 @@ func TestSetStructDefaultValue_Err(t *testing.T) {
 	require.Equal(t, false, p.Bool)
 
 }
+
+func TestSetStructDefaultValueNotNil(t *testing.T) {
+
+	p := Person{
+		Name:  "xxx",
+		Age:   12,
+		Age32: 12,
+		Age64: 12,
+		Bool:  false,
+	}
+	require.Nil(t, SetStructDefaultValue(&p, "Name", "bbb"))
+	require.Nil(t, SetStructDefaultValue(&p, "Age", 22))
+	require.Nil(t, SetStructDefaultValue(&p, "Bool", "true"))
+
+	require.Equal(t, "xxx", p.Name)
+	require.Equal(t, 22, p.Age)
+}

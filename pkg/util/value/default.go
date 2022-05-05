@@ -40,12 +40,15 @@ func SetStructDefaultValue(obj interface{}, key string, value interface{}) error
 		//	continue
 		//}
 		// todo: 默认值，key值必须为空，非空不赋值
-		if fieldValue.CanInterface() && fieldValue.CanSet() && fieldValue.String() == "" {
+
+		if fieldValue.CanInterface() && fieldValue.CanSet() {
 			//fmt.Printf("exported fieldName:%v value:%v\n", fieldName, fieldValue.Interface())
 			if defaultValueType.Kind() == fieldValue.Kind() && key == fieldName {
 				switch defaultValueType.Kind() {
 				case reflect.String:
-					fieldValue.SetString(fmt.Sprintf("%s", value))
+					if fieldValue.String() == "" {
+						fieldValue.SetString(fmt.Sprintf("%s", value))
+					}
 				case reflect.Int:
 					v, _ := value.(int)
 					fieldValue.SetInt(int64(v))
