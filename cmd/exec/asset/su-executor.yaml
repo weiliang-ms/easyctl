@@ -1,0 +1,10 @@
+server:
+  - host: 10.10.10.[1:3]
+    username: xxx
+    # privateKeyPath: ~/.ssh/id_rsa
+    password: ""
+    rootPassword: ""
+    port: 22
+excludes:
+  - 192.168.235.132
+script: "date"

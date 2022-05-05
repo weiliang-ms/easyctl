@@ -44,6 +44,7 @@ type RemoteRunItem struct {
 	Cmd                 string
 	RecordErrServerList bool
 	SSHTimeout          time.Duration
+	RunShellFunc        func(shell string, server ServerInternal, timeout time.Duration, logger *logrus.Logger) ShellResult
 }
 
 //type RunItem struct {
@@ -134,7 +135,7 @@ func GetResult(item RemoteRunItem) ([]ShellResult, error) {
 	}
 
 	// 组装执行器,执行命令
-	executor := ExecutorInternal{Servers: servers, Script: item.Cmd, Logger: item.Logger}
+	executor := ExecutorInternal{Servers: servers, Script: item.Cmd, Logger: item.Logger, RunShellFunc: item.RunShellFunc}
 	ch := executor.ParallelRun(item.SSHTimeout)
 
 	// 打包执行结果

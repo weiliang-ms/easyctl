@@ -4,7 +4,6 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/weiliang-ms/easyctl?style=flat-square)
 ![GitHub all releases](https://img.shields.io/github/downloads/weiliang-ms/easyctl/total?style=flat-square)
 [![codecov](https://codecov.io/gh/weiliang-ms/easyctl/branch/master/graph/badge.svg?token=7RGD5V5L9Y)](https://codecov.io/gh/weiliang-ms/easyctl)
-![GitHub](https://img.shields.io/github/license/weiliang-ms/easyctl?style=flat-square)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fweiliang-ms%2Feasyctl.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fweiliang-ms%2Feasyctl?ref=badge_shield)
 
 # easyctl

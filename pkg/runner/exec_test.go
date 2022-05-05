@@ -25,6 +25,8 @@ SOFTWARE.
 package runner
 
 import (
+	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/weiliang-ms/easyctl/pkg/util/constant"
 	"os"
@@ -125,3 +127,21 @@ func TestPublicKeyAuthFunc(t *testing.T) {
 //
 //	fmt.Printf("#%v", re)
 //}
+
+func Test_RunOnNodeWithChangeToRoot(t *testing.T) {
+
+	server := ServerInternal{
+		Host:         "192.168.174.90",
+		Port:         "22",
+		UserName:     "neusoft",
+		Password:     "123456",
+		RootPassword: "8765$#@!",
+	}
+
+	re := RunOnNodeWithChangeToRoot("ddd", server, time.Second, logrus.New())
+	if re.Err != nil {
+		panic(re.Err)
+	}
+
+	fmt.Println(re.StdOut)
+}

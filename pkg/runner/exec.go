@@ -33,6 +33,7 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/log"
 	"github.com/weiliang-ms/easyctl/pkg/util/value"
 	"golang.org/x/crypto/ssh"
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
@@ -89,6 +90,10 @@ func LocalRun(shell string, logger *logrus.Logger) ShellResult {
 // todo: 添加缓冲队列，避免过多goroutine
 func (executor ExecutorInternal) ParallelRun(timeout time.Duration) chan ShellResult {
 
+	if executor.RunShellFunc == nil {
+		executor.RunShellFunc = RunOnNode
+	}
+
 	executor.Logger = log.SetDefault(executor.Logger)
 	executor.Logger.Info("开始并行执行命令...")
 	wg := sync.WaitGroup{}
@@ -110,7 +115,7 @@ func (executor ExecutorInternal) ParallelRun(timeout time.Duration) chan ShellRe
 	for _, v := range executor.Servers {
 		wg.Add(1)
 		go func(s ServerInternal) {
-			ch <- executor.RunOnNode(s, timeout)
+			ch <- executor.RunShellFunc(executor.Script, s, timeout, executor.Logger)
 			defer wg.Done()
 		}(v)
 	}
@@ -120,11 +125,11 @@ func (executor ExecutorInternal) ParallelRun(timeout time.Duration) chan ShellRe
 	return ch
 }
 
-func (executor ExecutorInternal) RunOnNode(server ServerInternal, timeout time.Duration) (re ShellResult) {
+func RunOnNode(shell string, server ServerInternal, timeout time.Duration, logger *logrus.Logger) (re ShellResult) {
 	defer handleErr(&re.Err)
 
-	executor.Logger.Infof("[%s] 开始执行指令 -> start", server.Host)
-	executor.Logger.Debugf("\n# 指令开始\n%s\n# 指令结束\n", executor.Script)
+	logger.Infof("[%s] 开始执行指令 -> start", server.Host)
+	logger.Debugf("\n# 指令开始\n%s\n# 指令结束\n", shell)
 	session, err := server.SSHConnect(timeout)
 	defer session.Close()
 
@@ -133,7 +138,7 @@ func (executor ExecutorInternal) RunOnNode(server ServerInternal, timeout time.D
 		return ShellResult{
 			Host:      server.Host,
 			Err:       err,
-			Cmd:       executor.Script,
+			Cmd:       shell,
 			Status:    constant.Fail,
 			Code:      -1,
 			StdErrMsg: errMsg,
@@ -141,43 +146,43 @@ func (executor ExecutorInternal) RunOnNode(server ServerInternal, timeout time.D
 	}
 
 	// 是否实时输出
-	if executor.OutPutRealTime == true {
-		session.Stdout = os.Stdout
-		var errOut bytes.Buffer
-		session.Stderr = &errOut
-
-		if err := session.Run(executor.Script); err != nil {
-			code := err.(*ssh.ExitError).ExitStatus()
-			return ShellResult{
-				Host:      server.Host,
-				Err:       err,
-				Cmd:       executor.Script,
-				Status:    constant.Fail,
-				Code:      code,
-				StdErrMsg: fmt.Sprintf("[%s] 执行失败, %s", server.Host, string(errOut.Bytes()))}
-		}
-
-		return ShellResult{}
-	}
+	//if executor.OutPutRealTime == true {
+	//	session.Stdout = os.Stdout
+	//	var errOut bytes.Buffer
+	//	session.Stderr = &errOut
+	//
+	//	if err := session.Run(shell); err != nil {
+	//		code := err.(*ssh.ExitError).ExitStatus()
+	//		return ShellResult{
+	//			Host:      server.Host,
+	//			Err:       err,
+	//			Cmd:       shell,
+	//			Status:    constant.Fail,
+	//			Code:      code,
+	//			StdErrMsg: fmt.Sprintf("[%s] 执行失败, %s", server.Host, string(errOut.Bytes()))}
+	//	}
+	//
+	//	return ShellResult{}
+	//}
 
 	var out, errOut bytes.Buffer
 	session.Stdout = &out
 	session.Stderr = &errOut
 
-	if err := session.Run(executor.Script); err != nil {
+	if err := session.Run(shell); err != nil {
 		code := err.(*ssh.ExitError).ExitStatus()
 		session.Close()
 		return ShellResult{
 			Host:      server.Host,
 			Err:       err,
-			Cmd:       executor.Script,
+			Cmd:       shell,
 			Status:    constant.Fail,
 			Code:      code,
 			StdErrMsg: fmt.Sprintf("[%s] 执行失败, %s", server.Host, string(errOut.Bytes()))}
 	}
 
-	executor.Logger.Infof("[%s] 执行命令成功 <- end", server.Host)
-	executor.Logger.Debugf("[%s] 执行结果 => %s...\n", server.Host, string(out.Bytes()))
+	logger.Infof("[%s] 执行命令成功 <- end", server.Host)
+	logger.Debugf("[%s] 执行结果 => %s...\n", server.Host, string(out.Bytes()))
 
 	var subOut string
 
@@ -188,7 +193,151 @@ func (executor ExecutorInternal) RunOnNode(server ServerInternal, timeout time.D
 	}
 
 	defer session.Close()
-	return ShellResult{Host: server.Host, StdOut: subOut, Cmd: strings.TrimPrefix(executor.Script, "\n"), Status: constant.Success}
+	return ShellResult{Host: server.Host, StdOut: subOut, Cmd: strings.TrimPrefix(shell, "\n"), Status: constant.Success}
+}
+
+func rootMuxShell(w io.Writer, r, e io.Reader, rootPassword string) (chan<- string, <-chan string) {
+	in := make(chan string, 1)
+	out := make(chan string, 1)
+	var wg sync.WaitGroup
+	wg.Add(1) //for the shell itself
+	go func() {
+		for cmd := range in {
+			wg.Add(1)
+			w.Write([]byte(cmd + "\n"))
+			wg.Wait()
+		}
+	}()
+	go func() {
+		// here i try to grep sudo from stderr, but not work
+		var (
+			buf [65 * 1024]byte
+			t   int
+		)
+		for {
+			n, err := e.Read(buf[t:])
+			if err != nil && err.Error() != "EOF" {
+				//fmt.Println(err)
+			}
+			if s := string(buf[t:]); strings.Contains(s, "su - root -c") {
+				w.Write([]byte(fmt.Sprintf("%s\n", rootPassword)))
+			} else {
+			}
+			t += n
+		}
+	}()
+	go func() {
+		var (
+			buf [65 * 1024]byte
+			t   int
+		)
+		for {
+			n, err := r.Read(buf[t:])
+			if err != nil {
+				//fmt.Println(err.Error())
+				close(in)
+				close(out)
+				return
+			}
+			if s := string(buf[t:]); strings.Contains(s, "Password:") {
+				w.Write([]byte(fmt.Sprintf("%s\n", rootPassword)))
+			} else {
+			}
+			t += n
+			if buf[t-2] == '$' { //assuming the $PS1 == 'sh-4.3$ '
+				out <- string(buf[:t])
+				t = 0
+				//out <- ""
+				wg.Done()
+			}
+		}
+	}()
+	return in, out
+}
+
+func RunOnNodeWithChangeToRoot(shell string, server ServerInternal, timeout time.Duration, logger *logrus.Logger) (re ShellResult) {
+	defer handleErr(&re.Err)
+
+	logger.Infof("[%s] 开始执行指令 -> start", server.Host)
+	logger.Debugf("\n# 指令开始\n%s\n# 指令结束\n", shell)
+	session, err := server.SSHConnect(timeout)
+	defer session.Close()
+
+	if err != nil {
+		errMsg := fmt.Sprintf("%s ssh会话建立失败->%s", server.Host, err.Error())
+		return ShellResult{
+			Host:      server.Host,
+			Err:       err,
+			Cmd:       shell,
+			Status:    constant.Fail,
+			Code:      -1,
+			StdErrMsg: errMsg,
+		}
+	}
+
+	modes := ssh.TerminalModes{
+		ssh.ECHO:          0,     // disable echoing
+		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
+		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
+	}
+
+	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
+		return ShellResult{
+			Host:      server.Host,
+			Err:       err,
+			Cmd:       shell,
+			Status:    constant.Fail,
+			Code:      -1,
+			StdErrMsg: "",
+		}
+	}
+
+	w, err := session.StdinPipe()
+	if err != nil {
+		panic(err)
+	}
+	r, err := session.StdoutPipe()
+	if err != nil {
+		panic(err)
+	}
+
+	e, err := session.StderrPipe()
+	if err != nil {
+		panic(err)
+	}
+	in, out := rootMuxShell(w, r, e, server.RootPassword)
+	if err := session.Shell(); err != nil {
+		return ShellResult{
+			Host:      server.Host,
+			Err:       err,
+			Cmd:       shell,
+			Status:    constant.Fail,
+			Code:      -1,
+			StdErrMsg: "",
+		}
+	}
+	<-out //ignore the shell output
+
+	in <- fmt.Sprintf("su - root -c \"%s\"", shell)
+	outPut := <-out
+
+	strings.Trim(outPut, "Password:\n")
+
+	arr := strings.Split(outPut, "\n")
+	var result string
+	for _, v := range arr {
+		if !strings.HasPrefix(v, "Password:") && !strings.HasSuffix(v, "]$ ") {
+			result += v
+		}
+	}
+
+	in <- "exit"
+	session.Wait()
+
+	logger.Infof("[%s] 执行命令成功 <- end", server.Host)
+	logger.Debugf("[%s] 执行结果 => \n%s...\n", server.Host, result)
+
+	return ShellResult{Host: server.Host, StdOut: result, Cmd: strings.TrimPrefix(shell, "\n"), Status: constant.Success}
 }
 
 // ReturnRunResult 获取执行结果
@@ -242,14 +391,6 @@ func (server ServerInternal) SSHConnect(timeout time.Duration) (*ssh.Session, er
 	hostKeyCallbk := func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 		return nil
 	}
-
-	//var timeout time.Duration
-	//
-	//if os.Getenv(constant.SshNoTimeout) == "true" {
-	//	timeout = 1
-	//} else {
-	//	timeout = 3
-	//}
 
 	clientConfig = &ssh.ClientConfig{
 		User:            s.UserName,

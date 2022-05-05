@@ -30,11 +30,8 @@ func (h Handler) Exec(cmd string, server runner.ServerInternal, local bool, logg
 		logger.Info("[docker] 本地执行...")
 		return runner.LocalRun(cmd, logger).Err
 	}
-	return runner.ExecutorInternal{
-		Servers: []runner.ServerInternal{server},
-		Script:  cmd,
-		Logger:  logger,
-	}.RunOnNode(server, timeout).Err
+
+	return runner.RunOnNode(cmd, server, timeout, logger).Err
 }
 
 func (h Handler) Prune(server runner.ServerInternal, local bool, logger *logrus.Logger, timeout time.Duration) install.PruneErr {

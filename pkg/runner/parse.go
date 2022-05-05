@@ -154,6 +154,7 @@ func executorDeepCopy(executorExternal ExecutorExternal) ExecutorInternal {
 		executorExternal.Script,
 		logrus.New(),
 		false,
+		nil,
 	}
 }
 
@@ -174,6 +175,7 @@ func serverDeepCopy(serverExternal ServerExternal) ServerInternal {
 		serverExternal.Port,
 		serverExternal.Username,
 		serverExternal.Password,
+		serverExternal.RootPassword,
 		serverExternal.PrivateKeyPath,
 	}
 }

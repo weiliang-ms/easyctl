@@ -28,6 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // ServerExternal server序列化对象
@@ -36,6 +37,7 @@ type ServerExternal struct {
 	Port           string      `yaml:"port"`
 	Username       string      `yaml:"username"`
 	Password       string      `yaml:"password"`
+	RootPassword   string      `yaml:"rootPassword"`
 	PrivateKeyPath string      `yaml:"privateKeyPath"`
 }
 
@@ -45,6 +47,7 @@ type ServerInternal struct {
 	Port           string
 	UserName       string // ssh user's name -> root, e.g.
 	Password       string
+	RootPassword   string
 	PrivateKeyPath string
 }
 
@@ -74,6 +77,7 @@ type ExecutorInternal struct {
 	Script         string
 	Logger         *logrus.Logger
 	OutPutRealTime bool
+	RunShellFunc   func(shell string, server ServerInternal, timeout time.Duration, logger *logrus.Logger) ShellResult
 }
 
 // ShellResult shell执行结果

@@ -21,6 +21,7 @@ var RootCmd = &cobra.Command{
 func init() {
 	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "配置文件")
 	RootCmd.AddCommand(shellCmd)
+	RootCmd.AddCommand(suShellCmd)
 	RootCmd.AddCommand(scpCmd)
 	RootCmd.AddCommand(pingCmd)
 }
