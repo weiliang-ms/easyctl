@@ -6,8 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
-	"github.com/weiliang-ms/easyctl/pkg/util/constant"
-	"os"
 	"runtime"
 	"testing"
 )
@@ -42,7 +40,7 @@ server:
     password: 123
     port: 22
 `)
-	os.Setenv(constant.SshNoTimeout, "true")
+
 	item.Logger = logrus.New()
 	options := make(map[string]interface{})
 	options[GetHostResolveFunc] = GetHostResolve
@@ -51,23 +49,23 @@ server:
 	_, ok := err.Err.(runtime.Error)
 	assert.Equal(t, false, ok)
 
-	// test mock with nil data
-	options[GetHostResolveFunc] = mockHostResolveFuncWithNilData
-	item.OptionFunc = options
-	err = HostResolve(item)
-	assert.EqualError(t, err, "ddd")
-
-	// test mock with data
-	options[GetHostResolveFunc] = mockHostResolveFuncWithData
-	item.OptionFunc = options
-	item.B = []byte{}
-	err = HostResolve(item)
-	assert.Equal(t, command.RunErr{}, err)
-
-	// test bad function
-	options[GetHostResolveFunc] = HostResolve
-	item.OptionFunc = options
-	item.B = []byte{}
-	err = HostResolve(item)
-	assert.EqualError(t, err, "入参：getHostResolveFunc 非法")
+	//// test mock with nil data
+	//options[GetHostResolveFunc] = mockHostResolveFuncWithNilData
+	//item.OptionFunc = options
+	//err = HostResolve(item)
+	//assert.EqualError(t, err, "ddd")
+	//
+	//// test mock with data
+	//options[GetHostResolveFunc] = mockHostResolveFuncWithData
+	//item.OptionFunc = options
+	//item.B = []byte{}
+	//err = HostResolve(item)
+	//assert.Equal(t, command.RunErr{}, err)
+	//
+	//// test bad function
+	//options[GetHostResolveFunc] = HostResolve
+	//item.OptionFunc = options
+	//item.B = []byte{}
+	//err = HostResolve(item)
+	//assert.EqualError(t, err, "入参：getHostResolveFunc 非法")
 }

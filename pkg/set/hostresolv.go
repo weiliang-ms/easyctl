@@ -9,6 +9,7 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
 	"strings"
 	"text/template"
+	"time"
 )
 
 // IPAddress ip地址
@@ -36,6 +37,7 @@ type getHostResolveFunc func(b []byte, logger *logrus.Logger, cmd string) ([]run
 const GetHostResolveFunc = "getHostResolveFunc"
 
 // HostResolve 配置主机host解析
+// todo: 重构
 func HostResolve(item command.OperationItem) command.RunErr {
 
 	resolveFnc, ok := item.OptionFunc[GetHostResolveFunc].(func(b []byte, logger *logrus.Logger, cmd string) ([]runner.ShellResult, error))
@@ -71,6 +73,7 @@ func HostResolve(item command.OperationItem) command.RunErr {
 		Logger:              item.Logger,
 		Cmd:                 shell,
 		RecordErrServerList: false,
+		SSHTimeout:          time.Second,
 	})
 
 }
@@ -80,5 +83,6 @@ func GetHostResolve(b []byte, logger *logrus.Logger, cmd string) ([]runner.Shell
 		ManifestContent: b,
 		Logger:          logger,
 		Cmd:             cmd,
+		SSHTimeout:      time.Second,
 	})
 }
