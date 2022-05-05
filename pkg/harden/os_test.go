@@ -1,8 +1,10 @@
 package harden
 
 import (
+	"errors"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"gopkg.in/yaml.v2"
 	"testing"
@@ -139,7 +141,7 @@ func Test_addSudoUser(t *testing.T) {
 
 func TestOS(t *testing.T) {
 	err := OS(command.OperationItem{Logger: logrus.New()})
-	assert.Equal(t, command.RunErr{}, err)
+	require.Equal(t, command.RunErr{Err: errors.New("EOF")}, err)
 
 	// 模式异常
 	err = OS(command.OperationItem{Logger: logrus.New(), B: []byte(`
