@@ -41,7 +41,7 @@ jobs:
       - name: branch name
         id: branch_name
         run: echo "::set-output name=name::$(git rev-parse --abbrev-ref HEAD)"
-      - uses: wangyoucao577/go-release-action@v1.20
+      - uses: wangyoucao577/go-release-action@master
         with:
           github_token: ${{ secrets.EASYCTL_PUBLISH_TOKEN }}
           goos: ${{ matrix.goos }}
@@ -51,6 +51,6 @@ jobs:
           goversion: "1.18"
           project_path: "."
           binary_name: "easyctl"
-#          release_tag: "latest"
+          #          release_tag: "latest"
           overwrite: true
           extra_files: LICENSE README.md
