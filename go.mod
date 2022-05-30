@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
-	github.com/containerd/cgroups v1.0.3
+	github.com/containerd/cgroups v1.0.4
 	github.com/docker/docker v20.10.14+incompatible
 	github.com/go-ping/ping v0.0.0-20211130115550-779d1e919534
 	github.com/lithammer/dedent v1.1.0
