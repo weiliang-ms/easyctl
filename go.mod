@@ -16,12 +16,12 @@ require (
 	github.com/pkg/sftp v1.13.4
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	github.com/vbauerster/mpb/v7 v7.4.1
 	github.com/xuri/excelize/v2 v2.6.0
 	golang.org/x/crypto v0.0.0-20220408190544-5352b0902921
 	gopkg.in/yaml.v2 v2.4.0
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
