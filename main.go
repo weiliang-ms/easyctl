@@ -34,7 +34,7 @@ var (
 // RootCmd 根命令
 var RootCmd = &cobra.Command{
 	Use:   "easyctl",
-	Short: "Easycf is a tool manage linux settings",
+	Short: "Easyctl is a tool manage linux settings",
 	Long: `A Fast and Flexible Static Site Generator built with
                 love by spf13 and friends in Go.
                 Complete documentation is available at http://hugo.spf13.com`,

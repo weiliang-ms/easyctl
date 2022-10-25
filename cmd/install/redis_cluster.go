@@ -3,6 +3,7 @@ package install
 import (
 	// embed
 	_ "embed"
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/weiliang-ms/easyctl/pkg/install"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
@@ -24,6 +25,7 @@ var redisClusterCmd = &cobra.Command{
 				DefaultConfig:  redisClusterConfig,
 				ConfigFilePath: configFile,
 			}); runErr.Err != nil {
+			fmt.Println(runErr.Err)
 			panic(runErr.Err)
 		}
 	},
