@@ -163,6 +163,11 @@ func (f *File) getSheetView(sheet string, viewIndex int) (*xlsxSheetView, error)
 	if err != nil {
 		return nil, err
 	}
+	if ws.SheetViews == nil {
+		ws.SheetViews = &xlsxSheetViews{
+			SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
+		}
+	}
 	if viewIndex < 0 {
 		if viewIndex < -len(ws.SheetViews.SheetView) {
 			return nil, fmt.Errorf("view index %d out of range", viewIndex)
@@ -180,23 +185,22 @@ func (f *File) getSheetView(sheet string, viewIndex int) (*xlsxSheetView, error)
 //
 // Available options:
 //
-//    DefaultGridColor(bool)
-//    ShowFormulas(bool)
-//    ShowGridLines(bool)
-//    ShowRowColHeaders(bool)
-//    ShowZeros(bool)
-//    RightToLeft(bool)
-//    ShowRuler(bool)
-//    View(string)
-//    TopLeftCell(string)
-//    ZoomScale(float64)
+//	DefaultGridColor(bool)
+//	ShowFormulas(bool)
+//	ShowGridLines(bool)
+//	ShowRowColHeaders(bool)
+//	ShowZeros(bool)
+//	RightToLeft(bool)
+//	ShowRuler(bool)
+//	View(string)
+//	TopLeftCell(string)
+//	ZoomScale(float64)
 //
 // Example:
 //
-//    err = f.SetSheetViewOptions("Sheet1", -1, ShowGridLines(false))
-//
-func (f *File) SetSheetViewOptions(name string, viewIndex int, opts ...SheetViewOption) error {
-	view, err := f.getSheetView(name, viewIndex)
+//	err = f.SetSheetViewOptions("Sheet1", -1, ShowGridLines(false))
+func (f *File) SetSheetViewOptions(sheet string, viewIndex int, opts ...SheetViewOption) error {
+	view, err := f.getSheetView(sheet, viewIndex)
 	if err != nil {
 		return err
 	}
@@ -212,24 +216,23 @@ func (f *File) SetSheetViewOptions(name string, viewIndex int, opts ...SheetView
 //
 // Available options:
 //
-//    DefaultGridColor(bool)
-//    ShowFormulas(bool)
-//    ShowGridLines(bool)
-//    ShowRowColHeaders(bool)
-//    ShowZeros(bool)
-//    RightToLeft(bool)
-//    ShowRuler(bool)
-//    View(string)
-//    TopLeftCell(string)
-//    ZoomScale(float64)
+//	DefaultGridColor(bool)
+//	ShowFormulas(bool)
+//	ShowGridLines(bool)
+//	ShowRowColHeaders(bool)
+//	ShowZeros(bool)
+//	RightToLeft(bool)
+//	ShowRuler(bool)
+//	View(string)
+//	TopLeftCell(string)
+//	ZoomScale(float64)
 //
 // Example:
 //
-//    var showGridLines excelize.ShowGridLines
-//    err = f.GetSheetViewOptions("Sheet1", -1, &showGridLines)
-//
-func (f *File) GetSheetViewOptions(name string, viewIndex int, opts ...SheetViewOptionPtr) error {
-	view, err := f.getSheetView(name, viewIndex)
+//	var showGridLines excelize.ShowGridLines
+//	err = f.GetSheetViewOptions("Sheet1", -1, &showGridLines)
+func (f *File) GetSheetViewOptions(sheet string, viewIndex int, opts ...SheetViewOptionPtr) error {
+	view, err := f.getSheetView(sheet, viewIndex)
 	if err != nil {
 		return err
 	}

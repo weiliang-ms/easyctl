@@ -23,10 +23,7 @@ import (
 // parseFormatTableSet provides a function to parse the format settings of the
 // table with default value.
 func parseFormatTableSet(formatSet string) (*formatTable, error) {
-	format := formatTable{
-		TableStyle:     "",
-		ShowRowStripes: true,
-	}
+	format := formatTable{ShowRowStripes: true}
 	err := json.Unmarshal(parseFormatSet(formatSet), &format)
 	return &format, err
 }
@@ -35,18 +32,18 @@ func parseFormatTableSet(formatSet string) (*formatTable, error) {
 // name, coordinate area and format set. For example, create a table of A1:D5
 // on Sheet1:
 //
-//    err := f.AddTable("Sheet1", "A1", "D5", "")
+//	err := f.AddTable("Sheet1", "A1", "D5", "")
 //
 // Create a table of F2:H6 on Sheet2 with format set:
 //
-//    err := f.AddTable("Sheet2", "F2", "H6", `{
-//        "table_name": "table",
-//        "table_style": "TableStyleMedium2",
-//        "show_first_column": true,
-//        "show_last_column": true,
-//        "show_row_stripes": false,
-//        "show_column_stripes": true
-//    }`)
+//	err := f.AddTable("Sheet2", "F2", "H6", `{
+//	    "table_name": "table",
+//	    "table_style": "TableStyleMedium2",
+//	    "show_first_column": true,
+//	    "show_last_column": true,
+//	    "show_row_stripes": false,
+//	    "show_column_stripes": true
+//	}`)
 //
 // Note that the table must be at least two lines including the header. The
 // header cells must contain strings and must be unique, and must set the
@@ -57,10 +54,9 @@ func parseFormatTableSet(formatSet string) (*formatTable, error) {
 //
 // table_style: The built-in table style names
 //
-//    TableStyleLight1 - TableStyleLight21
-//    TableStyleMedium1 - TableStyleMedium28
-//    TableStyleDark1 - TableStyleDark11
-//
+//	TableStyleLight1 - TableStyleLight21
+//	TableStyleMedium1 - TableStyleMedium28
+//	TableStyleDark1 - TableStyleDark11
 func (f *File) AddTable(sheet, hCell, vCell, format string) error {
 	formatSet, err := parseFormatTableSet(format)
 	if err != nil {
@@ -86,9 +82,10 @@ func (f *File) AddTable(sheet, hCell, vCell, format string) error {
 
 	tableID := f.countTables() + 1
 	sheetRelationshipsTableXML := "../tables/table" + strconv.Itoa(tableID) + ".xml"
-	tableXML := strings.Replace(sheetRelationshipsTableXML, "..", "xl", -1)
+	tableXML := strings.ReplaceAll(sheetRelationshipsTableXML, "..", "xl")
 	// Add first table for given sheet.
-	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
+	sheetXMLPath, _ := f.getSheetXMLPath(sheet)
+	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipTable, sheetRelationshipsTableXML, "")
 	if err = f.addSheetTable(sheet, rID); err != nil {
 		return err
@@ -132,6 +129,35 @@ func (f *File) addSheetTable(sheet string, rID int) error {
 	return err
 }
 
+// setTableHeader provides a function to set cells value in header row for the
+// table.
+func (f *File) setTableHeader(sheet string, x1, y1, x2 int) ([]*xlsxTableColumn, error) {
+	var (
+		tableColumns []*xlsxTableColumn
+		idx          int
+	)
+	for i := x1; i <= x2; i++ {
+		idx++
+		cell, err := CoordinatesToCellName(i, y1)
+		if err != nil {
+			return tableColumns, err
+		}
+		name, _ := f.GetCellValue(sheet, cell)
+		if _, err := strconv.Atoi(name); err == nil {
+			_ = f.SetCellStr(sheet, cell, name)
+		}
+		if name == "" {
+			name = "Column" + strconv.Itoa(idx)
+			_ = f.SetCellStr(sheet, cell, name)
+		}
+		tableColumns = append(tableColumns, &xlsxTableColumn{
+			ID:   idx,
+			Name: name,
+		})
+	}
+	return tableColumns, nil
+}
+
 // addTable provides a function to add table by given worksheet name,
 // coordinate area and format set.
 func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, formatSet *formatTable) error {
@@ -145,29 +171,7 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, formatSet
 	if err != nil {
 		return err
 	}
-
-	var tableColumn []*xlsxTableColumn
-
-	idx := 0
-	for i := x1; i <= x2; i++ {
-		idx++
-		cell, err := CoordinatesToCellName(i, y1)
-		if err != nil {
-			return err
-		}
-		name, _ := f.GetCellValue(sheet, cell)
-		if _, err := strconv.Atoi(name); err == nil {
-			_ = f.SetCellStr(sheet, cell, name)
-		}
-		if name == "" {
-			name = "Column" + strconv.Itoa(idx)
-			_ = f.SetCellStr(sheet, cell, name)
-		}
-		tableColumn = append(tableColumn, &xlsxTableColumn{
-			ID:   idx,
-			Name: name,
-		})
-	}
+	tableColumns, _ := f.setTableHeader(sheet, x1, y1, x2)
 	name := formatSet.TableName
 	if name == "" {
 		name = "Table" + strconv.Itoa(i)
@@ -182,8 +186,8 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, formatSet
 			Ref: ref,
 		},
 		TableColumns: &xlsxTableColumns{
-			Count:       idx,
-			TableColumn: tableColumn,
+			Count:       len(tableColumns),
+			TableColumn: tableColumns,
 		},
 		TableStyleInfo: &xlsxTableStyleInfo{
 			Name:              formatSet.TableStyle,
@@ -211,11 +215,11 @@ func parseAutoFilterSet(formatSet string) (*formatAutoFilter, error) {
 // way of filtering a 2D range of data based on some simple criteria. For
 // example applying an autofilter to a cell range A1:D4 in the Sheet1:
 //
-//    err := f.AutoFilter("Sheet1", "A1", "D4", "")
+//	err := f.AutoFilter("Sheet1", "A1", "D4", "")
 //
 // Filter data in an autofilter:
 //
-//    err := f.AutoFilter("Sheet1", "A1", "D4", `{"column":"B","expression":"x != blanks"}`)
+//	err := f.AutoFilter("Sheet1", "A1", "D4", `{"column":"B","expression":"x != blanks"}`)
 //
 // column defines the filter columns in a autofilter range based on simple
 // criteria
@@ -230,38 +234,38 @@ func parseAutoFilterSet(formatSet string) (*formatAutoFilter, error) {
 // expression defines the conditions, the following operators are available
 // for setting the filter criteria:
 //
-//    ==
-//    !=
-//    >
-//    <
-//    >=
-//    <=
-//    and
-//    or
+//	==
+//	!=
+//	>
+//	<
+//	>=
+//	<=
+//	and
+//	or
 //
 // An expression can comprise a single statement or two statements separated
 // by the 'and' and 'or' operators. For example:
 //
-//    x <  2000
-//    x >  2000
-//    x == 2000
-//    x >  2000 and x <  5000
-//    x == 2000 or  x == 5000
+//	x <  2000
+//	x >  2000
+//	x == 2000
+//	x >  2000 and x <  5000
+//	x == 2000 or  x == 5000
 //
 // Filtering of blank or non-blank data can be achieved by using a value of
 // Blanks or NonBlanks in the expression:
 //
-//    x == Blanks
-//    x == NonBlanks
+//	x == Blanks
+//	x == NonBlanks
 //
 // Excel also allows some simple string matching operations:
 //
-//    x == b*      // begins with b
-//    x != b*      // doesn't begin with b
-//    x == *b      // ends with b
-//    x != *b      // doesn't end with b
-//    x == *b*     // contains b
-//    x != *b*     // doesn't contains b
+//	x == b*      // begins with b
+//	x != b*      // doesn't begin with b
+//	x == *b      // ends with b
+//	x != *b      // doesn't end with b
+//	x == *b*     // contains b
+//	x != *b*     // doesn't contains b
 //
 // You can also use '*' to match any character or number and '?' to match any
 // single character or number. No other regular expression quantifier is
@@ -272,10 +276,9 @@ func parseAutoFilterSet(formatSet string) (*formatAutoFilter, error) {
 // simple string. The actual placeholder name is ignored internally so the
 // following are all equivalent:
 //
-//    x     < 2000
-//    col   < 2000
-//    Price < 2000
-//
+//	x     < 2000
+//	col   < 2000
+//	Price < 2000
 func (f *File) AutoFilter(sheet, hCell, vCell, format string) error {
 	hCol, hRow, err := CellNameToCoordinates(hCell)
 	if err != nil {
@@ -431,9 +434,8 @@ func (f *File) writeCustomFilter(filter *xlsxAutoFilter, operator int, val strin
 //
 // Examples:
 //
-//    ('x', '==', 2000) -> exp1
-//    ('x', '>',  2000, 'and', 'x', '<', 5000) -> exp1 and exp2
-//
+//	('x', '==', 2000) -> exp1
+//	('x', '>',  2000, 'and', 'x', '<', 5000) -> exp1 and exp2
 func (f *File) parseFilterExpression(expression string, tokens []string) ([]int, []string, error) {
 	var expressions []int
 	var t []string

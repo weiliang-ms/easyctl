@@ -31,12 +31,12 @@ type languageInfo struct {
 // numberFormat directly maps the number format parser runtime required
 // fields.
 type numberFormat struct {
-	section                                                                 []nfp.Section
-	t                                                                       time.Time
-	sectionIdx                                                              int
-	isNumeric, hours, seconds                                               bool
-	number                                                                  float64
-	ap, afterPoint, beforePoint, localCode, result, value, valueSectionType string
+	section                                        []nfp.Section
+	t                                              time.Time
+	sectionIdx                                     int
+	date1904, isNumeric, hours, seconds            bool
+	number                                         float64
+	ap, localCode, result, value, valueSectionType string
 }
 
 var (
@@ -287,9 +287,9 @@ func (nf *numberFormat) prepareNumberic(value string) {
 // format provides a function to return a string parse by number format
 // expression. If the given number format is not supported, this will return
 // the original cell value.
-func format(value, numFmt string) string {
+func format(value, numFmt string, date1904 bool) string {
 	p := nfp.NumberFormatParser()
-	nf := numberFormat{section: p.Parse(numFmt), value: value}
+	nf := numberFormat{section: p.Parse(numFmt), value: value, date1904: date1904}
 	nf.number, nf.valueSectionType = nf.getValueSectionType(value)
 	nf.prepareNumberic(value)
 	for i, section := range nf.section {
@@ -315,7 +315,7 @@ func format(value, numFmt string) string {
 // positiveHandler will be handling positive selection for a number format
 // expression.
 func (nf *numberFormat) positiveHandler() (result string) {
-	nf.t, nf.hours, nf.seconds = timeFromExcelTime(nf.number, false), false, false
+	nf.t, nf.hours, nf.seconds = timeFromExcelTime(nf.number, nf.date1904), false, false
 	for i, token := range nf.section[nf.sectionIdx].Items {
 		if inStrSlice(supportedTokenTypes, token.TType, true) == -1 || token.TType == nfp.TokenTypeGeneral {
 			result = nf.value
@@ -337,7 +337,7 @@ func (nf *numberFormat) positiveHandler() (result string) {
 			nf.result += token.TValue
 			continue
 		}
-		if token.TType == nfp.TokenTypeZeroPlaceHolder && token.TValue == "0" {
+		if token.TType == nfp.TokenTypeZeroPlaceHolder && token.TValue == strings.Repeat("0", len(token.TValue)) {
 			if isNum, precision := isNumeric(nf.value); isNum {
 				if nf.number < 1 {
 					nf.result += "0"
@@ -899,7 +899,7 @@ func (nf *numberFormat) negativeHandler() (result string) {
 			nf.result += token.TValue
 			continue
 		}
-		if token.TType == nfp.TokenTypeZeroPlaceHolder && token.TValue == "0" {
+		if token.TType == nfp.TokenTypeZeroPlaceHolder && token.TValue == strings.Repeat("0", len(token.TValue)) {
 			if isNum, precision := isNumeric(nf.value); isNum {
 				if math.Abs(nf.number) < 1 {
 					nf.result += "0"
@@ -939,10 +939,11 @@ func (nf *numberFormat) textHandler() (result string) {
 // getValueSectionType returns its applicable number format expression section
 // based on the given value.
 func (nf *numberFormat) getValueSectionType(value string) (float64, string) {
-	number, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		return number, nfp.TokenSectionText
+	isNum, _ := isNumeric(value)
+	if !isNum {
+		return 0, nfp.TokenSectionText
 	}
+	number, _ := strconv.ParseFloat(value, 64)
 	if number > 0 {
 		return number, nfp.TokenSectionPositive
 	}

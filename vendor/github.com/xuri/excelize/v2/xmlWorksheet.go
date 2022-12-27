@@ -78,18 +78,17 @@ type xlsxDrawing struct {
 // footers on the first page can differ from those on odd- and even-numbered
 // pages. In the latter case, the first page is not considered an odd page.
 type xlsxHeaderFooter struct {
-	XMLName          xml.Name       `xml:"headerFooter"`
-	AlignWithMargins bool           `xml:"alignWithMargins,attr,omitempty"`
-	DifferentFirst   bool           `xml:"differentFirst,attr,omitempty"`
-	DifferentOddEven bool           `xml:"differentOddEven,attr,omitempty"`
-	ScaleWithDoc     bool           `xml:"scaleWithDoc,attr,omitempty"`
-	OddHeader        string         `xml:"oddHeader,omitempty"`
-	OddFooter        string         `xml:"oddFooter,omitempty"`
-	EvenHeader       string         `xml:"evenHeader,omitempty"`
-	EvenFooter       string         `xml:"evenFooter,omitempty"`
-	FirstFooter      string         `xml:"firstFooter,omitempty"`
-	FirstHeader      string         `xml:"firstHeader,omitempty"`
-	DrawingHF        *xlsxDrawingHF `xml:"drawingHF"`
+	XMLName          xml.Name `xml:"headerFooter"`
+	DifferentOddEven bool     `xml:"differentOddEven,attr,omitempty"`
+	DifferentFirst   bool     `xml:"differentFirst,attr,omitempty"`
+	ScaleWithDoc     bool     `xml:"scaleWithDoc,attr,omitempty"`
+	AlignWithMargins bool     `xml:"alignWithMargins,attr,omitempty"`
+	OddHeader        string   `xml:"oddHeader,omitempty"`
+	OddFooter        string   `xml:"oddFooter,omitempty"`
+	EvenHeader       string   `xml:"evenHeader,omitempty"`
+	EvenFooter       string   `xml:"evenFooter,omitempty"`
+	FirstHeader      string   `xml:"firstHeader,omitempty"`
+	FirstFooter      string   `xml:"firstFooter,omitempty"`
 }
 
 // xlsxDrawingHF (Drawing Reference in Header Footer) specifies the usage of
@@ -147,12 +146,12 @@ type xlsxPrintOptions struct {
 // a sheet or a custom sheet view.
 type xlsxPageMargins struct {
 	XMLName xml.Name `xml:"pageMargins"`
-	Bottom  float64  `xml:"bottom,attr"`
-	Footer  float64  `xml:"footer,attr"`
-	Header  float64  `xml:"header,attr"`
 	Left    float64  `xml:"left,attr"`
 	Right   float64  `xml:"right,attr"`
 	Top     float64  `xml:"top,attr"`
+	Bottom  float64  `xml:"bottom,attr"`
+	Header  float64  `xml:"header,attr"`
+	Footer  float64  `xml:"footer,attr"`
 }
 
 // xlsxSheetFormatPr directly maps the sheetFormatPr element in the namespace
@@ -450,25 +449,27 @@ type DataValidation struct {
 //
 // This simple type is restricted to the values listed in the following table:
 //
-//      Enumeration Value         | Description
-//     ---------------------------+---------------------------------
-//      b (Boolean)               | Cell containing a boolean.
-//      d (Date)                  | Cell contains a date in the ISO 8601 format.
-//      e (Error)                 | Cell containing an error.
-//      inlineStr (Inline String) | Cell containing an (inline) rich string, i.e., one not in the shared string table. If this cell type is used, then the cell value is in the is element rather than the v element in the cell (c element).
-//      n (Number)                | Cell containing a number.
-//      s (Shared String)         | Cell containing a shared string.
-//      str (String)              | Cell containing a formula string.
-//
+//	 Enumeration Value         | Description
+//	---------------------------+---------------------------------
+//	 b (Boolean)               | Cell containing a boolean.
+//	 d (Date)                  | Cell contains a date in the ISO 8601 format.
+//	 e (Error)                 | Cell containing an error.
+//	 inlineStr (Inline String) | Cell containing an (inline) rich string, i.e., one not in the shared string table. If this cell type is used, then the cell value is in the is element rather than the v element in the cell (c element).
+//	 n (Number)                | Cell containing a number.
+//	 s (Shared String)         | Cell containing a shared string.
+//	 str (String)              | Cell containing a formula string.
 type xlsxC struct {
 	XMLName  xml.Name `xml:"c"`
 	XMLSpace xml.Attr `xml:"space,attr,omitempty"`
 	R        string   `xml:"r,attr,omitempty"` // Cell ID, e.g. A1
 	S        int      `xml:"s,attr,omitempty"` // Style reference.
 	// Str string `xml:"str,attr,omitempty"` // Style reference.
-	T  string  `xml:"t,attr,omitempty"` // Type.
-	F  *xlsxF  `xml:"f,omitempty"`      // Formula
-	V  string  `xml:"v,omitempty"`      // Value
+	T  string  `xml:"t,attr,omitempty"`  // Type.
+	Cm *uint   `xml:"cm,attr,omitempty"` //
+	Vm *uint   `xml:"vm,attr,omitempty"` //
+	Ph *bool   `xml:"ph,attr,omitempty"` //
+	F  *xlsxF  `xml:"f,omitempty"`       // Formula
+	V  string  `xml:"v,omitempty"`       // Value
 	IS *xlsxSI `xml:"is"`
 }
 
@@ -642,13 +643,12 @@ type xlsxHyperlink struct {
 // size of the sample. To reference the table, just add the tableParts element,
 // of course after having created and stored the table part. For example:
 //
-//    <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-//        ...
-//        <tableParts count="1">
-// 		      <tablePart r:id="rId1" />
-//        </tableParts>
-//    </worksheet>
-//
+//	   <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+//	       ...
+//	       <tableParts count="1">
+//			      <tablePart r:id="rId1" />
+//	       </tableParts>
+//	   </worksheet>
 type xlsxTableParts struct {
 	XMLName    xml.Name         `xml:"tableParts"`
 	Count      int              `xml:"count,attr,omitempty"`
@@ -665,8 +665,7 @@ type xlsxTablePart struct {
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - Background sheet
 // image. For example:
 //
-//    <picture r:id="rId1"/>
-//
+//	<picture r:id="rId1"/>
 type xlsxPicture struct {
 	XMLName xml.Name `xml:"picture"`
 	RID     string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
@@ -880,8 +879,8 @@ type FormatHeaderFooter struct {
 	OddFooter        string
 	EvenHeader       string
 	EvenFooter       string
-	FirstFooter      string
 	FirstHeader      string
+	FirstFooter      string
 }
 
 // FormatPageMargins directly maps the settings of page margins

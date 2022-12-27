@@ -21,11 +21,10 @@ import (
 	"sync"
 )
 
-// NewFile provides a function to create new file by default template. For
-// example:
+// NewFile provides a function to create new file by default template.
+// For example:
 //
-//    f := NewFile()
-//
+//	f := NewFile()
 func NewFile() *File {
 	f := newFile()
 	f.Pkg.Store("_rels/.rels", []byte(xml.Header+templateRels))
@@ -60,14 +59,17 @@ func (f *File) Save() error {
 	if f.Path == "" {
 		return ErrSave
 	}
+	if f.options != nil {
+		return f.SaveAs(f.Path, *f.options)
+	}
 	return f.SaveAs(f.Path)
 }
 
 // SaveAs provides a function to create or update to a spreadsheet at the
 // provided path.
 func (f *File) SaveAs(name string, opt ...Options) error {
-	if len(name) > MaxFileNameLength {
-		return ErrMaxFileNameLength
+	if len(name) > MaxFilePathLength {
+		return ErrMaxFilePathLength
 	}
 	f.Path = name
 	contentType, ok := map[string]string{
@@ -78,7 +80,7 @@ func (f *File) SaveAs(name string, opt ...Options) error {
 		".xltx": ContentTypeTemplate,
 	}[filepath.Ext(f.Path)]
 	if !ok {
-		return ErrWorkbookExt
+		return ErrWorkbookFileFormat
 	}
 	f.setContentTypePartProjectExtensions(contentType)
 	file, err := os.OpenFile(filepath.Clean(name), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, os.ModePerm)
