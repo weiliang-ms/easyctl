@@ -56,7 +56,7 @@ github.com/docker/go-connections/tlsconfig
 # github.com/docker/go-units v0.4.0
 ## explicit
 github.com/docker/go-units
-# github.com/go-ping/ping v0.0.0-20211130115550-779d1e919534
+# github.com/go-ping/ping v1.1.0
 ## explicit; go 1.14
 github.com/go-ping/ping
 # github.com/godbus/dbus/v5 v5.0.4
