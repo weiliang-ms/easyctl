@@ -105,8 +105,8 @@ github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
-github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
-github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
+github.com/stretchr/testify v1.8.2 h1:+h33VjcLVPDHtOdpUCuF+7gSuG3yGIftsP1YvFihtJ8=
+github.com/stretchr/testify v1.8.2/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/vbauerster/mpb/v7 v7.5.3 h1:BkGfmb6nMrrBQDFECR/Q7RkKCw7ylMetCb4079CGs4w=
 github.com/vbauerster/mpb/v7 v7.5.3/go.mod h1:i+h4QY6lmLvBNK2ah1fSreiw3ajskRlBp9AhY/PnuOE=
 github.com/xuri/efp v0.0.0-20220603152613-6918739fd470 h1:6932x8ltq1w4utjmfMPVj09jdMlkY0aiA6+Skbtl3/c=
