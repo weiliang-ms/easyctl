@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
 	github.com/containerd/cgroups v1.1.0
-	github.com/docker/docker v23.0.1+incompatible
+	github.com/docker/docker v24.0.3+incompatible
 	github.com/go-ping/ping v1.1.0
 	github.com/lithammer/dedent v1.1.0
 	github.com/mitchellh/go-homedir v1.1.0
