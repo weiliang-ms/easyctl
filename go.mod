@@ -5,18 +5,18 @@ go 1.19
 require (
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
 	github.com/containerd/cgroups v1.1.0
-	github.com/docker/docker v23.0.1+incompatible
+	github.com/docker/docker v24.0.5+incompatible
 	github.com/go-ping/ping v1.1.0
 	github.com/lithammer/dedent v1.1.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417
+	github.com/opencontainers/runtime-spec v1.1.0-rc.3
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.5
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.6.1
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	github.com/vbauerster/mpb/v7 v7.5.3
 	github.com/xuri/excelize/v2 v2.7.1
 	golang.org/x/crypto v0.8.0
