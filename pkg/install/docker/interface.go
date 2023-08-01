@@ -6,7 +6,7 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/install"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/runner/scp"
-	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
+	strings2 "github.com/weiliang-ms/gotool/strings"
 	"time"
 )
 

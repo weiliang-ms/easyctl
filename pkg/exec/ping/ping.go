@@ -6,7 +6,7 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
 	"github.com/weiliang-ms/easyctl/pkg/util/file"
 	"github.com/weiliang-ms/easyctl/pkg/util/log"
-	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
+	strings2 "github.com/weiliang-ms/gotool/strings"
 	"gopkg.in/yaml.v2"
 	"net"
 	"sort"

@@ -8,7 +8,7 @@ import (
 	"github.com/weiliang-ms/easyctl/pkg/util/log"
 	"github.com/weiliang-ms/easyctl/pkg/util/platform"
 	"github.com/weiliang-ms/easyctl/pkg/util/request"
-	"github.com/weiliang-ms/easyctl/pkg/util/slice"
+	"github.com/weiliang-ms/gotool/slice"
 	"gopkg.in/yaml.v2"
 	"io/fs"
 	"net/http"
@@ -428,12 +428,12 @@ func (executor *Executor) TagsWithinRepo(projectName string, repoName string, ta
 }
 
 /*
-	入参： projectName, repoName
-    出参：
-	[]string{
-		projectName/repo1:tag1,
-		projectName/repo1:tag2,
-	}
+		入参： projectName, repoName
+	    出参：
+		[]string{
+			projectName/repo1:tag1,
+			projectName/repo1:tag2,
+		}
 */
 func (executor *Executor) generateRepoTagsSlice(projectName, repoName string) ([]string, error) {
 

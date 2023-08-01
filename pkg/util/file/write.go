@@ -3,7 +3,7 @@ package file
 import (
 	"bufio"
 	"fmt"
-	"github.com/weiliang-ms/easyctl/pkg/util/strings"
+	"github.com/weiliang-ms/gotool/strings"
 	"os"
 )
 

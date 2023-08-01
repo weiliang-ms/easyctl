@@ -1,7 +1,7 @@
 /*
 	MIT License
 
-Copyright (c) 2020 xzx.weiliang
+# Copyright (c) 2020 xzx.weiliang
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
 */
 package boot
 
@@ -30,7 +29,7 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
-	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
+	strings2 "github.com/weiliang-ms/gotool/strings"
 	"gopkg.in/yaml.v2"
 	"os/exec"
 )

@@ -4,8 +4,8 @@ import (
 	"github.com/lithammer/dedent"
 	"github.com/weiliang-ms/easyctl/pkg/runner"
 	"github.com/weiliang-ms/easyctl/pkg/util/command"
-	"github.com/weiliang-ms/easyctl/pkg/util/slice"
 	"github.com/weiliang-ms/easyctl/pkg/util/tmplutil"
+	"github.com/weiliang-ms/gotool/slice"
 	"gopkg.in/yaml.v2"
 	"text/template"
 )

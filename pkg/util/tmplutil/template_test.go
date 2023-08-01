@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/lithammer/dedent"
 	"github.com/stretchr/testify/assert"
-	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
+	strings2 "github.com/weiliang-ms/gotool/strings"
 	"testing"
 	"text/template"
 )

@@ -2,8 +2,8 @@ package scanos
 
 import (
 	"fmt"
-	slice2 "github.com/weiliang-ms/easyctl/pkg/util/slice"
-	strings2 "github.com/weiliang-ms/easyctl/pkg/util/strings"
+	slice2 "github.com/weiliang-ms/gotool/slice"
+	strings2 "github.com/weiliang-ms/gotool/strings"
 	"regexp"
 	"strconv"
 	"strings"
@@ -161,8 +161,8 @@ func NewDiskInfoItem(content string) DiskInfo {
 }
 
 /*
-	数据结构
-	/dev/vda1        40G  3.4G   34G   9% /
+数据结构
+/dev/vda1        40G  3.4G   34G   9% /
 */
 func NewDiskInfoMetaItem(content string) (diskInfoMeta DiskInfoMeta) {
 

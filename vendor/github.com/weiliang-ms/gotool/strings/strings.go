@@ -75,11 +75,11 @@ func GetMemoryBytes(memory string) (value int64, err error) {
 		mb := strings.TrimSuffix(memory, "MB")
 		mbValue, _ := strconv.ParseInt(mb, 0, 64)
 		value = mbValue * 1024 * 1024
-	}else if ok, _ := regexp.MatchString("^\\d+GB$", memory); ok {
+	} else if ok, _ := regexp.MatchString("^\\d+GB$", memory); ok {
 		gb := strings.TrimSuffix(memory, "GB")
 		mbValue, _ := strconv.ParseInt(gb, 0, 64)
 		value = mbValue * 1024 * 1024 * 1024
-	}else {
+	} else {
 		value = 0
 		err = fmt.Errorf("%s非法的内存配置", memory)
 	}
