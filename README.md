@@ -1,4 +1,3 @@
-![GitHub Workflow Status (event)](https://img.shields.io/github/workflow/status/weiliang-ms/easyctl/Go?style=flat-square)
 [![Go Report Card](https://goreportcard.com/badge/github.com/weiliang-ms/easyctl)](https://goreportcard.com/report/github.com/weiliang-ms/easyctl)
 ![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/weiliang-ms/easyctl?filename=go.mod&style=flat-square)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/weiliang-ms/easyctl?style=flat-square)
@@ -68,20 +67,6 @@ sudo cp easyctl /usr/local/bin
 > 下载[tag版本](https://github.com/weiliang-ms/easyctl/tags)
 
 ## 迭代计划
-
-> 里程碑
-
-- [x] [文档站点](https://weiliang-ms.github.io/easyctl/)
-- [x] 集成`github workflow`
-- [x] [集成codecov](https://app.codecov.io/gh/weiliang-ms/+)
-- `v0.x.y-alpha`: 开发
-- `v1.0.0-beta`: `bug`修复
-- `v1.0.0-release`: 正式版本
-
-> TODO
-
-- 单元测试覆盖率90%以上
-- 提升单元测试执行效率
 
 > `v1`功能列表
 

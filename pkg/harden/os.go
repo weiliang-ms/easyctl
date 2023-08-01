@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"os"
 	"strings"
+	"time"
 )
 
 // Object 加固对象
@@ -570,6 +571,7 @@ func (object *Object) run(cmd string) command.RunErr {
 		ManifestContent:     object.B,
 		Logger:              object.Logger,
 		Cmd:                 cmd,
+		SSHTimeout:          time.Second * 3,
 		RecordErrServerList: false,
 	})
 }

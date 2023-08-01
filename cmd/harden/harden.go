@@ -19,7 +19,7 @@ var config []byte
 var RootCmd = &cobra.Command{
 	Use:   "harden [OPTIONS] [flags]",
 	Short: "安全加固指令",
-	Args:  cobra.ExactValidArgs(1),
+	Args:  cobra.MatchAll(cobra.ExactArgs(1)),
 }
 
 func init() {
