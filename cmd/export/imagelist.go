@@ -17,7 +17,7 @@ var imageCmd = &cobra.Command{
 	Short: "导出harbor项目内的镜像列表",
 	Run: func(cmd *cobra.Command, args []string) {
 		if runErr := command.SetExecutorDefault(
-			command.Item{Cmd: cmd, Fnc: harbor.ImageList, DefaultConfig: harborConfig}); runErr.Err != nil {
+			command.Item{Cmd: cmd, Fnc: harbor.ImageList, ConfigFilePath: configFile, DefaultConfig: harborConfig}); runErr.Err != nil {
 			log.Println(runErr.Msg)
 			panic(runErr.Err)
 		}
