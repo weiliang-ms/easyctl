@@ -365,7 +365,7 @@ func (executor *Executor) TagsWithinProject(projectName string, repos []string) 
 	for _, r := range repos {
 		wg.Add(1)
 		// 添加缓冲时间
-		time.Sleep(time.Millisecond * 500)
+		time.Sleep(time.Millisecond * 50)
 		go func(repoName string) {
 			tags, err := executor.generateRepoTagsSlice(projectName, repoName)
 			ch <- result{tags: tags, err: err}
