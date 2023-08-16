@@ -56,8 +56,10 @@ func ImageList(item command.OperationItem) command.RunErr {
 		return command.RunErr{Err: err}
 	}
 
+	// 获取project 集合
 	projects = executor.FilterProjects(projects)
 
+	// 获取projects下的所有repo集合
 	projectAndReposMap, err := executor.ReposWithinProjects(projects)
 	if err != nil {
 		return command.RunErr{Err: err}
@@ -284,7 +286,10 @@ func (executor *Executor) ReposWithinProject(projectName string, projectId int) 
 	_ = json.Unmarshal(b, &meta)
 	logger.Debugf("反序列化对象结果: %+v\n", meta)
 
+	// 分页数量
 	count := meta.RepoCount / 10
+	logger.Debugf("project: %s 分页数量为：%d", projectName, count)
+
 	for i := 1; i < count+2; i++ {
 
 		data, err := executor.HandlerInterface.ListRepoByPage(
@@ -355,9 +360,12 @@ func (executor *Executor) TagsWithinProject(projectName string, repos []string) 
 	logger.Infof("解析项目%s下镜像tag集合，共计%d个tag",
 		projectName, len(repos))
 	ch := make(chan result, len(repos))
+	logger.Infof("项目：%s 所需协程数为：%d", projectName, len(repos))
 
 	for _, r := range repos {
 		wg.Add(1)
+		// 添加缓冲时间
+		time.Sleep(time.Millisecond * 500)
 		go func(repoName string) {
 			tags, err := executor.generateRepoTagsSlice(projectName, repoName)
 			ch <- result{tags: tags, err: err}

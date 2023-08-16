@@ -48,7 +48,7 @@ jobs:
           goarch: ${{ matrix.goarch }}
           build_flags: "-gcflags=-trimpath=$GOPATH -asmflags=-trimpath=$GOPATH"
           ldflags: "-w -s -X 'main.BuildTime=${{ steps.current_time.outputs.date }}' -X 'main.GitTag=${{ steps.branch_name.outputs.name }}'"
-          goversion: "1.18"
+          goversion: "1.19"
           project_path: "."
           binary_name: "easyctl"
           #          release_tag: "latest"

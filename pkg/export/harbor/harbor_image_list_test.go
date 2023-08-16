@@ -1834,3 +1834,24 @@ func Test_getHandlerInterface(t *testing.T) {
 	r2 := getHandlerInterface(h2)
 	require.Equal(t, h2, r2)
 }
+
+func TestChamp(t *testing.T) {
+	content := `
+harbor-repo:
+  schema: http
+  address: 192.168.174.95:80           # harbor连接地址
+  domain: harbor.chs.neusoft.com              # harbor域
+  user: admin                       # harbor用户
+  password: Harbor-12345                  # harbor用户密码
+  preserve-dir: D:\\                # 持久化tag
+  projects:                         # 导出哪些项目下的镜像tag（如果为空表示全库导出）
+    - champ                        # project名称
+  excludes:                         # 配置'projects'空值使用，过滤某些project
+}`
+	ImageList(command.OperationItem{
+		B:        []byte(content),
+		Logger:   mockLogger,
+		LocalRun: false,
+	})
+
+}
