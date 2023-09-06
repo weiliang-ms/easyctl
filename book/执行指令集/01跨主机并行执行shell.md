@@ -4,14 +4,14 @@
 
 > 版本支持
 
-- [v0.7.16-alpha以上](https://github.com/weiliang-ms/easyctl/releases/)
+- [v0.8.3以上](https://github.com/weiliang-ms/easyctl/releases/)
 
 > 兼容性
 
 - [x] `CentOS6`
 - [x] `CentOS7`
 
-### 使用方式
+### 使用方式1
 
 > 参考以下链接进行安装
 
@@ -44,15 +44,45 @@ script: "1.sh"
 
 添加`--debug`可以输出详细内容。
 
+### 使用方式2
+
+> 生成默认配置文件
+
+exec 后执行的 shell 指令需用双引号引用
+
 ```shell
-$ easyctl exec shell -c config.yaml --debug
+$ easyctl exec "date"
+INFO[0000] 未找到配置文件，为您生成配置文件样例, 请修改文件内容后携带 -c 参数重新执行 -> config.yaml
+```
+
+> 修改配置文件
+
+`config.yaml`, 修改主机列表。`easyctl`根据主机列表`ssh`远程至目标主机执行`shell`
+
+```yaml
+server:
+  - host: 10.10.10.[1:3]
+    username: root
+    privateKeyPath: ~/.ssh/id_rsa
+    password: ""
+    port: 22
+excludes:
+  - 192.168.235.132
+```
+
+> 执行
+
+添加`--debug`可以输出详细内容。
+
+```shell
+$ easyctl exec "date" -c config.yaml --debug
 ```
 
 ### 配置项说明
 
 - 主机配置段：该段配置远程执行`shell`的主机信息，字段说明如下
-    - `host: 10.10.10.[1:3]` 主机地址段，适用于`ip`连续场景。分隔符可以为`[1:3]`、`1-2`、`[1-2]`、`1:2`
-    - `username`: 远程主机`ssh`用户名称，缺省值为`root`
+  - `host: 10.10.10.[1:3]` 主机地址段，适用于`ip`连续场景。分隔符可以为`[1:3]`、`1-2`、`[1-2]`、`1:2`
+  - `username`: 远程主机`ssh`用户名称，缺省值为`root`
     - `password`: 对应`username`的密码
     - `privateKeyPath`: `ssh`私钥路径
     - `port`: `ssh`端口，默认`22`
