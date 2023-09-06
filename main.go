@@ -57,7 +57,6 @@ func init() {
 		set.RootCmd,
 		install.RootCmd,
 		upgrade.Cmd,
-		//cmd.InitTmplCmd,
 		export.RootCmd,
 		harden.RootCmd,
 		track.RootCmd,
